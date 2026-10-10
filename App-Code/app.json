@@ -19,6 +19,7 @@
       "supportsTablet": true
     },
     "android": {
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#090909",
         "foregroundImage": "./assets/fitprime-icon.png"

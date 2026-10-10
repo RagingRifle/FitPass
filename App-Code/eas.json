@@ -11,7 +11,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://gym-crm-backend-7zmm.onrender.com/api/v1"
+        "EXPO_PUBLIC_API_URL": "http://50.6.44.247/api/v1"
       },
       "android": {
         "buildType": "apk"
@@ -19,7 +19,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://gym-crm-backend-7zmm.onrender.com/api/v1"
+        "EXPO_PUBLIC_API_URL": "http://50.6.44.247/api/v1"
       },
       "android": {
         "buildType": "apk"
