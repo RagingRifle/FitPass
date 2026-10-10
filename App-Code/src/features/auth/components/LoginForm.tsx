@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Dimensions,
   ScrollView,
   Image,
   SafeAreaView,
@@ -20,9 +19,9 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 
-const H4_LOGO = require('../../../../assets/h4.jpeg');
-const { width, height } = Dimensions.get('window');
-
+const FITPRIME_LOGO = require('../../../../assets/fitprime-icon.png');
+const H4_PORTAL_LOGO = require('../../../../assets/h4-app-icon.png');
+const FITPASS_PORTAL_LOGO = require('../../../../assets/fitpass-icon.png');
 type PortalType = 'fitpass' | 'h4' | null;
 
 export const LoginForm: React.FC = () => {
@@ -180,13 +179,15 @@ export const LoginForm: React.FC = () => {
           resizeMode="cover"
         >
           <LinearGradient
-            colors={['rgba(255,255,255,0.02)', 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0.25)']}
+            colors={['rgba(10,36,49,0.52)', 'rgba(10,36,49,0.64)', 'rgba(10,36,49,0.96)']}
             style={styles.overlayGradient}
           >
             <SafeAreaView style={styles.portalSafeArea}>
               <View style={styles.portalHeader}>
-                <Text style={styles.portalWelcomeText}>WELCOME</Text>
-                <Text style={styles.portalAppTitle}>ZIPPY FIT PRIME</Text>
+                <Image source={FITPRIME_LOGO} style={styles.brandMark} resizeMode="cover" />
+                <Text style={styles.portalWelcomeText}>YOUR NEXT CHAPTER STARTS HERE</Text>
+                <Text style={styles.portalAppTitle}>FitPrime</Text>
+                <Text style={styles.portalTagline}>Find your fit. Make it yours.</Text>
               </View>
 
               <View style={styles.portalBottomGroup}>
@@ -198,17 +199,20 @@ export const LoginForm: React.FC = () => {
                     onPress={() => setSelectedPortal('h4')}
                   >
                     <LinearGradient
-                      colors={['#E04F00', '#C43600']}
+                      colors={['#F0C77D', '#C97847']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.portalCardGradient}
                     >
                       <View style={styles.portalCardContent}>
                         <View style={styles.portalCardIconWrapper}>
-                          <Image source={H4_LOGO} style={styles.portalCardLogoIcon} resizeMode="cover" />
+                          <Image source={H4_PORTAL_LOGO} style={styles.portalCardLogoIcon} resizeMode="cover" />
                         </View>
-                        <Text style={styles.portalCardTitle}>Continue with H4 Portal</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
+                        <View style={styles.portalCardTextGroup}>
+                          <Text style={styles.portalCardTitleH4}>H4 Fitness</Text>
+                          <Text style={styles.portalCardDescH4}>Your training, membership and progress</Text>
+                        </View>
+                        <Ionicons name="arrow-forward" size={20} color="#40291A" />
                       </View>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -220,21 +224,26 @@ export const LoginForm: React.FC = () => {
                     onPress={() => setSelectedPortal('fitpass')}
                   >
                     <LinearGradient
-                      colors={['#FF6B00', '#E04F00']}
+                      colors={['#6577E8', '#4E45B7']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.portalCardGradient}
                     >
                       <View style={styles.portalCardContent}>
-                        <Ionicons name="barbell-outline" size={24} color="#FFFFFF" style={{ marginRight: 12 }} />
-                        <Text style={styles.portalCardTitle}>Continue with Fit-Pass</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
+                        <View style={styles.portalCardIconWrapper}>
+                          <Image source={FITPASS_PORTAL_LOGO} style={styles.portalCardLogoIcon} resizeMode="cover" />
+                        </View>
+                        <View style={styles.portalCardTextGroup}>
+                          <Text style={styles.portalCardTitleLight}>FitPass</Text>
+                          <Text style={styles.portalCardDescLight}>Discover gyms. Move your way.</Text>
+                        </View>
+                        <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
                       </View>
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.footerNote}>Zippy Digital Solutions • Engineering Standard v1.1</Text>
+                <Text style={styles.footerNote}>ONE COMMUNITY. MANY WAYS TO MOVE.</Text>
               </View>
             </SafeAreaView>
           </LinearGradient>
@@ -246,6 +255,7 @@ export const LoginForm: React.FC = () => {
   // STEP 2: LOGIN FORM PAGE FOR SELECTED PORTAL (Light Theme, Premium Orange branding)
   const isH4 = selectedPortal === 'h4';
   const portalTitle = isH4 ? 'H4 PORTAL' : 'FIT-PASS';
+  const accent = isH4 ? '#B96B37' : '#594DC1';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -275,18 +285,13 @@ export const LoginForm: React.FC = () => {
             {/* Header Section */}
             <View style={styles.headerContainer}>
               <View style={styles.logoBadge}>
-                {isH4 ? (
-                  <Image source={H4_LOGO} style={styles.logoImage} resizeMode="cover" />
-                ) : (
-                  <LinearGradient
-                    colors={['#FF6B00', '#E04F00']}
-                    style={styles.fitpassBadgeGradient}
-                  >
-                    <Ionicons name="card-outline" size={40} color="#FFFFFF" />
-                  </LinearGradient>
-                )}
+                <Image
+                  source={isH4 ? H4_PORTAL_LOGO : FITPASS_PORTAL_LOGO}
+                  style={styles.logoImage}
+                  resizeMode="cover"
+                />
               </View>
-              <Text style={styles.title}>{portalTitle}</Text>
+              <Text style={[styles.title, { color: accent }]}>{portalTitle}</Text>
               <Text style={styles.subtitle}>
                 {!showOTPField && !showPasswordField 
                   ? `Sign in to access your ${isH4 ? 'H4 Fit Club' : 'FitPass'} account.` 
@@ -301,7 +306,7 @@ export const LoginForm: React.FC = () => {
               {!showOTPField && !showPasswordField ? (
                 <>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="mail-outline" size={20} color="#6E5E51" style={styles.inputIcon} />
+                    <Ionicons name="mail-outline" size={20} color={accent} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Email Address"
@@ -322,7 +327,7 @@ export const LoginForm: React.FC = () => {
                     activeOpacity={0.88}
                   >
                     <LinearGradient
-                      colors={['#FF6B00', '#E04F00']}
+                      colors={isH4 ? ['#C98534', '#A84F32'] : ['#5A6DD8', '#493CA8']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.buttonGradient}
@@ -341,7 +346,7 @@ export const LoginForm: React.FC = () => {
               ) : showOTPField ? (
                 <>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="keypad-outline" size={20} color="#6E5E51" style={styles.inputIcon} />
+                    <Ionicons name="keypad-outline" size={20} color={accent} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Enter 6-digit Code"
@@ -361,7 +366,7 @@ export const LoginForm: React.FC = () => {
                     activeOpacity={0.88}
                   >
                     <LinearGradient
-                      colors={['#FF6B00', '#E04F00']}
+                      colors={isH4 ? ['#C98534', '#A84F32'] : ['#5A6DD8', '#493CA8']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.buttonGradient}
@@ -385,7 +390,7 @@ export const LoginForm: React.FC = () => {
               ) : showPasswordField ? (
                 <>
                   <View style={styles.inputWrapper}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#6E5E51" style={styles.inputIcon} />
+                    <Ionicons name="lock-closed-outline" size={20} color={accent} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder={`Enter your ${portalTitle} password`}
@@ -405,7 +410,7 @@ export const LoginForm: React.FC = () => {
                     activeOpacity={0.88}
                   >
                     <LinearGradient
-                      colors={['#FF6B00', '#E04F00']}
+                      colors={isH4 ? ['#C98534', '#A84F32'] : ['#5A6DD8', '#493CA8']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.buttonGradient}
@@ -442,7 +447,7 @@ const styles = StyleSheet.create({
   // STEP 1: Portal Selection styles
   portalContainer: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#0B2733',
   },
   bgImage: {
     flex: 1,
@@ -459,22 +464,33 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   portalHeader: {
-    alignItems: 'center',
-    marginTop: 40,
+    alignItems: 'flex-start',
+    marginTop: 54,
+  },
+  brandMark: {
+    width: 58,
+    height: 58,
+    borderRadius: 19,
+    marginBottom: 25,
   },
   portalWelcomeText: {
-    fontSize: 14,
     fontWeight: '800',
-    color: '#FF6B00',
-    letterSpacing: 2,
-    marginBottom: 6,
+    color: '#BCE9D0',
+    letterSpacing: 2.3,
+    fontSize: 10,
+    marginBottom: 10,
   },
   portalAppTitle: {
-    fontSize: 34,
-    fontWeight: '900',
-    color: '#1C1611',
-    letterSpacing: 1,
-    marginBottom: 8,
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -1.5,
+    marginBottom: 5,
+  },
+  portalTagline: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.82)',
+    letterSpacing: 0.2,
   },
   portalCardContainer: {
     gap: 16,
@@ -487,11 +503,13 @@ const styles = StyleSheet.create({
   portalCard: {
     borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#FF6B00',
+    shadowColor: '#061A22',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
   portalCardGradient: {
     paddingVertical: 18,
@@ -501,15 +519,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  portalCardTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
   portalCardIconWrapper: {
-    width: 26,
-    height: 26,
+    width: 42,
+    height: 42,
     borderRadius: 13,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
@@ -520,28 +532,48 @@ const styles = StyleSheet.create({
   portalCardLogoIcon: {
     width: '100%',
     height: '100%',
-  },
-  portalCardDesc: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.85)',
-    lineHeight: 18,
-    fontWeight: '500',
+    borderRadius: 13,
   },
   portalCardTextGroup: {
     flex: 1,
     paddingRight: 8,
   },
+  portalCardTitleLight: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.1,
+  },
+  portalCardTitleH4: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#40291A',
+    letterSpacing: 0.1,
+  },
+  portalCardDescH4: {
+    fontSize: 13,
+    color: 'rgba(64,41,26,0.8)',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  portalCardDescLight: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.84)',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
   footerNote: {
     textAlign: 'center',
-    color: '#8C7E74',
-    fontSize: 12,
+    color: 'rgba(235,247,244,0.65)',
+    fontSize: 10,
+    letterSpacing: 1.3,
     fontWeight: '600',
   },
 
   // STEP 2: Form styles (Light Theme)
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: '#F3F7F5',
   },
   keyboardView: {
     flex: 1,
@@ -566,10 +598,10 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F0EC',
+    backgroundColor: '#FFFFFF',
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#E6E1DC',
+    borderColor: '#DDE8E5',
   },
   headerContainer: {
     alignItems: 'center',
@@ -579,14 +611,14 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 24,
-    backgroundColor: '#F3F0EC',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#FF6B00',
+    borderColor: '#D9E8E3',
     overflow: 'hidden',
-    shadowColor: '#FF6B00',
+    shadowColor: '#176D76',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -597,22 +629,16 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 22,
   },
-  fitpassBadgeGradient: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   title: {
     fontSize: 32,
-    color: '#1C1611',
+    color: '#17343D',
     fontWeight: '900',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#6E5E51',
+    color: '#637A7D',
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '500',
@@ -623,19 +649,19 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F4F1EC',
-    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     height: 60,
     paddingHorizontal: 20,
     borderWidth: 1.5,
-    borderColor: '#E6E1DC',
+    borderColor: '#DDE8E5',
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#1C1611',
+    color: '#17343D',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -644,7 +670,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     marginTop: 6,
-    shadowColor: '#FF6B00',
+    shadowColor: '#176D76',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -671,7 +697,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   backLinkText: {
-    color: '#6E5E51',
+    color: '#637A7D',
     fontSize: 14,
     fontWeight: '600',
   },

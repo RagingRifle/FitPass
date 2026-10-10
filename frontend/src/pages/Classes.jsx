@@ -174,7 +174,7 @@ const Classes = () => {
                 tokenOrPass: decodedText,
                 memberId: decodedText
             });
-            setScannerMessage({ text: `✅ Verified: ${data.member?.name || 'Member'} marked Attended!`, type: 'success' });
+            setScannerMessage({ text: ` Verified: ${data.member?.name || 'Member'} marked Attended!`, type: 'success' });
             const updated = await API.get(`/classes/${bookingsModal._id}/bookings`);
             setBookingsModal(updated.data);
             fetchClasses();
@@ -196,7 +196,7 @@ const Classes = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>📅 Studio Class Scheduling</h2>
+                    <h2 style={{ marginBottom: '0.25rem' }}> Studio Class Scheduling</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{classes.length} class session(s) scheduled across branches</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => { setIsModalOpen(true); setError(''); }}>
@@ -207,7 +207,7 @@ const Classes = () => {
             {/* Classes Grid */}
             {classes.length === 0 ? (
                 <div className="card empty-state" style={{ textAlign: 'center', padding: '4rem' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</div>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
                     <h3>No Classes Scheduled</h3>
                     <p style={{ color: 'var(--text-secondary)' }}>Click "+ Schedule New Class" to create branch-specific workouts.</p>
                 </div>
@@ -311,7 +311,7 @@ const Classes = () => {
                                             style={{ flex: 1, fontSize: '0.8rem', padding: '0.45rem' }}
                                             onClick={() => viewBookings(gymClass)}
                                         >
-                                            👥 View Roster ({bookedCount})
+                                             View Roster ({bookedCount})
                                         </button>
                                         <button 
                                             className="btn" 
@@ -329,7 +329,7 @@ const Classes = () => {
             )}
 
             {/* Create Class Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="📅 Schedule Studio Class">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title=" Schedule Studio Class">
                 <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {error && <div className="alert alert-danger">{error}</div>}
 
@@ -355,7 +355,7 @@ const Classes = () => {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                             <label style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
-                                📍 Assign to Branches (Multi-Select)
+                                 Assign to Branches (Multi-Select)
                             </label>
                             {branches.length > 1 && (
                                 <button 
@@ -447,7 +447,7 @@ const Classes = () => {
                     </div>
 
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={submitting}>
-                        {submitting ? 'Scheduling...' : '📅 Schedule Studio Class'}
+                        {submitting ? 'Scheduling...' : ' Schedule Studio Class'}
                     </button>
                 </form>
             </Modal>
@@ -456,7 +456,7 @@ const Classes = () => {
             <Modal 
                 isOpen={!!bookingsModal} 
                 onClose={() => { setBookingsModal(null); setSelectedMemberId(''); setIsClassScannerOpen(false); }} 
-                title={`👥 Class Roster & Attendance — ${bookingsModal?.name}`}
+                title={` Class Roster & Attendance — ${bookingsModal?.name}`}
             >
                 {/* Scanner & Manual Action Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -471,7 +471,7 @@ const Classes = () => {
                         style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
                         onClick={() => setIsClassScannerOpen(!isClassScannerOpen)}
                     >
-                        {isClassScannerOpen ? 'Stop Camera' : '📱 Scan Member Pass QR'}
+                        {isClassScannerOpen ? 'Stop Camera' : ' Scan Member Pass QR'}
                     </button>
                 </div>
 
@@ -578,7 +578,7 @@ const Classes = () => {
                     </table>
                 ) : (
                     <div className="empty-state">
-                        <div className="empty-state-icon">👥</div>
+                        <div className="empty-state-icon"></div>
                         <h3>No Bookings Yet</h3>
                         <p>Members who book online or are added by staff will appear here.</p>
                     </div>

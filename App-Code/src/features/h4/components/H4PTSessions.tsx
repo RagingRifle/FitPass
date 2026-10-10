@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { UserCheck, Calendar, Clock, PackageCheck, Award } from 'lucide-react-native';
+import { UserCheck, Calendar, Clock, PackageCheck, Award } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Badge } from '@/components/ui';
 import { API_CLIENT } from '@/lib/api-client';

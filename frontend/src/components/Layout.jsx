@@ -5,14 +5,15 @@ import { SidebarProvider, useSidebar } from '../context/SidebarContext';
 
 const Layout = ({ children }) => {
     const { mobileOpen, closeMobile } = useSidebar();
-    const [isDark, setIsDark] = useState(() => {
-        return localStorage.getItem('gymcrm-theme') === 'dark';
+    const [theme, setTheme] = useState(() => {
+        const savedTheme = localStorage.getItem('gymcrm-theme');
+        return ['light', 'dark', 'hybrid'].includes(savedTheme) ? savedTheme : 'light';
     });
 
     useEffect(() => {
-        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-        localStorage.setItem('gymcrm-theme', isDark ? 'dark' : 'light');
-    }, [isDark]);
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('gymcrm-theme', theme);
+    }, [theme]);
 
     return (
         <div className="app-container">
@@ -23,8 +24,10 @@ const Layout = ({ children }) => {
             />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
                 <AppHeader
-                    isDark={isDark}
-                    onThemeToggle={() => setIsDark(d => !d)}
+                    theme={theme}
+                    onThemeToggle={() => setTheme(current => (
+                        current === 'light' ? 'dark' : current === 'dark' ? 'hybrid' : 'light'
+                    ))}
                 />
                 <main className="main-content fade-in">
                     <div className="page-content">

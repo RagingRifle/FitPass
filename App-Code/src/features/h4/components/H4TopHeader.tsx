@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, StatusBar } from 'react-native';
-import { LogOut, Dumbbell, QrCode } from 'lucide-react-native';
+import { LogOut, Dumbbell, QrCode } from '@/components/ui/app-icons';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useRouter } from 'expo-router';
 import { theme } from '@/design-system/theme';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 
 interface H4TopHeaderProps {
   title: string;
@@ -15,20 +16,16 @@ export function H4TopHeader({ title, subtitle, showScanBtn = true }: H4TopHeader
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  const userInitial = user?.name ? user.name[0].toUpperCase() : 'H';
-
   return (
-    <View style={styles.headerRoot}>
+    <View style={[styles.headerRoot, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
       <View style={styles.leftGroup}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{userInitial}</Text>
-        </View>
+        <ProfileAvatar size={36} nameFallback="H" />
         <View style={styles.titleWrap}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>
             {title}
           </Text>
           {subtitle ? (
-            <Text style={styles.headerSub} numberOfLines={1}>
+            <Text style={[styles.headerSub, { color: theme.colors.textSecondary }]} numberOfLines={1}>
               {subtitle}
             </Text>
           ) : null}
@@ -38,7 +35,7 @@ export function H4TopHeader({ title, subtitle, showScanBtn = true }: H4TopHeader
       <View style={styles.rightGroup}>
         {showScanBtn && (
           <TouchableOpacity
-            style={styles.iconBtn}
+            style={[styles.iconBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.bgTertiary }]}
             onPress={() => router.push('/(h4)/scan' as any)}
             activeOpacity={0.8}
             accessibilityLabel="Scan QR"

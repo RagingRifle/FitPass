@@ -76,7 +76,7 @@ const Expenses = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <button onClick={() => navigate('/reports')} className="btn btn-secondary" style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary-color)' }}>
-                        📊 Export
+                         Export
                     </button>
                     <button onClick={() => setShowModal(true)} className="btn btn-primary">
                         + Add Expense

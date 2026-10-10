@@ -45,16 +45,16 @@ const Analytics = () => {
     return (
         <div className="fade-in">
             <div style={{ marginBottom: '2rem' }}>
-                <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}>📊 Churn & Retention Analytics</h2>
+                <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}> Churn & Retention Analytics</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Business intelligence metrics for your gym</p>
             </div>
 
             {/* KPI Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-                <MetricCard icon="⚠️" label="Inactive Members (7d)" value={data.inactiveCount} sub="Active members with no attendance" color="#f59e0b" />
-                <MetricCard icon="📉" label="Churn Rate (30d)" value={`${data.churnRate}%`} sub={`${data.expiredLast30} expired this month`} color="#ef4444" />
-                <MetricCard icon="🔄" label="Renewal Rate (90d)" value={`${data.renewalRate}%`} sub={`${data.renewedCount} members renewed`} color="#10b981" />
-                <MetricCard icon="💎" label="Avg Lifetime Value" value={`₹${data.avgLTV.toLocaleString()}`} sub="Average total paid per member" color="#8b5cf6" />
+                <MetricCard icon="" label="Inactive Members (7d)" value={data.inactiveCount} sub="Active members with no attendance" color="#f59e0b" />
+                <MetricCard icon="" label="Churn Rate (30d)" value={`${data.churnRate}%`} sub={`${data.expiredLast30} expired this month`} color="#ef4444" />
+                <MetricCard icon="" label="Renewal Rate (90d)" value={`${data.renewalRate}%`} sub={`${data.renewedCount} members renewed`} color="#10b981" />
+                <MetricCard icon="" label="Avg Lifetime Value" value={`₹${data.avgLTV.toLocaleString()}`} sub="Average total paid per member" color="#8b5cf6" />
             </div>
 
             {/* Charts Row */}
@@ -62,7 +62,7 @@ const Analytics = () => {
 
                 {/* Churn Trend */}
                 <div className="card">
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1rem' }}>📉 Monthly Churn Trend</h3>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1rem' }}> Monthly Churn Trend</h3>
                     <div style={{ width: '100%', height: 240 }}>
                         <ResponsiveContainer width="100%" height={240}>
                             <BarChart data={data.churnTrend}>
@@ -81,7 +81,7 @@ const Analytics = () => {
 
                 {/* Membership Status Breakdown */}
                 <div className="card">
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1rem' }}>👥 Membership Status</h3>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1rem' }}> Membership Status</h3>
                     <div style={{ width: '100%', height: 240 }}>
                         <ResponsiveContainer width="100%" height={240}>
                             <PieChart>
@@ -121,7 +121,7 @@ const Analytics = () => {
 
                 {/* Top Value Members */}
                 <div className="card">
-                    <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem' }}>💎 Top Lifetime Value Members</h3>
+                    <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem' }}> Top Lifetime Value Members</h3>
                     {data.topMembers?.length > 0 ? (
                         <div>
                             {data.topMembers.map((m, i) => (
@@ -151,7 +151,7 @@ const Analytics = () => {
 
                 {/* Inactive Members */}
                 <div className="card">
-                    <h3 style={{ marginBottom: '0.25rem', fontSize: '1rem' }}>⚠️ Inactive Members (7+ Days)</h3>
+                    <h3 style={{ marginBottom: '0.25rem', fontSize: '1rem' }}> Inactive Members (7+ Days)</h3>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem' }}>Active members who haven't attended recently</p>
                     {data.inactiveMembers?.length > 0 ? (
                         <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
@@ -179,7 +179,7 @@ const Analytics = () => {
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', color: '#10b981', padding: '2rem' }}>
-                            <div style={{ fontSize: '2rem' }}>✅</div>
+                            <div style={{ fontSize: '2rem' }}></div>
                             <p>All active members attended recently!</p>
                         </div>
                     )}

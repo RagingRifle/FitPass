@@ -276,7 +276,11 @@ const Dashboard = () => {
                         </p>
                         <div style={{ background: '#fff', padding: '1.5rem', display: 'inline-block', borderRadius: '12px' }}>
                             <QRCodeCanvas 
-                                value={JSON.stringify({ gymId: user?.gymId, gymName: user?.name || 'Partner Gym' })}
+                                value={JSON.stringify({
+                                    gymId: user?.gymId,
+                                    ...(user?.branchId ? { branchId: user.branchId } : {}),
+                                    gymName: user?.name || 'Partner Gym'
+                                })}
                                 size={220}
                                 level="H"
                             />
@@ -579,7 +583,7 @@ const Dashboard = () => {
                         </div>
                     ) : (
                         <div className="empty-state">
-                            <div className="empty-state-icon">📝</div>
+                            <div className="empty-state-icon"></div>
                             <h3>No Recent Activity</h3>
                             <p>No members have checked in this month yet.</p>
                         </div>

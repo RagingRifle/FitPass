@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
-import { ArrowLeft, Download, DollarSign, FileText } from 'lucide-react-native';
+import { ArrowLeft, Download, DollarSign, FileText } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Select, Input } from '@/components/ui';
 import { SafeAreaWrapper } from '@/components/layout';

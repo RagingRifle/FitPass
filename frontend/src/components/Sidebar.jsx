@@ -381,6 +381,7 @@ const Sidebar = () => {
                 <div className="sidebar-division-switcher">
                     <div className="sidebar-division-switcher-inner">
                         <button
+                            className={activeDivision === 'fitpass' ? 'is-active' : ''}
                             onClick={() => handleDivisionChange('fitpass')}
                             style={{
                                 flex: 1,
@@ -403,6 +404,7 @@ const Sidebar = () => {
                             {!collapsed && <span>FitPass</span>}
                         </button>
                         <button
+                            className={activeDivision === 'h4' ? 'is-active' : ''}
                             onClick={() => handleDivisionChange('h4')}
                             style={{
                                 flex: 1,
@@ -462,7 +464,9 @@ const Sidebar = () => {
             <div className="sidebar-footer">
                 <div className="sidebar-user" onClick={logout} title="Click to Sign Out">
                     <div className="user-avatar">
-                        {user?.name?.charAt(0) || 'U'}
+                        {user?.profileImageUrl ? (
+                            <img src={user.profileImageUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: 'inherit', objectFit: 'cover' }} />
+                        ) : (user?.name?.charAt(0) || 'U')}
                     </div>
                     {!collapsed && (
                         <>

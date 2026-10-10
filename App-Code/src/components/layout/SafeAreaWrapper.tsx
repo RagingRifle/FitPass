@@ -18,19 +18,19 @@ export const SafeAreaWrapper: React.FC<SafeAreaWrapperProps> = ({
 }) => {
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, styles.center]}>
-        <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <SafeAreaView style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, style]} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }, style]} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       {scrollable ? (
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, { backgroundColor: theme.colors.background }]}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >

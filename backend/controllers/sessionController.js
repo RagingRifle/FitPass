@@ -174,21 +174,50 @@ const checkIn = catchAsync(async (req, res, next) => {
 
       const now = new Date();
       const checkInTime = now.toTimeString().split(' ')[0];
-      const attendance = await prisma.attendance.create({
-        data: {
-          memberId: member.id,
-          date: now,
-          checkInTime,
-          gymId: member.gymId,
-          branchId: member.branchId || null,
-        },
-      });
+      const isSessionPlan = (plan.sessions || 0) > 0 || (member.sessionsTotal || 0) > 0;
+      if (isSessionPlan && (member.sessionsRemaining || 0) <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: `You have no sessions remaining out of ${member.sessionsTotal || plan.sessions}. Please renew or top up your plan.`,
+        });
+      }
+
+      const attendanceData = {
+        memberId: member.id,
+        date: now,
+        checkInTime,
+        gymId: member.gymId,
+        branchId: member.branchId || null,
+      };
+      let attendance;
+      let checkedInMember = member;
+      if (isSessionPlan) {
+        const result = await prisma.$transaction(async (tx) => {
+          const updatedMember = await tx.member.update({
+            where: { id: member.id },
+            data: {
+              sessionsRemaining: (member.sessionsRemaining || 0) - 1,
+              lastCheckInAt: now,
+            },
+          });
+          const createdAttendance = await tx.attendance.create({ data: attendanceData });
+          return { member: updatedMember, attendance: createdAttendance };
+        });
+        checkedInMember = result.member;
+        attendance = result.attendance;
+      } else {
+        attendance = await prisma.attendance.create({ data: attendanceData });
+      }
 
       await logAudit(req, 'ATTENDANCE_MARKED', 'Attendance', attendance.id, `Checked in at home branch via QR scan.`, member.name);
 
       return res.status(200).json({
         success: true,
-        message: 'Check-in successful at home branch.',
+        message: isSessionPlan
+          ? `Check-in successful. 1 session deducted. ${checkedInMember.sessionsRemaining} session(s) remaining.`
+          : 'Check-in successful at home branch.',
+        sessionsRemaining: checkedInMember.sessionsRemaining ?? 0,
+        sessionsTotal: checkedInMember.sessionsTotal ?? member.sessionsTotal ?? 0,
         gym: { id: gym.id, name: gym.name },
         branch: branch ? { id: branch.id, name: branch.name } : null,
       });

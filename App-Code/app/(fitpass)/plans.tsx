@@ -21,7 +21,7 @@ import {
   Flame,
   Award,
   Activity,
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { Skeleton } from '@/components/ui';

@@ -2,11 +2,12 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
-import { Search, Sun, Moon, Bell, Menu, ChevronDown, X, User } from 'lucide-react';
+import { Search, Sun, Moon, Contrast, Bell, Menu, ChevronDown, X } from 'lucide-react';
 import API from '../services/api';
 
 const PAGE_TITLES = {
     '/dashboard': 'Dashboard Overview',
+    '/superadmin/dashboard': 'Network Overview',
     '/members': 'Member Directory',
     '/plans': 'Membership Plans',
     '/payments': 'Financial Transactions',
@@ -26,7 +27,7 @@ const PAGE_TITLES = {
     '/partner/fitpass-leads': 'FitPass Member Audit & Leads',
 };
 
-const AppHeader = ({ onThemeToggle, isDark }) => {
+const AppHeader = ({ onThemeToggle, theme }) => {
     const { user, selectedGymId, changeSelectedGym, activeDivision, selectedBranchId, changeSelectedBranch } = useContext(AuthContext);
     const { toggleMobile } = useSidebar();
     const location = useLocation();
@@ -94,6 +95,14 @@ const AppHeader = ({ onThemeToggle, isDark }) => {
     const notifRef = useRef(null);
 
     const getPageTitle = () => PAGE_TITLES[location.pathname] || 'GYM CRM Management';
+    const getWorkspaceLabel = () => {
+        if (['superadmin', 'fitpass_admin'].includes(user?.role)) {
+            return isH4User ? 'H4 GYM NETWORK' : 'FITPASS NETWORK';
+        }
+        if (user?.role === 'member') return 'MEMBER PORTAL';
+        if (user?.role === 'partner') return 'PARTNER PORTAL';
+        return 'GYM OPERATIONS';
+    };
 
     // Search debounce
     useEffect(() => {
@@ -169,7 +178,7 @@ const AppHeader = ({ onThemeToggle, isDark }) => {
 
     return (
         <header className="app-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="header-start">
                 <button
                     className="header-btn show-mobile"
                     onClick={toggleMobile}
@@ -177,12 +186,15 @@ const AppHeader = ({ onThemeToggle, isDark }) => {
                 >
                     <Menu size={20} />
                 </button>
-                <h1 className="page-title">{getPageTitle()}</h1>
+                <div className="header-title-stack">
+                    <span className="header-workspace-label">{getWorkspaceLabel()}</span>
+                    <h1 className="page-title">{getPageTitle()}</h1>
+                </div>
 
                 {['superadmin', 'fitpass_admin', 'h4_admin'].includes(user?.role) && isH4User && (
-                    <div style={{ marginLeft: '0.75rem', display: 'flex', alignItems: 'center', position: 'relative' }}>
+                    <div className="header-context-select">
                         {user?.branchId ? (
-                            <div style={{
+                            <div className="header-context-static" style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 background: '#FBF6EC',
@@ -197,7 +209,7 @@ const AppHeader = ({ onThemeToggle, isDark }) => {
                                 {gyms.find(b => (b._id || b.id) === user.branchId)?.name || 'H4 Branch'}
                             </div>
                         ) : (
-                            <div style={{
+                            <div className="header-context-picker" style={{
                                 position: 'relative',
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -349,9 +361,10 @@ const AppHeader = ({ onThemeToggle, isDark }) => {
                 <button
                     className="header-btn"
                     onClick={onThemeToggle}
-                    title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    title={`Current theme: ${theme}. Click to cycle themes.`}
+                    aria-label={`Current theme: ${theme}. Click to cycle themes.`}
                 >
-                    {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                    {theme === 'light' ? <Sun size={20} /> : theme === 'dark' ? <Moon size={20} /> : <Contrast size={20} />}
                 </button>
 
                 {/* Notification Bell */}
@@ -415,21 +428,6 @@ const AppHeader = ({ onThemeToggle, isDark }) => {
                     )}
                 </div>
 
-                {/* User Pill */}
-                <div className="user-pill">
-                    <div className="user-avatar">
-                        {user?.name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="hide-mobile" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)', lineHeight: 1 }}>
-                            {user?.name || 'User'}
-                        </span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.02em' }}>
-                            {user?.role === 'fitpass_admin' ? 'FitPass Admin' : user?.role === 'h4_admin' ? 'H4 Admin' : user?.role === 'superadmin' ? 'Super Admin' : user?.role === 'partner' ? 'Partner Admin' : user?.role}
-                        </span>
-                    </div>
-                    <ChevronDown size={14} className="hide-mobile" style={{ color: 'var(--text-muted)', marginLeft: '4px' }} />
-                </div>
             </div>
         </header>
     );

@@ -27,7 +27,7 @@ import {
   Check,
   Info,
   MapPin,
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { fontFamilies } from '@/design-system/tokens';
 import { Skeleton } from '@/components/ui';
 import { useH4Classes, useH4BookClass, useH4CancelClass, GymClassItem } from '../api/h4.api';
@@ -115,13 +115,35 @@ export function H4Classes() {
     try {
       setActionLoadingId(classId);
       await bookMutation.mutateAsync(classId);
-      Alert.alert('✅ Seat Reserved!', `Your seat for ${cls.name} has been confirmed.`);
+      Alert.alert('Seat reserved', `Your seat for ${cls.name} has been confirmed.`);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Could not book class';
       Alert.alert('Booking Error', msg);
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const confirmBook = (cls: GymClassItem) => {
+    const details = [
+      cls.description?.trim() || 'No class description has been added yet.',
+      `Time: ${cls.startTime || 'To be announced'}${cls.endTime ? ` – ${cls.endTime}` : ''}`,
+      `Coach: ${cls.trainerName || 'H4 Certified Trainer'}`,
+      `Seats left: ${cls.seatsAvailable}`,
+    ].join('\n\n');
+    Alert.alert(`Book ${cls.name}?`, details, [
+      { text: 'Keep browsing', style: 'cancel' },
+      { text: 'Confirm booking', onPress: () => { void handleBook(cls); } },
+    ]);
+  };
+
+  const showClassDetails = (cls: GymClassItem) => {
+    Alert.alert(cls.name, [
+      cls.description?.trim() || 'No class description has been added yet.',
+      `Time: ${cls.startTime || 'To be announced'}${cls.endTime ? ` – ${cls.endTime}` : ''}`,
+      `Coach: ${cls.trainerName || 'H4 Certified Trainer'}`,
+      `Location: ${cls.branchName || 'Main Studio'}`,
+    ].join('\n\n'), [{ text: 'Close' }]);
   };
 
   const handleCancel = async (cls: GymClassItem) => {
@@ -147,14 +169,14 @@ export function H4Classes() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={['#F0A020']} />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={['#246B78']} />
         }
       >
         {/* Banner Header Card */}
         <View style={styles.bannerCard}>
           <View style={styles.bannerBadgeRow}>
             <View style={styles.sparkleTag}>
-              <Sparkles size={12} color="#F0A020" />
+              <Sparkles size={12} color="#246B78" />
               <Text style={styles.sparkleTagText}>H4 STUDIO SCHEDULE</Text>
             </View>
             <View style={styles.livePill}>
@@ -181,7 +203,7 @@ export function H4Classes() {
             </View>
             <View style={styles.metricDivider} />
             <View style={styles.metricItem}>
-              <Text style={[styles.metricValue, { color: '#F0A020' }]}>{openSeatsCount}</Text>
+              <Text style={[styles.metricValue, { color: '#246B78' }]}>{openSeatsCount}</Text>
               <Text style={styles.metricLabel}>Open Seats</Text>
             </View>
           </View>
@@ -269,7 +291,7 @@ export function H4Classes() {
         ) : filteredClasses.length === 0 ? (
           <View style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <Users size={32} color="#F0A020" />
+              <Users size={32} color="#246B78" />
             </View>
             <Text style={styles.emptyTitle}>No Classes Found</Text>
             <Text style={styles.emptySubtitle}>
@@ -318,7 +340,7 @@ export function H4Classes() {
                   {/* Top Category Badge & Status */}
                   <View style={styles.cardHeaderRow}>
                     <View style={styles.categoryPill}>
-                      <Dumbbell size={12} color="#F0A020" />
+                      <Dumbbell size={12} color="#246B78" />
                       <Text style={styles.categoryPillText}>{(cls.type || 'STUDIO').toUpperCase()}</Text>
                     </View>
 
@@ -348,37 +370,42 @@ export function H4Classes() {
                   </View>
 
                   {/* Class Title & Description */}
-                  <Text style={styles.classTitle}>{cls.name}</Text>
-                  {cls.description ? (
-                    <Text style={styles.classDescription} numberOfLines={2}>
-                      {cls.description}
-                    </Text>
-                  ) : null}
+                  <TouchableOpacity
+                    onPress={() => showClassDetails(cls)}
+                    activeOpacity={0.74}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View details for ${cls.name}`}
+                  >
+                    <Text style={styles.classTitle}>{cls.name}</Text>
+                    {cls.description ? (
+                      <Text style={styles.classDescription} numberOfLines={2}>{cls.description}</Text>
+                    ) : null}
+                  </TouchableOpacity>
 
                   {/* Meta Items Row */}
                   <View style={styles.metaRow}>
                     {/* Branch Location Badge */}
                     <View style={[styles.metaBadge, styles.branchBadge]}>
-                      <MapPin size={13} color="#F0A020" />
+                      <MapPin size={13} color="#246B78" />
                       <Text style={[styles.metaText, styles.branchBadgeText]} numberOfLines={1}>
                         {cls.branchName || 'Main Studio'}
                       </Text>
                     </View>
 
                     <View style={styles.metaBadge}>
-                      <Calendar size={13} color="#F0A020" />
+                      <Calendar size={13} color="#246B78" />
                       <Text style={styles.metaText}>{formattedDate}</Text>
                     </View>
 
                     <View style={styles.metaBadge}>
-                      <Clock size={13} color="#F0A020" />
+                      <Clock size={13} color="#246B78" />
                       <Text style={styles.metaText}>
                         {cls.startTime} - {cls.endTime}
                       </Text>
                     </View>
 
                     <View style={styles.metaBadge}>
-                      <UserCheck size={13} color="#F0A020" />
+                      <UserCheck size={13} color="#246B78" />
                       <Text style={styles.metaText}>{cls.trainerName || 'H4 Certified Trainer'}</Text>
                     </View>
                   </View>
@@ -397,7 +424,7 @@ export function H4Classes() {
                           styles.capacityFill,
                           {
                             width: `${capacityPercent}%`,
-                            backgroundColor: capacityPercent > 80 ? '#DC2626' : '#F0A020',
+                            backgroundColor: capacityPercent > 80 ? '#DC2626' : '#246B78',
                           },
                         ]}
                       />
@@ -429,7 +456,7 @@ export function H4Classes() {
                     ) : (
                       <TouchableOpacity
                         style={[styles.reserveBtn, isFull && styles.reserveBtnDisabled]}
-                        onPress={() => handleBook(cls)}
+                        onPress={() => confirmBook(cls)}
                         disabled={isFull || isActioning}
                         activeOpacity={0.85}
                       >
@@ -484,7 +511,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(240, 160, 32, 0.25)',
   },
-  sparkleTagText: { fontSize: 10, fontWeight: '900', color: '#F0A020', letterSpacing: 0.8 },
+  sparkleTagText: { fontSize: 10, fontWeight: '900', color: '#246B78', letterSpacing: 0.8 },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -539,8 +566,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   filterChipActive: {
-    backgroundColor: '#F0A020',
-    borderColor: '#F0A020',
+    backgroundColor: '#246B78',
+    borderColor: '#246B78',
   },
   filterChipText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
   filterChipTextActive: { color: '#FFFFFF' },
@@ -573,7 +600,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(240, 160, 32, 0.3)',
     marginTop: 6,
   },
-  clearFilterText: { fontSize: 13, fontWeight: '800', color: '#F0A020' },
+  clearFilterText: { fontSize: 13, fontWeight: '800', color: '#246B78' },
 
   classList: { gap: 16 },
   classCard: {
@@ -609,7 +636,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  categoryPillText: { fontSize: 10, fontWeight: '900', color: '#F0A020', letterSpacing: 0.5 },
+  categoryPillText: { fontSize: 10, fontWeight: '900', color: '#246B78', letterSpacing: 0.5 },
 
   statusBookedBadge: {
     flexDirection: 'row',
@@ -636,7 +663,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  statusOpenText: { fontSize: 10, fontWeight: '900', color: '#F0A020', letterSpacing: 0.5 },
+  statusOpenText: { fontSize: 10, fontWeight: '900', color: '#246B78', letterSpacing: 0.5 },
 
   classTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
   classDescription: { fontSize: 13, color: '#64748B', lineHeight: 18 },
@@ -668,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#F0A020',
+    backgroundColor: '#246B78',
     paddingVertical: 14,
     borderRadius: 14,
   },
@@ -706,7 +733,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   branchSwitchBtnActive: {
-    backgroundColor: '#F0A020',
+    backgroundColor: '#246B78',
   },
   branchSwitchText: {
     fontSize: 12,

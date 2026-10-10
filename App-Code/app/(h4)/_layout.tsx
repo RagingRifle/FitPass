@@ -1,14 +1,11 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { TouchableOpacity, StyleSheet, View } from 'react-native';
-import { LayoutDashboard, CalendarCheck, Dumbbell, Apple, User, LogOut } from 'lucide-react-native';
+import { StyleSheet, View } from 'react-native';
+import { LayoutDashboard, CalendarCheck, Dumbbell, LayoutGrid, User } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
-import { useAuth } from '@/features/auth/hooks/useAuth';
 import { CustomTabBar } from '@/components/layout/CustomTabBar';
 
 export default function H4Layout() {
-  const logout = useAuth((s) => s.logout);
-
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} portalType="h4" />}
@@ -16,7 +13,7 @@ export default function H4Layout() {
         headerShown: false,
       }}
     >
-      {/* ── 5 visible tabs ── */}
+      {/* Core destinations stay fixed; secondary tools live under More. */}
       <Tabs.Screen
         name="dashboard"
         options={{
@@ -54,13 +51,13 @@ export default function H4Layout() {
         }}
       />
       <Tabs.Screen
-        name="diets"
+        name="more"
         options={{
-          title: 'Nutrition',
-          tabBarLabel: 'Nutrition',
+          title: 'More',
+          tabBarLabel: 'More',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <Apple color={color} size={20} />
+              <LayoutGrid color={color} size={20} />
             </View>
           ),
         }}
@@ -78,7 +75,8 @@ export default function H4Layout() {
         }}
       />
 
-      {/* ── Hidden tabs (accessible via deep links / quick actions) ── */}
+      {/* Secondary destinations are linked from the More hub. */}
+      <Tabs.Screen name="diets"       options={{ href: null, title: 'Nutrition' }} />
       <Tabs.Screen name="payments"    options={{ href: null, title: 'Payments' }} />
       <Tabs.Screen name="classes"     options={{ href: null, title: 'Group Classes' }} />
       <Tabs.Screen name="pt-sessions" options={{ href: null, title: 'PT Sessions' }} />

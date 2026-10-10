@@ -203,9 +203,16 @@ const getMembers = catchAsync(async (req, res, next) => {
             .limit(Number(limit))
             .lean();
 
+        const memberIds = members.map((member) => member._id || member.id);
+        const linkedUsers = memberIds.length
+            ? await User.find({ memberId: { $in: memberIds } }).select('memberId profileImageUrl').lean()
+            : [];
+        const profileImages = new Map(linkedUsers.map((user) => [String(user.memberId), user.profileImageUrl || null]));
+
         const { getMemberCode } = require('../utils/idGenerator');
         const formattedMembers = members.map((m, idx) => ({
             ...m,
+            profileImageUrl: profileImages.get(String(m._id || m.id)) || null,
             empid: getMemberCode(m, skip + idx),
             displayId: getMemberCode(m, skip + idx)
         }));

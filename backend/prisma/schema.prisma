@@ -72,6 +72,8 @@ model User {
   email               String    @unique
   password            String
   phone               String?
+  profileImageUrl     String?
+  registrationNumber  String?
   role                String    @default("admin")
   gymId               String
   memberId            String?
@@ -111,6 +113,7 @@ model Plan {
 
 model Member {
   id                    String   @id @default(uuid())
+  registrationNumber    String?
   name                  String
   phone                 String
   email                 String?

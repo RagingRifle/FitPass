@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
+import { Check, X } from 'lucide-react';
 
 const typeColors = {
     Yoga: '#10b981', Zumba: '#f59e0b', Strength: '#6366f1', Cardio: '#ef4444',
@@ -27,7 +28,7 @@ const MemberClasses = () => {
         setActionLoading(prev => ({ ...prev, [gymClass._id]: 'booking' }));
         try {
             const { data } = await API.post(`/member-portal/classes/${gymClass._id}/book`);
-            alert(`✅ Booked! ${data.seatsAvailable} seats remaining.`);
+            alert(` Booked! ${data.seatsAvailable} seats remaining.`);
             fetchClasses();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to book class');
@@ -39,7 +40,7 @@ const MemberClasses = () => {
         setActionLoading(prev => ({ ...prev, [gymClass._id]: 'cancelling' }));
         try {
             await API.delete(`/member-portal/classes/${gymClass._id}/book`);
-            alert('✅ Booking cancelled.');
+            alert(' Booking cancelled.');
             fetchClasses();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to cancel booking');
@@ -51,13 +52,13 @@ const MemberClasses = () => {
     return (
         <div className="fade-in">
             <div style={{ marginBottom: '2rem' }}>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: '800' }}>📅 Upcoming Classes</h2>
+                <h2 style={{ fontSize: '1.75rem', fontWeight: '800' }}> Upcoming Classes</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Book a spot in your favourite fitness class</p>
             </div>
 
             {classes.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</div>
+                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
                     <h3>No upcoming classes</h3>
                     <p>Check back later for new classes from your gym!</p>
                 </div>
@@ -85,25 +86,25 @@ const MemberClasses = () => {
                                         }}>{gymClass.type}</span>
                                         <h3 style={{ margin: '0.5rem 0 0.25rem', fontSize: '1.05rem', fontWeight: '800' }}>{gymClass.name}</h3>
                                         {gymClass.trainerName && (
-                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>👤 {gymClass.trainerName}</p>
+                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}> {gymClass.trainerName}</p>
                                         )}
                                     </div>
                                     {isBooked && (
                                         <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700' }}>
-                                            ✓ Booked
+                                            <Check size={14} /> Booked
                                         </span>
                                     )}
                                 </div>
 
                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                    <span>📆 {new Date(gymClass.scheduleDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                                    <span>⏰ {gymClass.startTime} – {gymClass.endTime}</span>
+                                    <span> {new Date(gymClass.scheduleDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                                    <span> {gymClass.startTime} – {gymClass.endTime}</span>
                                     {gymClass.bookingDeadline && (
                                         <span style={{ color: isClosed ? '#ef4444' : 'var(--text-secondary)', fontWeight: isClosed ? 700 : 400 }}>
-                                            🔒 {isClosed ? 'Booking closed' : 'Book before'} {new Date(gymClass.bookingDeadline).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                             {isClosed ? 'Booking closed' : 'Book before'} {new Date(gymClass.bookingDeadline).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     )}
-                                    {gymClass.description && <span style={{ fontStyle: 'italic' }}>📝 {gymClass.description}</span>}
+                                    {gymClass.description && <span style={{ fontStyle: 'italic' }}> {gymClass.description}</span>}
                                 </div>
 
                                 {/* Seat progress bar */}
@@ -132,7 +133,7 @@ const MemberClasses = () => {
                                         className="btn"
                                         style={{ width: '100%', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '0.6rem' }}
                                     >
-                                        {loading === 'cancelling' ? 'Cancelling...' : '✕ Cancel Booking'}
+                                        {loading === 'cancelling' ? 'Cancelling...' : <><X size={15} /> Cancel Booking</>}
                                     </button>
                                 ) : (
                                     <button
@@ -141,7 +142,7 @@ const MemberClasses = () => {
                                         className="btn btn-primary"
                                         style={{ width: '100%', background: (isFull || isClosed) ? 'rgba(100,100,100,0.2)' : color, opacity: (isFull || isClosed) ? 0.6 : 1 }}
                                     >
-                                        {loading === 'booking' ? 'Booking...' : isClosed ? '🔒 Booking Closed' : isFull ? '🚫 Class Full' : '🎯 Book Slot'}
+                                        {loading === 'booking' ? 'Booking...' : isClosed ? ' Booking Closed' : isFull ? ' Class Full' : ' Book Slot'}
                                     </button>
                                 )}
                             </div>

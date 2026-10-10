@@ -486,7 +486,7 @@ function FitPassMembers() {
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                                     {memberSummary.frequentlyVisitedGyms.map((g, idx) => (
                                                         <span key={idx} style={{ padding: '4px 10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-                                                            🏢 {g.gymName} ({g.count} visits)
+                                                             {g.gymName} ({g.count} visits)
                                                         </span>
                                                     ))}
                                                 </div>

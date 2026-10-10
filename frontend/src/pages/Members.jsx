@@ -210,7 +210,7 @@ const Members = () => {
         try {
             if (editingMember) {
                 await updateMember(editingMember._id, formData);
-                alert(`✅ Member "${formData.name}" details updated successfully.`);
+                alert(` Member "${formData.name}" details updated successfully.`);
             } else {
                 const newMember = await createMember({ ...formData, questionnaire });
                 if (convertingLeadId) {
@@ -224,7 +224,7 @@ const Members = () => {
                     }
                     setConvertingLeadId(null);
                 }
-                alert(`🎉 Member "${formData.name}" registered successfully!`);
+                alert(` Member "${formData.name}" registered successfully!`);
                 if (newMember?._id) {
                     setHighlightId(newMember._id);
                 }
@@ -467,7 +467,7 @@ const Members = () => {
                     <option value="">All Status</option>
                     <option value="Active">Active</option>
                     <option value="Expired">Expired</option>
-                    <option value="Frozen">❄️ Frozen</option>
+                    <option value="Frozen"> Frozen</option>
                 </select>
                 {!user?.branchId && branches.length > 0 && (
                     <select
@@ -477,7 +477,7 @@ const Members = () => {
                         onChange={(e) => setBranchFilter(e.target.value)}
                     >
                         <option value="">All Branches</option>
-                        {branches.map(b => <option key={b._id} value={b._id}>🏢 {b.name}</option>)}
+                        {branches.map(b => <option key={b._id} value={b._id}> {b.name}</option>)}
                     </select>
                 )}
             </div>
@@ -502,7 +502,7 @@ const Members = () => {
                             <tr>
                                 <td colSpan="8">
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">👥</div>
+                                        <div className="empty-state-icon"></div>
                                         <h3>No members found</h3>
                                         <p>Try adjusting your search query or status filter.</p>
                                     </div>
@@ -524,15 +524,26 @@ const Members = () => {
                                     </span>
                                 </td>
                                 <td>
-                                    <div style={{ fontWeight: '600' }}>{member.name}</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{member.email}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                        {member.profileImageUrl ? (
+                                            <img src={member.profileImageUrl} alt="" style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                        ) : (
+                                            <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, color: 'var(--primary)', background: 'var(--primary-light)', fontWeight: 800 }}>
+                                                {member.name?.charAt(0)?.toUpperCase() || 'M'}
+                                            </span>
+                                        )}
+                                        <div>
+                                            <div style={{ fontWeight: '600' }}>{member.name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{member.email}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td className="hide-mobile">{member.phone}</td>
                                 <td>{member.planId?.name || 'N/A'}</td>
                                 <td className="hide-mobile">
                                     {member.branchId ? (
                                         <span style={{ background: 'rgba(14,165,233,0.1)', color: '#0ea5e9', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '600' }}>
-                                            🏢 {branches.find(b => b._id === (member.branchId?._id || member.branchId))?.name || 'Branch'}
+                                             {branches.find(b => b._id === (member.branchId?._id || member.branchId))?.name || 'Branch'}
                                         </span>
                                     ) : <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>—</span>}
                                 </td>
@@ -586,7 +597,7 @@ const Members = () => {
                         onClick={() => setPage(page - 1)}
                         style={{ opacity: page === 1 ? 0.5 : 1 }}
                     >
-                        ◀ Previous
+                         Previous
                     </button>
                     <span style={{ fontWeight: '600' }}>Page {page} of {pages}</span>
                     <button
@@ -595,7 +606,7 @@ const Members = () => {
                         onClick={() => setPage(page + 1)}
                         style={{ opacity: page === pages ? 0.5 : 1 }}
                     >
-                        Next ▶
+                        Next
                     </button>
                 </div>
             )}
@@ -604,7 +615,7 @@ const Members = () => {
                 isOpen={isModalOpen}
                 onClose={() => { setIsModalOpen(false); setConvertingLeadId(null); setWizardStep(1); }}
                 closeOnOverlayClick={false}
-                title={editingMember ? 'Edit Member Details' : `📝 Member Registration & Assessment (${wizardStep}/3)`}
+                title={editingMember ? 'Edit Member Details' : ` Member Registration & Assessment (${wizardStep}/3)`}
             >
                 <form
                     onSubmit={(e) => {
@@ -618,7 +629,7 @@ const Members = () => {
                 >
                     {convertingLeadId && (
                         <div style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.6rem 0.85rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: '600' }}>
-                            🎯 Converting lead to member — details pre-filled below.
+                             Converting lead to member — details pre-filled below.
                         </div>
                     )}
 
@@ -767,7 +778,7 @@ const Members = () => {
                                     <label>Branch (optional)</label>
                                     <select className="input" value={formData.branchId} onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}>
                                         <option value="">No Branch / All Locations</option>
-                                        {branches.map(b => <option key={b._id} value={b._id}>🏢 {b.name}</option>)}
+                                        {branches.map(b => <option key={b._id} value={b._id}> {b.name}</option>)}
                                     </select>
                                 </div>
                             )}
@@ -800,10 +811,10 @@ const Members = () => {
                                 <label style={{ fontWeight: '700', marginBottom: '0.5rem', display: 'block', color: 'var(--text-color, #1f2937)' }}>Q1. What is the member's Primary Fitness Goal? (Multiple Choice)</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                                     {[
-                                        { val: 'Fat Loss', label: '🔥 Fat Loss & Toning' },
-                                        { val: 'Muscle Hypertrophy', label: '💪 Muscle Mass & Bodybuilding' },
-                                        { val: 'Athletic Endurance', label: '🏃 Athletic Endurance & Cardio' },
-                                        { val: 'General Wellness', label: '🧘 Mobility & General Health' }
+                                        { val: 'Fat Loss', label: ' Fat Loss & Toning' },
+                                        { val: 'Muscle Hypertrophy', label: ' Muscle Mass & Bodybuilding' },
+                                        { val: 'Athletic Endurance', label: ' Athletic Endurance & Cardio' },
+                                        { val: 'General Wellness', label: ' Mobility & General Health' }
                                     ].map(opt => (
                                         <div
                                             key={opt.val}
@@ -829,9 +840,9 @@ const Members = () => {
                                 <label style={{ fontWeight: '700', marginBottom: '0.5rem', display: 'block', color: 'var(--text-color, #1f2937)' }}>Q2. Gym Training Experience Level? (Multiple Choice)</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                                     {[
-                                        { val: 'Beginner', label: '🐣 Beginner (< 6 mos)' },
-                                        { val: 'Intermediate', label: '🏋️ Intermediate (1-2 yrs)' },
-                                        { val: 'Advanced', label: '🏆 Advanced (3+ yrs)' }
+                                        { val: 'Beginner', label: ' Beginner (< 6 mos)' },
+                                        { val: 'Intermediate', label: ' Intermediate (1-2 yrs)' },
+                                        { val: 'Advanced', label: ' Advanced (3+ yrs)' }
                                     ].map(opt => (
                                         <div
                                             key={opt.val}
@@ -883,10 +894,10 @@ const Members = () => {
                                 <label style={{ fontWeight: '700', marginBottom: '0.5rem', display: 'block', color: 'var(--text-color, #1f2937)' }}>Q4. Dietary / Nutrition Preference? (Multiple Choice)</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                                     {[
-                                        { val: 'Vegetarian', label: '🥗 Vegetarian' },
-                                        { val: 'Non-Vegetarian', label: '🍗 Non-Vegetarian' },
-                                        { val: 'Vegan', label: '🌱 Vegan / Plant-Based' },
-                                        { val: 'Keto', label: '🥩 High Protein / Keto' }
+                                        { val: 'Vegetarian', label: ' Vegetarian' },
+                                        { val: 'Non-Vegetarian', label: ' Non-Vegetarian' },
+                                        { val: 'Vegan', label: ' Vegan / Plant-Based' },
+                                        { val: 'Keto', label: ' High Protein / Keto' }
                                     ].map(diet => (
                                         <div
                                             key={diet.val}
@@ -983,7 +994,7 @@ const Members = () => {
                                             setWizardStep(prev => prev - 1);
                                         }}
                                     >
-                                        ◀ Back
+                                         Back
                                     </button>
                                 )}
 
@@ -1002,7 +1013,7 @@ const Members = () => {
                                             setWizardStep(prev => prev + 1);
                                         }}
                                     >
-                                        Next: {wizardStep === 1 ? 'Fitness Questionnaire ▶' : 'Medical Details ▶'}
+                                        Next: {wizardStep === 1 ? 'Fitness Questionnaire ' : 'Medical Details '}
                                     </button>
                                 ) : (
                                     <button
@@ -1015,7 +1026,7 @@ const Members = () => {
                                             handleSubmit(e);
                                         }}
                                     >
-                                        Submit Registration ✅
+                                        Submit Registration
                                     </button>
                                 )}
                             </>
@@ -1059,7 +1070,7 @@ const Members = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                                 <div>
                                     <h3 style={{ fontSize: '1.25rem', color: '#fff', marginBottom: '0.25rem' }}>{auditData.member.name}</h3>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>📞 {auditData.member.phone} | ✉️ {auditData.member.email || 'No email'}</p>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}> {auditData.member.phone} |  {auditData.member.email || 'No email'}</p>
                                 </div>
                                 <span className={`badge badge-${auditData.member.status.toLowerCase()}`}>{auditData.member.status}</span>
                             </div>
@@ -1069,11 +1080,11 @@ const Members = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
                                 <div>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>Current Division/Gym</span>
-                                    <strong style={{ color: '#fff' }}>🏢 {auditData.member.gymName}</strong>
+                                    <strong style={{ color: '#fff' }}> {auditData.member.gymName}</strong>
                                 </div>
                                 <div>
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.25rem' }}>Joined Date</span>
-                                    <strong style={{ color: '#fff' }}>📅 {new Date(auditData.member.joinDate).toLocaleDateString()} ({auditData.member.joinMonth})</strong>
+                                    <strong style={{ color: '#fff' }}> {new Date(auditData.member.joinDate).toLocaleDateString()} ({auditData.member.joinMonth})</strong>
                                 </div>
                             </div>
                         </div>
@@ -1136,7 +1147,7 @@ const Members = () => {
                         {/* SuperAdmin Conversion controls */}
                         {['superadmin', 'fitpass_admin'].includes(user?.role) && (
                             <div style={{ background: 'var(--card-bg, #2D251C)', border: '1px solid var(--border-color, #3A3025)', borderRadius: '12px', padding: '1.5rem' }}>
-                                <h4 style={{ fontSize: '1rem', color: 'var(--primary)', marginBottom: '1.0rem', marginTop: 0 }}>🔄 Convert Member Type / Division</h4>
+                                <h4 style={{ fontSize: '1rem', color: 'var(--primary)', marginBottom: '1.0rem', marginTop: 0 }}> Convert Member Type / Division</h4>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
                                         Instantly transition this member's type by migrating them to a different division/gym. This will trigger audit logging.
@@ -1176,7 +1187,7 @@ const Members = () => {
                                             <option value="" disabled>Select Division / Gym</option>
                                             {gyms.map(g => (
                                                 <option key={g._id || g.id} value={g._id || g.id}>
-                                                    {g.name === 'H4' ? '🏢 H4 (Gym Membership)' : `🏋️ ${g.name} (FitPass Partner)`}
+                                                    {g.name === 'H4' ? ' H4 (Gym Membership)' : ` ${g.name} (FitPass Partner)`}
                                                 </option>
                                             ))}
                                         </select>
@@ -1220,37 +1231,37 @@ const Members = () => {
                             return (
                                 <div style={{ background: 'var(--card-bg, #2D251C)', border: '1px solid var(--border-color, #3A3025)', borderRadius: '12px', padding: '1.5rem' }}>
                                     <h4 style={{ fontSize: '1rem', color: 'var(--primary)', marginBottom: '1rem', marginTop: 0 }}>
-                                        🥗 Member Lifestyle, Diet & Health Profile
+                                         Member Lifestyle, Diet & Health Profile
                                     </h4>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem' }}>
                                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>🥗 Diet & Nutrition</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Diet & Nutrition</span>
                                             <strong style={{ fontSize: '0.95rem', color: '#10b981' }}>{parsed.dietPreference}</strong>
                                         </div>
                                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>🔥 Primary Fitness Goal</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Primary Fitness Goal</span>
                                             <strong style={{ fontSize: '0.95rem', color: '#fff' }}>{parsed.fitnessGoal}</strong>
                                         </div>
                                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>🏋️ Training Experience</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Training Experience</span>
                                             <strong style={{ fontSize: '0.95rem', color: '#fff' }}>{parsed.experienceLevel}</strong>
                                         </div>
                                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>📅 Workout Frequency</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Workout Frequency</span>
                                             <strong style={{ fontSize: '0.95rem', color: '#fff' }}>{parsed.workoutFrequency}</strong>
                                         </div>
                                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>🩺 Medical / Injuries</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Medical / Injuries</span>
                                             <strong style={{ fontSize: '0.92rem', color: '#fff' }}>{parsed.medicalHistory}</strong>
                                         </div>
                                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '8px' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>🚨 Emergency Contact</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Emergency Contact</span>
                                             <strong style={{ fontSize: '0.92rem', color: '#fff' }}>{parsed.emergencyContact}</strong>
                                         </div>
                                     </div>
                                     {parsed.specialNotes && (
                                         <div style={{ marginTop: '0.85rem', padding: '0.65rem 0.85rem', background: 'rgba(240,160,32,0.04)', borderRadius: '8px', borderLeft: '3px solid var(--primary)' }}>
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>📝 Coach Remarks & Instructions:</span>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}> Coach Remarks & Instructions:</span>
                                             <p style={{ fontSize: '0.85rem', color: '#fff', margin: '0.2rem 0 0 0' }}>{parsed.specialNotes}</p>
                                         </div>
                                     )}
@@ -1283,7 +1294,7 @@ const Members = () => {
             </Modal>
 
             {/* Renew Plan Modal */}
-            <Modal isOpen={!!renewMemberData} onClose={() => setRenewMemberData(null)} title={`🔄 Upgrade / Renew Plan: ${renewMemberData?.name}`}>
+            <Modal isOpen={!!renewMemberData} onClose={() => setRenewMemberData(null)} title={` Upgrade / Renew Plan: ${renewMemberData?.name}`}>
                 <form onSubmit={async (e) => {
                     e.preventDefault();
                     setSubmittingAction(true);
@@ -1426,7 +1437,7 @@ const Members = () => {
             </Modal>
 
             {/* Transfer Branch Modal */}
-            <Modal isOpen={!!transferMemberData} onClose={() => setTransferMemberData(null)} title={`🏢 Transfer Branch: ${transferMemberData?.name}`}>
+            <Modal isOpen={!!transferMemberData} onClose={() => setTransferMemberData(null)} title={` Transfer Branch: ${transferMemberData?.name}`}>
                 <form onSubmit={async (e) => {
                     e.preventDefault();
                     setSubmittingAction(true);
@@ -1449,7 +1460,7 @@ const Members = () => {
                         >
                             <option value="">No Branch (Global Gym Access)</option>
                             {branches.map(b => (
-                                <option key={b._id} value={b._id}>🏢 {b.name} — {b.address || 'Main Location'}</option>
+                                <option key={b._id} value={b._id}> {b.name} — {b.address || 'Main Location'}</option>
                             ))}
                         </select>
                     </div>

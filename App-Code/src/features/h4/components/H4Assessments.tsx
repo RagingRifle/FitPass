@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
-import { Activity, Scale, Flame, Award, Calendar, TrendingUp } from 'lucide-react-native';
+import { Activity, Scale, Flame, Award, Calendar, TrendingUp } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card } from '@/components/ui';
 import { API_CLIENT } from '@/lib/api-client';

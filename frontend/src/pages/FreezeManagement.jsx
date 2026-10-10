@@ -40,7 +40,7 @@ const FreezeManagement = () => {
         setActionLoading(prev => ({ ...prev, [member._id]: 'unfreezing' }));
         try {
             const { data } = await API.post(`/members/${member._id}/unfreeze`);
-            alert(`✅ ${member.name} unfrozen!\n📅 Expiry extended by ${data.daysAdded} day(s).\n📆 New expiry: ${new Date(data.newExpiryDate).toLocaleDateString()}`);
+            alert(` ${member.name} unfrozen!\n Expiry extended by ${data.daysAdded} day(s).\n New expiry: ${new Date(data.newExpiryDate).toLocaleDateString()}`);
             fetchMembers();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to unfreeze');
@@ -73,7 +73,7 @@ const FreezeManagement = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>❄️ Membership Freeze</h2>
+                    <h2 style={{ marginBottom: '0.25rem' }}> Membership Freeze</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                         Frozen: {members.filter(m => m.status === 'Frozen').length} member(s)
                     </p>
@@ -83,7 +83,7 @@ const FreezeManagement = () => {
             <input
                 className="input"
                 style={{ marginBottom: '1.5rem', maxWidth: '350px' }}
-                placeholder="🔍 Search by name or phone..."
+                placeholder=" Search by name or phone..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
             />
@@ -110,7 +110,7 @@ const FreezeManagement = () => {
                                     <td>{new Date(member.expiryDate).toLocaleDateString()}</td>
                                     <td>
                                         <span style={{ ...statusStyle(member.status), padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.78rem', fontWeight: '700' }}>
-                                            {member.status === 'Frozen' ? '❄️ Frozen' : member.status}
+                                            {member.status === 'Frozen' ? ' Frozen' : member.status}
                                         </span>
                                     </td>
                                     <td>
@@ -122,7 +122,7 @@ const FreezeManagement = () => {
                                                     className="btn"
                                                     style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '8px' }}
                                                 >
-                                                    {loading === 'unfreezing' ? '...' : '☀️ Unfreeze'}
+                                                    {loading === 'unfreezing' ? '...' : ' Unfreeze'}
                                                 </button>
                                             ) : (
                                                 <button
@@ -131,7 +131,7 @@ const FreezeManagement = () => {
                                                     className="btn"
                                                     style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', background: 'var(--primary-muted)', color: 'var(--primary-color)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '8px', opacity: member.status === 'Expired' ? 0.5 : 1 }}
                                                 >
-                                                    {loading === 'freezing' ? '...' : '❄️ Freeze'}
+                                                    {loading === 'freezing' ? '...' : ' Freeze'}
                                                 </button>
                                             )}
                                             <button
@@ -139,7 +139,7 @@ const FreezeManagement = () => {
                                                 className="btn"
                                                 style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}
                                             >
-                                                📋 History
+                                                 History
                                             </button>
                                         </div>
                                     </td>
@@ -151,7 +151,7 @@ const FreezeManagement = () => {
             </div>
 
             {/* Freeze Confirm Modal */}
-            <Modal isOpen={!!freezeModal} onClose={() => setFreezeModal(null)} title={`❄️ Freeze ${freezeModal?.name}'s Membership`}>
+            <Modal isOpen={!!freezeModal} onClose={() => setFreezeModal(null)} title={` Freeze ${freezeModal?.name}'s Membership`}>
                 <div>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.875rem' }}>
                         The membership will be paused. When unfrozen, the expiry date will be extended by the number of frozen days.
@@ -160,22 +160,22 @@ const FreezeManagement = () => {
                         <label>Reason (optional)</label>
                         <select className="input" value={reason} onChange={e => setReason(e.target.value)}>
                             <option value="">Select reason...</option>
-                            <option value="Vacation">🏖️ Vacation</option>
-                            <option value="Injury">🤕 Injury</option>
-                            <option value="Travel">✈️ Travel</option>
-                            <option value="Personal Emergency">🆘 Personal Emergency</option>
+                            <option value="Vacation"> Vacation</option>
+                            <option value="Injury"> Injury</option>
+                            <option value="Travel"> Travel</option>
+                            <option value="Personal Emergency"> Personal Emergency</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                         <button onClick={() => setFreezeModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                        <button onClick={handleFreeze} className="btn btn-primary" style={{ flex: 1, background: 'var(--primary-color)' }}>❄️ Freeze Now</button>
+                        <button onClick={handleFreeze} className="btn btn-primary" style={{ flex: 1, background: 'var(--primary-color)' }}> Freeze Now</button>
                     </div>
                 </div>
             </Modal>
 
             {/* History Modal */}
-            <Modal isOpen={!!historyModal} onClose={() => setHistoryModal(null)} title={`📋 Freeze History — ${historyModal?.name}`}>
+            <Modal isOpen={!!historyModal} onClose={() => setHistoryModal(null)} title={` Freeze History — ${historyModal?.name}`}>
                 {historyModal?.freezeHistory?.length > 0 ? (
                     <table>
                         <thead><tr><th>Frozen On</th><th>Unfrozen On</th><th>Reason</th><th>Days Added</th></tr></thead>
@@ -183,7 +183,7 @@ const FreezeManagement = () => {
                             {historyModal.freezeHistory.map((f, i) => (
                                 <tr key={i}>
                                     <td>{new Date(f.freezeDate).toLocaleDateString()}</td>
-                                    <td>{f.unfreezeDate ? new Date(f.unfreezeDate).toLocaleDateString() : <span style={{ color: 'var(--primary-color)' }}>❄️ Currently Frozen</span>}</td>
+                                    <td>{f.unfreezeDate ? new Date(f.unfreezeDate).toLocaleDateString() : <span style={{ color: 'var(--primary-color)' }}> Currently Frozen</span>}</td>
                                     <td>{f.reason || '—'}</td>
                                     <td>{f.daysAdded || (f.unfreezeDate ? '0' : '—')}</td>
                                 </tr>

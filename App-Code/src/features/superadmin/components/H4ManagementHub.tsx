@@ -5,7 +5,7 @@ import {
   User, Users, Target, Package, Calendar, Award, Wrench, ShieldAlert,
   CreditCard, DollarSign, AlertCircle, Scan, MapPin, ClipboardList,
   Snowflake, FileText, BarChart2, ChevronRight
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography } from '@/components/ui';
 

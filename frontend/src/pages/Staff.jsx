@@ -161,7 +161,7 @@ const Staff = () => {
                 </div>
                 {activeTab === 'directory' && (
                     <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-                        👤 Add New Staff
+                         Add New Staff
                     </button>
                 )}
             </div>
@@ -298,7 +298,7 @@ const Staff = () => {
                             background: 'rgba(46, 125, 50, 0.1)', border: '1px solid var(--success)',
                             color: 'var(--success)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', fontWeight: '600'
                         }}>
-                            ✓ {matrixMessage}
+                            <Check size={15} /> {matrixMessage}
                         </div>
                     )}
 
@@ -375,7 +375,7 @@ const Staff = () => {
                     {/* Features Matrix Info */}
                     <div className="card" style={{ padding: '2rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
                         <div style={{ flex: 1, minWidth: '260px' }}>
-                            <h4 style={{ margin: '0 0 0.5rem 0' }}>🔐 Dynamic Permission Control</h4>
+                            <h4 style={{ margin: '0 0 0.5rem 0' }}> Dynamic Permission Control</h4>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', margin: 0 }}>
                                 Custom checks are intercepted at the route layer. Setting changes made in this dashboard immediately block access to pages and hide their sidebar icons across the entire organization.
                             </p>
@@ -388,7 +388,7 @@ const Staff = () => {
             <Modal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
-                title={editingStaff ? `✏️ Edit Staff: ${editingStaff.name}` : '👤 Create New Staff Member'}
+                title={editingStaff ? ` Edit Staff: ${editingStaff.name}` : ' Create New Staff Member'}
             >
                 <form onSubmit={handleSubmit} style={{ marginTop: '1rem' }}>
                     {error && (

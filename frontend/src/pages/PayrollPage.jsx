@@ -168,7 +168,7 @@ const PayrollPage = () => {
         <div className="fade-in">
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}>💵 Payroll & Trainer Salaries</h2>
+                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}> Payroll & Trainer Salaries</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Manage salary structures, track PT commissions, and disburse payrolls</p>
                 </div>
                 {isAdmin && (
@@ -240,10 +240,10 @@ const PayrollPage = () => {
                         <div className="spinner"></div>
                     ) : (
                         <div className="card">
-                            <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}>📜 Monthly Pay Slips</h3>
+                            <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}> Monthly Pay Slips</h3>
                             {safePayrolls.length === 0 ? (
                                 <div className="empty-state">
-                                    <div className="empty-state-icon">💵</div>
+                                    <div className="empty-state-icon"></div>
                                     <h3>No payroll records found</h3>
                                     <p>No payroll reports generated for this period.</p>
                                 </div>
@@ -322,7 +322,7 @@ const PayrollPage = () => {
 
             {activeTab === 'salary' && isAdmin && (
                 <div className="card">
-                    <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}>⚙️ Salary & PT Commission Structures</h3>
+                    <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}> Salary & PT Commission Structures</h3>
                     <div className="table-container">
                         <table>
                             <thead>
@@ -495,7 +495,7 @@ const PayrollPage = () => {
             </Modal>
 
             {/* Printable Payslip Modal */}
-            <Modal isOpen={!!selectedPayslip} onClose={() => setSelectedPayslip(null)} title="📄 Official Salary Slip">
+            <Modal isOpen={!!selectedPayslip} onClose={() => setSelectedPayslip(null)} title=" Official Salary Slip">
                 {selectedPayslip && (
                     <div style={{ background: '#fff', color: '#111', padding: '1.5rem', borderRadius: '12px', fontFamily: 'sans-serif' }}>
                         {/* Header */}

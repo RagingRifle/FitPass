@@ -3,14 +3,14 @@ import { View, StyleSheet, Alert, TouchableOpacity, ScrollView, Modal, Text, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { X, QrCode, Dumbbell, ChevronLeft, MapPin, Search, ShieldCheck, CheckCircle2, ArrowRight, Activity, Flame, Building2 } from 'lucide-react-native';
+import { X, QrCode, Dumbbell, ChevronLeft, MapPin, Search, ShieldCheck, CheckCircle2, ArrowRight, Activity, Flame, Building2 } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { useH4CheckIn, useH4Dashboard } from '../api/h4.api';
 import { useQuery } from '@tanstack/react-query';
 import { API_CLIENT } from '@/lib/api-client';
 
-type ScanState = 'idle' | 'scanning' | 'processing' | 'done' | 'error';
+type ScanState = 'idle' | 'scanning' | 'confirming' | 'processing' | 'done' | 'error';
 
 interface H4GymItem {
   id: string;
@@ -26,7 +26,7 @@ export function H4QRScan() {
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const checkInMutation = useH4CheckIn();
-  const { data: dashboardData } = useH4Dashboard();
+  const { data: dashboardData, refetch: refreshDashboard } = useH4Dashboard();
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [manualSearch, setManualSearch] = useState('');
 
@@ -52,6 +52,42 @@ export function H4QRScan() {
 
   const memberHomeGymName = dashboardData?.member?.gymName || 'H4 Fitness Main Flagship Gym';
   const memberHomeGymId = dashboardData?.member?.gymId || '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d';
+  const confirmCheckIn = useCallback(async (payload: { gymId: string; branchId?: string; qrCode: string; gymName?: string }) => {
+    const refreshedDashboard = await refreshDashboard().catch(() => null);
+    const memberData = refreshedDashboard?.data?.member || dashboardData?.member;
+    const remaining = memberData?.sessionsRemaining;
+    const total = memberData?.sessionsTotal;
+    const balanceText = (total ?? 0) > 0 ? `${remaining ?? 0} sessions remaining` : 'Unlimited access';
+    setScanState('confirming');
+    Alert.alert('Confirm attendance', `${payload.gymName || 'H4 Fitness'}\n\n${balanceText}. Confirm attendance?`, [
+      { text: 'Cancel', style: 'cancel', onPress: () => setScanState('idle') },
+      {
+        text: 'Confirm attendance',
+        onPress: async () => {
+          setScanState('processing');
+          try {
+            const result = await checkInMutation.mutateAsync({ gymId: payload.gymId, branchId: payload.branchId, qrCode: payload.qrCode });
+            setScanState('done');
+            const updatedRemaining = result.sessionsRemaining ?? remaining;
+            const resultBalance = (total ?? 0) > 0
+              ? `${updatedRemaining ?? 0} sessions remaining`
+              : 'Unlimited access';
+            Alert.alert('Attendance confirmed', `Your check-in at ${payload.gymName || 'H4 Fitness'} is complete. ${resultBalance}.`, [
+              { text: 'Go to Dashboard', onPress: () => router.push('/(h4)/dashboard') },
+            ]);
+          } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || 'Check-in failed. Please try again.';
+            setErrorMessage(msg);
+            setScanState('error');
+            Alert.alert('Check-in Failed', msg, [
+              { text: 'Try Again', onPress: () => { setScanState('idle'); setErrorMessage(null); } },
+              { text: 'Cancel', onPress: () => router.back() },
+            ]);
+          }
+        },
+      },
+    ]);
+  }, [checkInMutation, dashboardData?.member, refreshDashboard, router]);
 
   // Consolidated H4 Gym List — always includes registered Home Gym at top
   const h4Locations: H4GymItem[] = [
@@ -70,12 +106,12 @@ export function H4QRScan() {
   );
 
   const handleBarCodeScanned = useCallback(
-    async ({ data }: { data: string }) => {
+    ({ data }: { data: string }) => {
       if (scanState !== 'idle') return;
       setScanState('scanning');
 
       try {
-        let payload: { gymId?: string; branchId?: string };
+        let payload: { gymId?: string; branchId?: string; gymName?: string };
         try {
           payload = JSON.parse(data);
         } catch {
@@ -83,16 +119,12 @@ export function H4QRScan() {
         }
 
         setScanState('processing');
-        await checkInMutation.mutateAsync({
+        confirmCheckIn({
           gymId: payload.gymId || memberHomeGymId,
           branchId: payload.branchId,
           qrCode: data,
+          gymName: payload.gymName,
         });
-
-        setScanState('done');
-        Alert.alert('✅ H4 Attendance Marked!', 'Your physical attendance at H4 Fitness has been recorded.', [
-          { text: 'Go to Dashboard', onPress: () => router.push('/(h4)/dashboard') },
-        ]);
       } catch (err: any) {
         const msg =
           err?.response?.data?.message ||
@@ -106,28 +138,14 @@ export function H4QRScan() {
         ]);
       }
     },
-    [scanState, checkInMutation, router, memberHomeGymId],
+    [scanState, confirmCheckIn, memberHomeGymId],
   );
 
   const handleManualCheckIn = async (gym: H4GymItem) => {
     setIsManualModalOpen(false);
-    setScanState('processing');
-    try {
-      const gymId = gym.id || gym._id || memberHomeGymId;
-      const qrCode = JSON.stringify({ gymId, gymName: gym.name, source: 'manual_h4_select' });
-      await checkInMutation.mutateAsync({ gymId, qrCode });
-      setScanState('done');
-      Alert.alert('✅ H4 Attendance Marked', `Checked in at ${gym.name}!`, [
-        { text: 'Go to Dashboard', onPress: () => router.push('/(h4)/dashboard') },
-      ]);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Manual attendance check-in failed.';
-      setErrorMessage(msg);
-      setScanState('error');
-      Alert.alert('Attendance Error', msg, [
-        { text: 'OK', onPress: () => setScanState('idle') },
-      ]);
-    }
+    const gymId = gym.id || gym._id || memberHomeGymId;
+    const qrCode = JSON.stringify({ gymId, gymName: gym.name, source: 'manual_h4_select' });
+    confirmCheckIn({ gymId, qrCode, gymName: gym.name });
   };
 
   if (!permission) {
@@ -295,6 +313,7 @@ export function H4QRScan() {
           <Text style={styles.scanStatusText}>
             {scanState === 'idle' && 'Align H4 gym counter QR code inside frame'}
             {scanState === 'scanning' && 'Reading H4 attendance QR code…'}
+            {scanState === 'confirming' && 'Confirm attendance in the popup…'}
             {scanState === 'processing' && 'Validating H4 athlete access…'}
             {scanState === 'done' && '✅ H4 Attendance Marked!'}
             {scanState === 'error' && `❌ ${errorMessage ?? 'Check-in failed'}`}

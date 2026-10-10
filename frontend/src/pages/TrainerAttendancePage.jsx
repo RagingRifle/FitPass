@@ -110,7 +110,7 @@ const TrainerAttendancePage = () => {
     return (
         <div className="fade-in">
             <div className="page-header" style={{ marginBottom: '2rem' }}>
-                <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}>⏱️ Trainer Attendance & Work Hours</h2>
+                <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}> Trainer Attendance & Work Hours</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Log working hours and view attendance sheets</p>
             </div>
 
@@ -201,10 +201,10 @@ const TrainerAttendancePage = () => {
 
                     {/* Attendance Logs Table */}
                     <div className="card">
-                        <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}>📜 Attendance Shift History</h3>
+                        <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}> Attendance Shift History</h3>
                         {safeLogs.length === 0 ? (
                             <div className="empty-state">
-                                <div className="empty-state-icon">⏱️</div>
+                                <div className="empty-state-icon"></div>
                                 <h3>No attendance records found</h3>
                                 <p>No shifts have been logged for this period yet.</p>
                             </div>

@@ -213,7 +213,7 @@ function AdminManagement() {
                             <tr>
                                 <td colSpan="5">
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">🛡️</div>
+                                        <div className="empty-state-icon"></div>
                                         <h3>No Dedicated Admins Configured</h3>
                                         <p>Create a dedicated FitPass or H4 admin above to delegate access control.</p>
                                     </div>

@@ -1,100 +1,52 @@
 import { create } from 'zustand';
-import { storage } from '@/lib/storage';
 import { radii, spacing, typography } from './tokens';
 
 // Spacing, Colors, Typography, and Radii design tokens for GYM-CRM Mobile App
 // Compliance: AGENTS.md §5
 
-// Light Theme colors (Vibrant Electric Orange Theme)
+// Fixed mobile palette: mineral neutrals with a deep teal FitPrime accent.
 export const lightColors = {
-  primary: '#FF5F1F', // Vibrant Electric Orange
-  background: '#FFFFFF',
+  primary: '#246B78',
+  background: '#F2F5F6',
   card: '#FFFFFF',
-  surface: '#FFFFFF',
-  text: '#1A1510',
-  border: '#EAE7E1',
-  notification: '#E04E10',
-  textSecondary: '#655B50',
-  textMuted: '#9B9084',
+  surface: '#E8EFF1',
+  text: '#182630',
+  border: '#D8E1E4',
+  notification: '#C56A35',
+  textSecondary: '#52636C',
+  textMuted: '#819098',
   textInverse: '#FFFFFF',
-  accent: '#E04E10',
-  success: '#2E7D32',
-  warning: '#FF5F1F',
-  error: '#C62828',
-  info: '#1976D2',
-  bgTertiary: '#F8F6F0',
-  borderFocus: '#FF5F1F',
-  brandLight: '#FFF0EA',
-  brandMuted: 'rgba(255, 95, 31, 0.18)',
+  accent: '#C56A35',
+  success: '#28785D',
+  warning: '#C56A35',
+  error: '#B84747',
+  info: '#3979A8',
+  bgTertiary: '#E4EBED',
+  borderFocus: '#246B78',
+  brandLight: '#E4F0F1',
+  brandMuted: 'rgba(36, 107, 120, 0.14)',
 };
 
-// Dark Theme colors (Premium Dark Theme with Vibrant Orange accent)
-export const darkColors = {
-  primary: '#FF5F1F', // Vibrant Electric Orange
-  background: '#231D14', // Very dark warm brown-black
-  card: '#2D251C', // Dark warm brown card/surface
-  surface: '#2D251C',
-  text: '#FFFFFF', // White text
-  border: '#3A3025', // Warm brown border
-  notification: '#E04E10',
-  textSecondary: '#A39686',
-  textMuted: '#6D6154',
-  textInverse: '#231D14',
-  accent: '#E04E10',
-  success: '#2E7D32',
-  warning: '#FF5F1F',
-  error: '#C62828',
-  info: '#1976D2',
-  bgTertiary: '#3A3025',
-  borderFocus: '#FF5F1F',
-  brandLight: '#3F2518',
-  brandMuted: 'rgba(255, 95, 31, 0.18)',
-};
+// Keep the root layout's existing initialization hook while using one app theme.
+export type ThemeMode = 'light';
 
-// Global reactive reference for active theme mode
-export let activeThemeMode: 'light' | 'dark' = 'light'; // Default to light minimalistic theme
-
-export function setActiveThemeMode(mode: 'light' | 'dark') {
-  activeThemeMode = mode;
-}
-
-// Zustand store for managing app theme mode
 interface ThemeState {
-  themeMode: 'light' | 'dark';
-  toggleTheme: () => void;
+  themeMode: ThemeMode;
   initTheme: () => Promise<void>;
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  themeMode: 'light', // Default to minimalistic light theme
-  initTheme: async () => {
-    try {
-      const saved = await storage.getItem('app-theme');
-      if (saved === 'light' || saved === 'dark') {
-        setActiveThemeMode(saved);
-        set({ themeMode: saved });
-      }
-    } catch (e) {
-      console.error('Failed to init app theme:', e);
-    }
-  },
-  toggleTheme: async () => {
-    set((state) => {
-      const newMode = state.themeMode === 'light' ? 'dark' : 'light';
-      storage.setItem('app-theme', newMode);
-      setActiveThemeMode(newMode);
-      return { themeMode: newMode };
-    });
-  },
+  themeMode: 'light',
+  initTheme: async () => { set({ themeMode: 'light' }); },
 }));
 
 // Dynamic proxy theme to maintain full backwards compatibility with static imports
 export const theme = {
   get dark() {
-    return activeThemeMode === 'dark';
+    return false;
   },
   get colors() {
-    return activeThemeMode === 'dark' ? darkColors : lightColors;
+    return lightColors;
   },
   radii,
   spacing,

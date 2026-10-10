@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, Modal as RNModal, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 
 interface ModalProps {

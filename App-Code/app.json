@@ -1,31 +1,33 @@
 {
   "expo": {
-    "name": "App-Code",
+    "name": "FitPrime",
     "slug": "App-Code",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "icon": "./assets/fitprime-icon.png",
+    "userInterfaceStyle": "light",
     "scheme": "gymcrm",
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        { "photosPermission": "Allow FitPrime to use a photo for your member profile." }
+      ]
     ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#090909",
+        "foregroundImage": "./assets/fitprime-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.marcos.gymcrm"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/fitprime-icon.png"
     },
     "extra": {
       "router": {},

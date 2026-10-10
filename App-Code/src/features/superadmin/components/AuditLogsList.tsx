@@ -4,7 +4,7 @@ import {
   LogIn, LogOut, UserPlus, UserCog, UserMinus, DollarSign, ArrowDown, ArrowUp,
   Clipboard, Calendar, Target, Snowflake, Sun, Building, Settings, ShieldAlert,
   Scan, MapPin, ChevronLeft, ChevronRight
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { useAuditLogs, useAuditSummary } from '../api/superadmin.api';
 import { Select, Skeleton, EmptyState, Badge, Typography } from '@/components/ui';

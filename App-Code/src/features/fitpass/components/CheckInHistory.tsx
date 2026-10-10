@@ -5,7 +5,7 @@ import { fontFamilies } from '@/design-system/tokens';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
 import { useSessionHistory } from '../api/fitpass.api';
 import type { CheckInHistoryItem } from '../types';
-import { Clock, ChevronLeft, ChevronRight, Check } from 'lucide-react-native';
+import { Clock, ChevronLeft, ChevronRight, Check } from '@/components/ui/app-icons';
 
 export function CheckInHistory() {
   const [page, setPage] = useState(1);

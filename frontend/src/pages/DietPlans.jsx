@@ -117,10 +117,10 @@ const DietPlans = () => {
         try {
             if (editingId) {
                 await API.put(`/diet-plans/${editingId}`, payload);
-                toast.success('Diet plan modified successfully! 🥗');
+                toast.success('Diet plan modified successfully! ');
             } else {
                 await API.post('/diet-plans', payload);
-                toast.success('Diet plan assigned successfully! 🥗');
+                toast.success('Diet plan assigned successfully! ');
             }
             setShowModal(false);
             resetForm();
@@ -146,7 +146,7 @@ const DietPlans = () => {
         if (!window.confirm('Are you sure you want to delete this plan?')) return;
         try {
             await API.delete(`/diet-plans/${id}`);
-            toast.success('Diet plan deleted successfully! 🗑️');
+            toast.success('Diet plan deleted successfully! ');
             fetchPlans();
         } catch (err) {
             const errMsg = err.response?.data?.message || 'Failed to delete plan';
@@ -202,7 +202,7 @@ const DietPlans = () => {
         const next = { ...consumedMeals, [index]: !consumedMeals[index] };
         setConsumedMeals(next);
         localStorage.setItem(`consumed_${user.id}`, JSON.stringify(next));
-        toast.info(next[index] ? 'Meal marked as consumed! 🥗' : 'Meal unmarked 🥣');
+        toast.info(next[index] ? 'Meal marked as consumed! ' : 'Meal unmarked ');
     };
 
     const changeWaterIntake = (amount) => {
@@ -210,9 +210,9 @@ const DietPlans = () => {
         setWaterIntake(next);
         localStorage.setItem(`water_${user.id}`, next.toString());
         if (amount > 0) {
-            toast.success('Water intake logged! 💧');
+            toast.success('Water intake logged! ');
         } else if (amount < 0) {
-            toast.info('Water log updated 💧');
+            toast.info('Water log updated ');
         }
     };
 
@@ -464,20 +464,12 @@ const DietPlans = () => {
 
             {/* Assignment & Creation Modal */}
             {showModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-                }}>
-                    <div className="card" style={{ width: '90%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
+                <div className="diet-modal-overlay">
+                    <div className="card diet-plan-modal">
                         <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Modify Assigned Plan' : 'Assign Diet Plan'}</h3>
                         
                         {/* Macro aggregation ticker */}
-                        <div style={{
-                            display: 'flex', gap: '1rem', background: 'var(--bg-secondary)', padding: '1rem',
-                            borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '1.5rem',
-                            justifyContent: 'space-around', alignItems: 'center'
-                        }}>
+                        <div className="diet-macro-summary">
                             <div>
                                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Target Energy</div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)' }}>{formTotals.calories} kcal</div>
@@ -496,7 +488,7 @@ const DietPlans = () => {
                             </div>
                         </div>
 
-                        <form onSubmit={handleSubmit}>
+                        <form className="diet-plan-form" onSubmit={handleSubmit}>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Member</label>
                                 <select 
@@ -526,7 +518,7 @@ const DietPlans = () => {
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div className="diet-date-grid">
                                 <div className="form-group">
                                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Start Date</label>
                                     <input 
@@ -547,7 +539,7 @@ const DietPlans = () => {
                                 </div>
                             </div>
 
-                            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+                            <div className="diet-meals-section">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <h4 style={{ margin: 0 }}>Meals & Macro-nutrients</h4>
                                     <button type="button" className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={handleAddMeal}>
@@ -556,15 +548,12 @@ const DietPlans = () => {
                                 </div>
 
                                 {meals.map((meal, index) => (
-                                    <div key={index} style={{
-                                        border: '1px solid var(--border)', borderRadius: '12px', padding: '1rem', marginBottom: '1rem',
-                                        background: 'var(--bg-secondary)', position: 'relative'
-                                    }}>
-                                        <button type="button" style={{ position: 'absolute', right: '0.75rem', top: '0.75rem', background: 'none', border: 'none', color: '#C62828', cursor: 'pointer' }} onClick={() => handleRemoveMeal(index)}>
+                                    <div key={index} className="diet-meal-card">
+                                        <button type="button" className="diet-remove-meal" aria-label={`Remove ${meal.name || 'meal'}`} onClick={() => handleRemoveMeal(index)}>
                                             <Trash2 size={16} />
                                         </button>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr', gap: '0.5rem', marginBottom: '0.5rem', paddingRight: '2rem' }}>
+                                        <div className="diet-meal-primary-grid">
                                             <input 
                                                 type="text" 
                                                 placeholder="Time (e.g. 08:00 AM)" 
@@ -590,7 +579,7 @@ const DietPlans = () => {
                                             />
                                         </div>
 
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <div className="diet-meal-macro-grid">
                                             <input 
                                                 type="number" 
                                                 placeholder="Prot (g)" 
@@ -618,7 +607,6 @@ const DietPlans = () => {
                                             type="text" 
                                             placeholder="Food items (e.g. 3 eggs, 100g oats, 1 banana)" 
                                             className="form-control" 
-                                            style={{ width: '100%' }}
                                             value={meal.items} 
                                             onChange={(e) => handleMealChange(index, 'items', e.target.value)}
                                         />
@@ -626,7 +614,7 @@ const DietPlans = () => {
                                 ))}
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+                            <div className="diet-form-actions">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
                                 <button type="submit" className="btn btn-primary">Save Diet Plan</button>
                             </div>

@@ -9,7 +9,7 @@ import {
 import {
     Users, CheckCircle2, AlertTriangle, Clock, Sparkles, IndianRupee,
     TrendingDown, TrendingUp, Building2, Package, ShieldCheck, Zap,
-    Activity, CalendarCheck, ArrowRight, BarChart2, Dumbbell
+    Activity, CalendarCheck, ArrowRight, BarChart2, Dumbbell, X
 } from 'lucide-react';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ function SuperAdminDashboard() {
         <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', paddingBottom: '3rem' }}>
 
             {/* ── Hero Welcome ─────────────────────────────────────────────────── */}
-            <div style={{
+            <div className="superadmin-hero" style={{
                 background: 'linear-gradient(135deg, rgba(240,160,32,0.12) 0%, rgba(217,134,15,0.06) 50%, transparent 100%)',
                 border: '1px solid rgba(240,160,32,0.25)',
                 borderRadius: 'var(--radius-lg)',
@@ -198,7 +198,7 @@ function SuperAdminDashboard() {
                         </span>
                     </div>
                     <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
-                        {greeting}, {user?.name?.split(' ')[0] || (user?.role === 'fitpass_admin' ? 'FitPass Admin' : user?.role === 'h4_admin' ? 'H4 Admin' : 'Master Admin')} 👋
+                        {greeting}, {user?.name?.split(' ')[0] || (user?.role === 'fitpass_admin' ? 'FitPass Admin' : user?.role === 'h4_admin' ? 'H4 Admin' : 'Master Admin')}
                     </h1>
                     <p style={{ margin: '0.4rem 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                         {user?.role === 'fitpass_admin' ? 'FitPass Network Operations Overview' : user?.role === 'h4_admin' ? 'H4 Gym Network Overview' : 'Global platform overview'} — {now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -235,23 +235,14 @@ function SuperAdminDashboard() {
                     {QUICK_ACTIONS.map(action => (
                         <button
                             key={action.path}
+                            className="superadmin-quick-action"
                             id={`quick-nav-${action.path.split('/').pop()}`}
                             onClick={() => navigate(action.path)}
                             style={{
                                 background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
                                 padding: '1rem 1.1rem', cursor: 'pointer', textAlign: 'left',
                                 display: 'flex', flexDirection: 'column', gap: '0.5rem',
-                                transition: 'all 0.2s ease', position: 'relative', overflow: 'hidden'
-                            }}
-                            onMouseEnter={e => {
-                                e.currentTarget.style.borderColor = action.color + '55';
-                                e.currentTarget.style.transform = 'translateY(-3px)';
-                                e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.35), 0 0 0 1px ${action.color}22`;
-                            }}
-                            onMouseLeave={e => {
-                                e.currentTarget.style.borderColor = 'var(--border)';
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = 'none';
+                                position: 'relative', overflow: 'hidden'
                             }}
                         >
                             <div style={{
@@ -547,7 +538,7 @@ function SuperAdminDashboard() {
                                 onClick={() => setSearchLog('')}
                                 style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: 2 }}
                             >
-                                ✕
+                                <X size={18} />
                             </button>
                         )}
                     </div>

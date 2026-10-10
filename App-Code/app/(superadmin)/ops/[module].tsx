@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, ActivityIndicator, TextInput, BackHandler, TouchableOpacity, Alert, Share } from 'react-native';
 import { useLocalSearchParams, Tabs, useRouter } from 'expo-router';
-import { Search, ArrowLeft, Pencil, Trash2, Download, Phone, Mail, Calendar } from 'lucide-react-native';
+import { Search, ArrowLeft, Pencil, Trash2, Download, Phone, Mail, Calendar } from '@/components/ui/app-icons';
 import { useQuery } from '@tanstack/react-query';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Input, Badge, EmptyState, Button, Modal, Select } from '@/components/ui';

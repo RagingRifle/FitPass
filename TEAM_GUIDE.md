@@ -83,7 +83,7 @@ Below are the pre-configured database credentials for development and verificati
 
 | Role | Username / Email | Password | Gym Context / Details |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `superadmin@gymcrm.com` | `superpassword` | Manages the global system, registers new gyms, creates FitPrime plans. |
+| **Super Admin** | `superadmin@gymcrm.com` | `superadmin123` | Manages the global system, registers new gyms, creates FitPrime plans. |
 | **FitPrime Gym Admin** | `admin@fitprime.com` | `adminpassword123` | Admin for "Fitprime Gym" (partner gym). |
 | **FitPrime Gym Member** | `user@fitprime.com` | `userpassword123` | Member registered at Fitprime Gym. Used for Mobile login checks. |
 

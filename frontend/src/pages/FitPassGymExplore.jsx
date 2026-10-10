@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { discoveryService } from '../services/discoveryService';
 import { Skeleton } from '../components/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { Dumbbell } from 'lucide-react';
+import { Check, Dumbbell, X } from 'lucide-react';
 
 export default function FitPassGymExplore() {
   const [loading, setLoading] = useState(true);
@@ -100,14 +100,14 @@ export default function FitPassGymExplore() {
   };
 
   const categories = [
-    { id: 'all', label: '🔥 All Partner Gyms' },
-    { id: 'nearby', label: '📍 Nearby Gyms' },
-    { id: 'recommended', label: '✨ Recommended' },
-    { id: 'trending', label: '⚡ Trending' },
-    { id: 'newly_added', label: '🆕 Newly Added' },
-    { id: 'highest_rated', label: '⭐ Highest Rated' },
-    { id: 'most_visited', label: '🏆 Most Visited' },
-    { id: 'open_now', label: '🟢 Open Right Now' }
+    { id: 'all', label: ' All Partner Gyms' },
+    { id: 'nearby', label: ' Nearby Gyms' },
+    { id: 'recommended', label: ' Recommended' },
+    { id: 'trending', label: ' Trending' },
+    { id: 'newly_added', label: ' Newly Added' },
+    { id: 'highest_rated', label: ' Highest Rated' },
+    { id: 'most_visited', label: ' Most Visited' },
+    { id: 'open_now', label: ' Open Right Now' }
   ];
 
   return (
@@ -194,7 +194,7 @@ export default function FitPassGymExplore() {
       {posts.length > 0 && (
         <div style={{ marginBottom: '32px' }}>
           <h2 style={{ fontSize: '20px', color: '#F0A020', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            📸 Latest Partner Gym Posts & Highlights
+             Latest Partner Gym Posts & Highlights
           </h2>
           <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }}>
             {posts.map(post => (
@@ -304,16 +304,16 @@ export default function FitPassGymExplore() {
                   <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
                     {p.isOpenNow ? (
                       <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(46,125,50,0.9)', color: '#FFF', fontWeight: 'bold' }}>
-                        🟢 Open Now
+                         Open Now
                       </span>
                     ) : (
                       <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(198,40,40,0.9)', color: '#FFF', fontWeight: 'bold' }}>
-                        🔴 Closed
+                         Closed
                       </span>
                     )}
                     {p.distanceKm !== null && (
                       <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(0,0,0,0.7)', color: '#F0A020', fontWeight: 'bold' }}>
-                        📍 {p.distanceKm} km
+                         {p.distanceKm} km
                       </span>
                     )}
                   </div>
@@ -324,12 +324,12 @@ export default function FitPassGymExplore() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#FFF' }}>{gym.name}</h3>
                     <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#F0A020' }}>
-                      ⭐ {p.rating || 4.8}
+                       {p.rating || 4.8}
                     </span>
                   </div>
 
                   <div style={{ fontSize: '12px', color: '#A39686', marginBottom: '10px' }}>
-                    📍 {p.city || 'Chennai'} • {p.address}
+                     {p.city || 'Chennai'} • {p.address}
                   </div>
 
                   <p style={{
@@ -348,10 +348,10 @@ export default function FitPassGymExplore() {
 
                   {/* Badges row */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                    {p.isAc && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}>❄️ AC</span>}
-                    {p.hasParking && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}>🅿️ Parking</span>}
-                    {p.hasPersonalTraining && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}>🏋️ Trainer</span>}
-                    {p.isWomenFriendly && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}>👩 Women Friendly</span>}
+                    {p.isAc && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> AC</span>}
+                    {p.hasParking && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> Parking</span>}
+                    {p.hasPersonalTraining && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> Trainer</span>}
+                    {p.isWomenFriendly && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> Women Friendly</span>}
                   </div>
 
                   <button
@@ -409,7 +409,7 @@ export default function FitPassGymExplore() {
                   fontSize: '18px', cursor: 'pointer'
                 }}
               >
-                ✕
+                <X size={20} />
               </button>
 
               <div style={{
@@ -426,7 +426,7 @@ export default function FitPassGymExplore() {
                     {selectedGym.name}
                   </h2>
                   <div style={{ fontSize: '13px', color: '#FCE6B8', marginTop: '4px' }}>
-                    FitPass Verified Partner • ⭐ {selectedGym.discoveryProfile?.rating} ({selectedGym.discoveryProfile?.reviewCount} reviews)
+                    FitPass Verified Partner •  {selectedGym.discoveryProfile?.rating} ({selectedGym.discoveryProfile?.reviewCount} reviews)
                   </div>
                 </div>
               </div>
@@ -443,7 +443,7 @@ export default function FitPassGymExplore() {
                     color: '#231D14', fontWeight: 'bold', textAlign: 'center', textDecoration: 'none'
                   }}
                 >
-                  📞 Call Gym ({selectedGym.discoveryProfile?.contactNumber})
+                   Call Gym ({selectedGym.discoveryProfile?.contactNumber})
                 </a>
 
                 <a
@@ -455,7 +455,7 @@ export default function FitPassGymExplore() {
                     color: '#FFF', fontWeight: 'bold', textAlign: 'center', textDecoration: 'none'
                   }}
                 >
-                  🗺️ Get Directions on Maps
+                   Get Directions on Maps
                 </a>
               </div>
 
@@ -469,7 +469,7 @@ export default function FitPassGymExplore() {
                 </div>
 
                 <div style={{ background: '#2D251C', padding: '16px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-                  <h4 style={{ fontSize: '14px', color: '#FFF', marginBottom: '8px' }}>⏰ Operating Hours</h4>
+                  <h4 style={{ fontSize: '14px', color: '#FFF', marginBottom: '8px' }}> Operating Hours</h4>
                   <div style={{ fontSize: '13px', color: '#A39686' }}>
                     {selectedGym.discoveryProfile?.openingTime} - {selectedGym.discoveryProfile?.closingTime}
                   </div>
@@ -485,7 +485,7 @@ export default function FitPassGymExplore() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {selectedGym.discoveryProfile?.amenities?.map(item => (
                     <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#2D251C', color: '#FFF', fontSize: '13px', border: '1px solid #3A3025' }}>
-                      ✓ {item}
+                      <Check size={14} /> {item}
                     </span>
                   ))}
                 </div>
@@ -496,7 +496,7 @@ export default function FitPassGymExplore() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   {selectedGym.discoveryProfile?.equipments?.map(item => (
                     <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#2D251C', color: '#A39686', fontSize: '13px' }}>
-                      🏋️ {item}
+                       {item}
                     </span>
                   ))}
                 </div>

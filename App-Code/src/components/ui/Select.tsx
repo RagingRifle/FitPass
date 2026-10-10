@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { ChevronDown, Check } from 'lucide-react-native';
+import { ChevronDown, Check } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 
 interface Option {

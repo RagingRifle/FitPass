@@ -724,14 +724,16 @@ function PartnerGyms() {
                         
                         <div style={{ background: '#FFFFFF', padding: '1.75rem', display: 'inline-block', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', border: '1px solid rgba(240,160,32,0.3)' }}>
                             <QRCodeCanvas
-                                value={JSON.stringify({ gymId: selectedGymQr._id, gymName: selectedGymQr.name })}
+                                value={JSON.stringify(selectedGymQr.isBranch
+                                    ? { gymId: selectedGymQr.parentGymId, branchId: selectedGymQr._id, gymName: selectedGymQr.name }
+                                    : { gymId: selectedGymQr._id, gymName: selectedGymQr.name })}
                                 size={220}
                                 level="H"
                             />
                         </div>
 
                         <div style={{ marginTop: '1.25rem', fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                            ID: {selectedGymQr._id}
+                            ID: {selectedGymQr.isBranch ? selectedGymQr.parentGymId : selectedGymQr._id}
                         </div>
 
                         <div style={{ marginTop: '1.5rem' }}>

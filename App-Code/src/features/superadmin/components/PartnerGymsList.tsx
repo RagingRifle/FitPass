@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Alert, Modal as RNModal } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { MapPin, User, Settings, Edit3, Trash2, QrCode, Phone, Mail, Users, DollarSign, Plus, ShieldCheck, Building2, Sparkles } from 'lucide-react-native';
+import { MapPin, User, Settings, Edit3, Trash2, QrCode, Phone, Mail, Users, DollarSign, Plus, ShieldCheck, Building2, Sparkles } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -746,9 +746,13 @@ export const PartnerGymsList: React.FC = () => {
               Members scan this QR code on check-in to access this H4 branch.
             </Typography>
             <View style={styles.qrWrapper}>
-              {qrBranch && selectedGymId && (
+              {qrBranch && (qrBranch.parentGymId || qrBranch.gymId || selectedGymId) && (
                 <QRCode
-                  value={JSON.stringify({ gymId: selectedGymId, branchId: qrBranch._id, gymName: qrBranch.name })}
+                  value={JSON.stringify({
+                    gymId: qrBranch.parentGymId || qrBranch.gymId || selectedGymId,
+                    branchId: qrBranch._id || qrBranch.id,
+                    gymName: qrBranch.name,
+                  })}
                   size={200}
                   backgroundColor="#fff"
                 />

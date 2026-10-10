@@ -5,7 +5,7 @@ import {
   Users, DollarSign, 
   ArrowUpRight, ArrowDownRight, Activity, Ticket, TrendingUp, MapPin, 
   BarChart3, PieChart as PieIcon, ShieldCheck
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { useGlobalStats } from '../api/superadmin.api';
 import { Skeleton, Typography, Badge } from '@/components/ui';

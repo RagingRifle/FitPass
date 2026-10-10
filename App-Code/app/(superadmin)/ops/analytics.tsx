@@ -6,7 +6,7 @@ import {
   ArrowLeft, TrendingDown, RefreshCw, Award, AlertTriangle,
   DollarSign, Users, ArrowUpRight, BarChart3,
   Layers, Target, ShieldCheck, Wallet
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { BarChart, LineChart } from 'react-native-chart-kit';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Badge, Button } from '@/components/ui';

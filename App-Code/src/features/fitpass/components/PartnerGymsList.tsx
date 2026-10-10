@@ -23,7 +23,7 @@ import {
   ArrowUpRight,
   BadgeCheck,
   ShieldCheck,
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { usePartnerGyms } from '../api/fitpass.api';
 import { useAuth } from '@/features/auth';
 

@@ -7,7 +7,7 @@ import { useH4Attendance, useH4CheckIn, useH4DigitalPass } from '../api/h4.api';
 import { 
   CalendarCheck, QrCode, CheckCircle, ShieldCheck, 
   RotateCw, Key, Flame, Zap, MapPin, ChevronRight, Info
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { useRouter } from 'expo-router';
 import { H4TopHeader } from './H4TopHeader';
 
@@ -106,7 +106,7 @@ export function H4Attendance() {
           <View style={styles.passCardHeader}>
             <View style={{ flex: 1 }}>
               <View style={styles.memberTag}>
-                <Zap size={12} color="#F0A020" />
+                <Zap size={12} color="#246B78" />
                 <Typography variant="caption" style={styles.memberTagText}>H4 MEMBERSHIP PASS</Typography>
               </View>
               <Typography variant="h2" style={styles.memberName}>
@@ -130,7 +130,7 @@ export function H4Attendance() {
             <Typography variant="caption" style={{ color: '#0F172A', fontWeight: '700' }}>
               Sessions Remaining:
             </Typography>
-            <Typography variant="bodySm" style={{ color: '#F0A020', fontWeight: '900' }}>
+            <Typography variant="bodySm" style={{ color: theme.colors.primary, fontWeight: '900' }}>
               {passData?.member?.sessionsTotal ? `${passData?.member?.sessionsRemaining} / ${passData?.member?.sessionsTotal} Sessions` : 'Unlimited Access'}
             </Typography>
           </View>
@@ -139,7 +139,7 @@ export function H4Attendance() {
           <View style={styles.qrWrapper}>
             <View style={styles.qrWhiteBox}>
               {isPassLoading || !passData?.qrData ? (
-                <ActivityIndicator size="large" color="#F0A020" style={{ width: 170, height: 170 }} />
+                <ActivityIndicator size="large" color="#246B78" style={{ width: 170, height: 170 }} />
               ) : (
                 <QRCode
                   value={passData.qrData}
@@ -157,9 +157,9 @@ export function H4Attendance() {
 
           {/* Member ID / Phone Identifier Box */}
           <View style={styles.pinContainer}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Key size={14} color="#F0A020" />
-              <Typography variant="caption" color="secondary">Desk Check-In Phone:</Typography>
+            <View style={styles.pinLabel}>
+              <Key size={14} color="#246B78" />
+              <Typography variant="caption" style={{ color: theme.colors.textSecondary }}>Desk Check-In Phone</Typography>
             </View>
             <View style={styles.pinBox}>
               <Typography variant="body" style={styles.pinText}>
@@ -191,7 +191,7 @@ export function H4Attendance() {
               onPress={() => router.push('/(h4)/scan' as any)}
               activeOpacity={0.85}
             >
-              <QrCode size={16} color="#F0A020" />
+              <QrCode size={16} color="#246B78" />
               <Typography variant="bodySm" style={styles.scanBtnText}>Scan Desk QR</Typography>
             </TouchableOpacity>
           </View>
@@ -211,13 +211,13 @@ export function H4Attendance() {
         <Card style={styles.heatmapCard}>
           <View style={styles.heatmapHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Flame size={18} color="#F0A020" />
+              <Flame size={18} color="#246B78" />
               <Typography variant="h3" style={{ color: theme.colors.text }}>
                 Workout Activity Grid
               </Typography>
             </View>
-            <Typography variant="caption" style={{ color: '#F0A020', fontWeight: '800' }}>
-              {heatmap.totalVisits} Workouts in 12 Weeks
+            <Typography variant="caption" style={styles.heatmapCount}>
+              {heatmap.totalVisits} workouts in the last 12 weeks
             </Typography>
           </View>
 
@@ -244,9 +244,9 @@ export function H4Attendance() {
           {/* Legend */}
           <View style={styles.legendRow}>
             <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>Less</Typography>
-            <View style={[styles.legendCell, { backgroundColor: '#2D251C' }]} />
+            <View style={[styles.legendCell, { backgroundColor: '#C6D7DA' }]} />
             <View style={[styles.legendCell, { backgroundColor: 'rgba(240, 160, 32, 0.4)' }]} />
-            <View style={[styles.legendCell, { backgroundColor: '#F0A020' }]} />
+            <View style={[styles.legendCell, { backgroundColor: theme.colors.primary }]} />
             <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>More</Typography>
             <Typography variant="caption" color="secondary" style={{ fontSize: 10, marginLeft: 'auto' }}>
               Mon – Sun (84 Days)
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   passCard: {
     padding: 18,
     backgroundColor: theme.colors.card,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: 20,
     gap: 14,
@@ -321,14 +321,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: theme.colors.brandLight,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     alignSelf: 'flex-start',
     marginBottom: 6,
   },
-  memberTagText: { color: '#F0A020', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  memberTagText: { color: theme.colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   memberName: { color: theme.colors.text, fontWeight: '900', fontSize: 20 },
   countdownBadge: {
     flexDirection: 'row',
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(240, 160, 32, 0.3)',
   },
-  countdownText: { color: '#F0A020', fontWeight: '900', fontSize: 12 },
+  countdownText: { color: theme.colors.primary, fontWeight: '900', fontSize: 12 },
 
   qrWrapper: { alignItems: 'center', marginVertical: 4 },
   qrWhiteBox: {
@@ -357,24 +357,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#231D14',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    gap: 8,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
   },
   progressBarTrack: {
     width: 170,
     height: 4,
-    backgroundColor: '#3A3025',
+    backgroundColor: theme.colors.border,
     borderRadius: 2,
     marginTop: 10,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#F0A020',
+    backgroundColor: theme.colors.primary,
     borderRadius: 2,
   },
   antiFraudHint: {
@@ -388,22 +389,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#231D14',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
   },
+  pinLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
   pinBox: {
-    backgroundColor: 'rgba(240, 160, 32, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
+    backgroundColor: theme.colors.brandLight,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
     borderWidth: 1,
-    borderColor: '#F0A020',
+    borderColor: theme.colors.primary,
+    flexShrink: 0,
   },
-  pinText: { color: '#F0A020', fontWeight: '900', letterSpacing: 2 },
+  pinText: { color: theme.colors.primary, fontWeight: '900', letterSpacing: 1, fontSize: 13 },
 
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   markBtn: {
@@ -412,7 +415,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#F0A020',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 13,
     borderRadius: 14,
   },
@@ -424,12 +427,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: '#F0A020',
-    backgroundColor: 'rgba(240, 160, 32, 0.08)',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.brandLight,
     paddingVertical: 13,
     borderRadius: 14,
   },
-  scanBtnText: { color: '#F0A020', fontWeight: '800', fontSize: 13 },
+  scanBtnText: { color: theme.colors.primary, fontWeight: '800', fontSize: 13 },
 
   successBanner: {
     flexDirection: 'row',
@@ -446,25 +449,26 @@ const styles = StyleSheet.create({
   heatmapCard: {
     padding: 16,
     backgroundColor: theme.colors.card,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: 20,
     gap: 8,
   },
-  heatmapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heatmapHeader: { flexDirection: 'column', alignItems: 'flex-start', gap: 5, marginBottom: 2 },
+  heatmapCount: { color: theme.colors.primary, fontWeight: '800', fontSize: 11, lineHeight: 15, marginLeft: 24, flexShrink: 1 },
   gridMatrix: { flexDirection: 'row', gap: 4, paddingVertical: 4 },
   gridColumn: { gap: 4 },
   gridCell: {
     width: 13,
     height: 13,
     borderRadius: 3,
-    backgroundColor: '#231D14',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#2D251C',
+    borderColor: '#C6D7DA',
   },
   gridCellActive: {
-    backgroundColor: '#F0A020',
-    borderColor: '#D9860F',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   gridCellToday: {
     borderColor: '#FFFFFF',
@@ -476,7 +480,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
   },
   legendCell: { width: 10, height: 10, borderRadius: 2 },
 
@@ -487,7 +491,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     backgroundColor: theme.colors.card,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
     borderWidth: 1,
     borderRadius: 16,
   },
@@ -499,10 +503,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#231D14',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#3A3025',
+    borderColor: theme.colors.border,
   },
-  emptyCard: { padding: 24, alignItems: 'center', backgroundColor: theme.colors.card, borderRadius: 16, borderWidth: 1, borderColor: '#3A3025' },
+  emptyCard: { padding: 24, alignItems: 'center', backgroundColor: theme.colors.card, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border },
   skeleton: { height: 60, borderRadius: 16 },
 });

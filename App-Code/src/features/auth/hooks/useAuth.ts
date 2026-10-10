@@ -14,6 +14,7 @@ export interface User {
   branchId?: string;
   memberId?: string;
   phone?: string;
+  profileImageUrl?: string | null;
 }
 
 interface AuthState {

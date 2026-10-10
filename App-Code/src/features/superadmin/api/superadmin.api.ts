@@ -217,6 +217,9 @@ export const useAuditSummary = () => {
 // 5. H4 Branches
 export interface Branch {
   _id: string;
+  id?: string;
+  parentGymId?: string;
+  gymId?: string;
   name: string;
   address?: string;
   phone?: string;

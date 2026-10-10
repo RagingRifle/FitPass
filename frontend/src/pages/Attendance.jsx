@@ -93,7 +93,7 @@ const Attendance = () => {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>📋 Attendance Control Hub</h2>
+                    <h2 style={{ marginBottom: '0.25rem' }}> Attendance Control Hub</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                         Manage daily physical member check-ins and staff presence
                     </p>
@@ -195,7 +195,7 @@ const Attendance = () => {
                                     disabled={!selectedMember}
                                     style={{ width: '100%', padding: '0.75rem' }}
                                 >
-                                    ✓ Confirm Session Check-In
+                                    <Check size={16} /> Confirm Session Check-In
                                 </button>
                             </div>
                         </div>
@@ -211,7 +211,7 @@ const Attendance = () => {
                                 style={{ width: '100%', maxWidth: '240px' }}
                                 onClick={() => setIsScannerOpen(!isScannerOpen)}
                             >
-                                {isScannerOpen ? 'Stop Scanner' : '📱 Scan Member Pass'}
+                                {isScannerOpen ? 'Stop Scanner' : ' Scan Member Pass'}
                             </button>
                         </div>
                     </div>
@@ -260,7 +260,7 @@ const Attendance = () => {
                                     <tr>
                                         <td colSpan="4">
                                             <div className="empty-state">
-                                                <div className="empty-state-icon">📋</div>
+                                                <div className="empty-state-icon"></div>
                                                 <h3>No Member Visits Logged Today</h3>
                                                 <p>Scan arriving members or check them in manually.</p>
                                             </div>
@@ -312,7 +312,7 @@ const Attendance = () => {
                                 <tr>
                                     <td colSpan="5">
                                         <div className="empty-state">
-                                            <div className="empty-state-icon">🛡️</div>
+                                            <div className="empty-state-icon"></div>
                                             <h3>No Staff Clocked In Yet Today</h3>
                                             <p>Trainers and staff must scan the Branch Duty QR upon arrival.</p>
                                         </div>
@@ -355,7 +355,7 @@ const Attendance = () => {
             </Modal>
 
             {/* Branch Daily Duty QR Modal */}
-            <Modal isOpen={!!dutyQRModal} onClose={() => setDutyQRModal(null)} title="🏢 Daily Branch Duty Standee QR">
+            <Modal isOpen={!!dutyQRModal} onClose={() => setDutyQRModal(null)} title=" Daily Branch Duty Standee QR">
                 {dutyQRModal && (
                     <div style={{ textAlign: 'center', padding: '1.5rem' }}>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.85rem' }}>

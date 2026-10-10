@@ -20,6 +20,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
 
   const containerStyle = [
     styles.container,
+    { backgroundColor: theme.colors.background },
     {
       paddingTop: insets.top || 16,
       paddingBottom: insets.bottom || 16,
@@ -31,26 +32,26 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <View style={[styles.container, styles.center, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.outerContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+    <View style={[styles.outerContainer, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       {scrollable ? (
         <ScrollView
-          style={styles.scroll}
+          style={[styles.scroll, { backgroundColor: theme.colors.background }]}
           contentContainerStyle={containerStyle}
           keyboardShouldPersistTaps="handled"
         >
           {children}
         </ScrollView>
       ) : (
-        <View style={containerStyle}>{children}</View>
+        <View style={[containerStyle, { backgroundColor: theme.colors.background }]}>{children}</View>
       )}
     </View>
   );

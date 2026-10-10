@@ -2,7 +2,7 @@
 (For managing the entire CRM system across all gyms)
 
 Role	Email	Password
-Super Admin	superadmin@gymcrm.com	superpassword
+Super Admin	superadmin@gymcrm.com	superadmin123
 🏢 Gym-Specific Roles (Fitprime Gym)
 Role	Email	Password
 Gym Admin	admin@fitprime.com	adminpassword123

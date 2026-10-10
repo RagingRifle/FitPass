@@ -565,7 +565,7 @@ const Reports = () => {
             </div>
 
             <div style={{ marginTop: '1.25rem', padding: '0.875rem 1rem', background: `${C.info}10`, border: `1px solid ${C.info}25`, borderRadius: 8, fontSize: '0.78rem', color: C.textMuted }}>
-              💡 <strong style={{ color: C.text }}>Tip:</strong> CSV files open directly in Excel, Google Sheets, or any spreadsheet app.
+               <strong style={{ color: C.text }}>Tip:</strong> CSV files open directly in Excel, Google Sheets, or any spreadsheet app.
             </div>
           </ChartCard>
         </div>

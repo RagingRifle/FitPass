@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 
@@ -21,13 +21,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <View style={styles.headerContainer}>
       <View style={styles.leftRow}>
         {onBack && (
-          <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.75}>
+            <TouchableOpacity onPress={onBack} style={[styles.backButton, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} activeOpacity={0.75}>
             <ChevronLeft color={theme.colors.text} size={22} />
           </TouchableOpacity>
         )}
         <View style={styles.titleColumn}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+          {subtitle && <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text>}
         </View>
       </View>
       {rightAction && <View style={styles.rightContainer}>{rightAction}</View>}

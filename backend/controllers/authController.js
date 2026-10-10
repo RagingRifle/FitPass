@@ -284,6 +284,7 @@ const verifyOTP = catchAsync(async (req, res, next) => {
         name: user.name,
         email: user.email,
         phone: user.phone || null,
+        profileImageUrl: user.profileImageUrl || null,
         role: user.role,
         gymId: user.gymId?._id || user.gymId,
         gymName: user.gymId?.name || null,
@@ -460,6 +461,7 @@ const authUser = catchAsync(async (req, res, next) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        profileImageUrl: user.profileImageUrl || null,
         role: user.role,
         gymId: user.gymId?._id || user.gymId,
         gymName: user.gymId?.name || 'Unknown Gym',
@@ -601,6 +603,7 @@ const updateProfile = catchAsync(async (req, res, next) => {
         name: user.name,
         email: user.email,
         phone: user.phone || null,
+        profileImageUrl: user.profileImageUrl || null,
         role: user.role,
         gymId: user.gymId?._id || user.gymId,
         branchId: user.branchId || null,
@@ -608,4 +611,23 @@ const updateProfile = catchAsync(async (req, res, next) => {
     });
 });
 
-module.exports = { registerUser, verifyOTP, authUser, checkUserAndSendOTP, updateProfile };
+const uploadProfileImage = catchAsync(async (req, res) => {
+    if (!req.file?.path) {
+        res.status(400);
+        throw new Error('Choose a profile picture before uploading.');
+    }
+
+    const userId = req.user._id || req.user.id;
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    user.profileImageUrl = req.file.path;
+    await user.save();
+
+    res.json({ success: true, profileImageUrl: user.profileImageUrl });
+});
+
+module.exports = { registerUser, verifyOTP, authUser, checkUserAndSendOTP, updateProfile, uploadProfileImage };

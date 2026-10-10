@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TextInput, TextInputProps, TouchableOpacity } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 
 interface InputProps extends TextInputProps {

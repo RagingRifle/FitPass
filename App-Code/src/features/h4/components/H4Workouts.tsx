@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Dumbbell, CheckCircle, Circle, Flame, Award, Trophy, Calendar, ShieldCheck, Clock } from 'lucide-react-native';
+import { Dumbbell, CheckCircle, Circle, Flame, Award, Trophy, Calendar, ShieldCheck, Clock } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { API_CLIENT } from '@/lib/api-client';
 import { storage } from '@/lib/storage';

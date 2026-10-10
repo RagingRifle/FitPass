@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { discoveryService } from '../../services/discoveryService';
+import { Check, X } from 'lucide-react';
 
 export default function DiscoveryApprovalQueue() {
   const [loading, setLoading] = useState(true);
@@ -99,7 +100,7 @@ export default function DiscoveryApprovalQueue() {
       }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
-            🛡️ FitPass Discovery Approval Queue
+             FitPass Discovery Approval Queue
           </h1>
           <p style={{ color: '#A39686', fontSize: '14px', marginTop: '6px', marginBottom: 0 }}>
             Review pending partner gym profiles and social posts before they go live to all FitPass members.
@@ -119,7 +120,7 @@ export default function DiscoveryApprovalQueue() {
               color: activeSubTab === 'profiles' ? '#231D14' : '#A39686'
             }}
           >
-            🏢 Pending Profiles ({queue.profiles.length})
+             Pending Profiles ({queue.profiles.length})
           </button>
 
           <button
@@ -134,7 +135,7 @@ export default function DiscoveryApprovalQueue() {
               color: activeSubTab === 'posts' ? '#231D14' : '#A39686'
             }}
           >
-            📸 Pending Posts ({queue.posts.length})
+             Pending Posts ({queue.posts.length})
           </button>
         </div>
       </div>
@@ -144,7 +145,7 @@ export default function DiscoveryApprovalQueue() {
         <div>
           {queue.profiles.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', background: '#2D251C', borderRadius: '12px', color: '#81C784' }}>
-              ✓ All partner gym profiles are reviewed and approved! No pending profiles.
+              <Check size={16} /> All partner gym profiles are reviewed and approved! No pending profiles.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -171,7 +172,7 @@ export default function DiscoveryApprovalQueue() {
                         {p.gym?.name}
                       </h3>
                       <div style={{ fontSize: '13px', color: '#A39686' }}>
-                        📍 {p.city || 'Chennai'} | {p.address} | Owner: {p.ownerName || 'N/A'}
+                         {p.city || 'Chennai'} | {p.address} | Owner: {p.ownerName || 'N/A'}
                       </div>
                       <div style={{ fontSize: '13px', color: '#F0A020', marginTop: '4px' }}>
                         Hours: {p.openingTime} - {p.closingTime}
@@ -192,7 +193,7 @@ export default function DiscoveryApprovalQueue() {
                         cursor: 'pointer'
                       }}
                     >
-                      ✓ Approve Profile
+                      <Check size={15} /> Approve Profile
                     </button>
                     <button
                       onClick={() => openRejectModal('profile', p.gymId, p.gym?.name)}
@@ -206,7 +207,7 @@ export default function DiscoveryApprovalQueue() {
                         cursor: 'pointer'
                       }}
                     >
-                      ✗ Reject (With Reason)
+                      <X size={15} /> Reject (With Reason)
                     </button>
                   </div>
                 </div>
@@ -221,7 +222,7 @@ export default function DiscoveryApprovalQueue() {
         <div>
           {queue.posts.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center', background: '#2D251C', borderRadius: '12px', color: '#81C784' }}>
-              ✓ All gym social posts are reviewed! No pending posts.
+              <Check size={16} /> All gym social posts are reviewed! No pending posts.
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
@@ -242,13 +243,13 @@ export default function DiscoveryApprovalQueue() {
                         onClick={() => handleApprovePost(post.id)}
                         style={{ flex: 1, padding: '8px 14px', background: '#2E7D32', color: '#FFF', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                       >
-                        ✓ Approve Post
+                        <Check size={15} /> Approve Post
                       </button>
                       <button
                         onClick={() => openRejectModal('post', post.id, post.title)}
                         style={{ flex: 1, padding: '8px 14px', background: '#C62828', color: '#FFF', fontWeight: 'bold', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
                       >
-                        ✗ Reject
+                        <X size={15} /> Reject
                       </button>
                     </div>
                   </div>

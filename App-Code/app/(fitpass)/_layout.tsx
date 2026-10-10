@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { LayoutDashboard, Building2, Award, User } from 'lucide-react-native';
+import { LayoutDashboard, Building2, ScanLine, BadgeCheck } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { CustomTabBar } from '@/components/layout/CustomTabBar';
 
@@ -37,8 +37,23 @@ export default function FitPassLayout() {
           ),
         }}
       />
-      {/* Hidden routes — accessible via deep link or the scanner button */}
-      <Tabs.Screen name="scan"    options={{ href: null }} />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: 'Check-in',
+          tabBarLabel: 'Scan',
+          tabBarIcon: ({ color }) => <ScanLine color={color} size={20} />,
+        }}
+      />
+      <Tabs.Screen
+        name="plans"
+        options={{
+          title: 'Plans',
+          tabBarLabel: 'Plans',
+          tabBarIcon: ({ color }) => <BadgeCheck color={color} size={20} />,
+        }}
+      />
+      {/* Secondary routes remain available from Home and feature screens. */}
       <Tabs.Screen name="workouts" options={{ href: null }} />
       <Tabs.Screen name="history"  options={{ href: null }} />
       <Tabs.Screen name="diets"    options={{ href: null }} />

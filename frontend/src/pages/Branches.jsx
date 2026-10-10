@@ -102,7 +102,7 @@ const Branches = () => {
         <div className="fade-in">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>🏢 Branch Management</h2>
+                    <h2 style={{ marginBottom: '0.25rem' }}> Branch Management</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                         {branches.length} branch(es) · {totalMembers} members · ₹{totalRevenue.toLocaleString()} total revenue
                     </p>
@@ -113,7 +113,7 @@ const Branches = () => {
             {branches.length === 0 ? (
                 <div className="card">
                     <div className="empty-state">
-                        <div className="empty-state-icon">🏢</div>
+                        <div className="empty-state-icon"></div>
                         <h3>No branches yet</h3>
                         <p>Create your first branch to start organising members by location.</p>
                         {canManageBranches && <button className="btn btn-primary" onClick={openCreate} style={{ marginTop: '1rem' }}>+ Add First Branch</button>}
@@ -125,8 +125,8 @@ const Branches = () => {
                         <div key={branch._id} className="glass" style={{ borderRadius: '16px', padding: '1.5rem', borderTop: '4px solid var(--primary-color)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <div>
-                                    <h3 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem', fontWeight: '800' }}>🏢 {branch.name}</h3>
-                                    {branch.managerName && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>👤 {branch.managerName}</p>}
+                                    <h3 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem', fontWeight: '800' }}> {branch.name}</h3>
+                                    {branch.managerName && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}> {branch.managerName}</p>}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
                                     <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.72rem', fontWeight: '700' }}>
@@ -140,15 +140,15 @@ const Branches = () => {
                                         fontSize: '0.72rem',
                                         fontWeight: '700'
                                     }}>
-                                        {branch.fitPassEnabled ? '⚡ FitPass' : '❌ No FitPass'}
+                                        {branch.fitPassEnabled ? ' FitPass' : ' No FitPass'}
                                     </span>
                                 </div>
                             </div>
 
                             <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                {branch.address && <span>📍 {branch.address}</span>}
-                                {branch.phone && <span>📞 {branch.phone}</span>}
-                                {branch.email && <span>✉️ {branch.email}</span>}
+                                {branch.address && <span> {branch.address}</span>}
+                                {branch.phone && <span> {branch.phone}</span>}
+                                {branch.email && <span> {branch.email}</span>}
                             </div>
 
                             {/* Stats */}
@@ -165,7 +165,7 @@ const Branches = () => {
 
                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                 <button onClick={() => viewMembers(branch)} className="btn btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', background: 'var(--primary-light)', color: 'var(--primary-color)' }}>
-                                    👥 Members
+                                     Members
                                 </button>
                                 {branch.fitPassEnabled && (
                                     <button onClick={() => setQrBranch(branch)} className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', borderRadius: '8px' }} title="Print Branch QR Code">
@@ -227,16 +227,16 @@ const Branches = () => {
                         </label>
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} disabled={submitting}>
-                        {submitting ? 'Saving...' : editBranch ? '💾 Update Branch' : '🏢 Create Branch'}
+                        {submitting ? 'Saving...' : editBranch ? ' Update Branch' : ' Create Branch'}
                     </button>
                 </form>
             </Modal>
 
             {/* Branch Members Modal */}
-            <Modal isOpen={!!membersModal} onClose={() => { setMembersModal(null); setBranchMembers([]); }} title={`👥 Members — ${membersModal?.name}`}>
+            <Modal isOpen={!!membersModal} onClose={() => { setMembersModal(null); setBranchMembers([]); }} title={` Members — ${membersModal?.name}`}>
                 {branchMembers.length === 0 ? (
                     <div className="empty-state">
-                        <div className="empty-state-icon">👥</div>
+                        <div className="empty-state-icon"></div>
                         <h3>No members assigned</h3>
                         <p>No members have been assigned to this branch yet.</p>
                     </div>

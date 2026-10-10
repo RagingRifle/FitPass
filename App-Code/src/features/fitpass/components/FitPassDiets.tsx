@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Apple, Droplet, Check, Flame } from 'lucide-react-native';
+import { Apple, Droplet, Check, Flame } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card } from '@/components/ui';
 import { API_CLIENT } from '@/lib/api-client';

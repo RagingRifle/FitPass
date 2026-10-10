@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { discoveryService } from '../services/discoveryService';
+import { Check, Plus } from 'lucide-react';
 
 export default function GymProfileDiscovery() {
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'posts'
@@ -261,7 +262,7 @@ export default function GymProfileDiscovery() {
               color: activeTab === 'profile' ? '#231D14' : '#A39686'
             }}
           >
-            🏢 Gym Profile Details
+             Gym Profile Details
           </button>
           <button
             onClick={() => setActiveTab('posts')}
@@ -275,7 +276,7 @@ export default function GymProfileDiscovery() {
               color: activeTab === 'posts' ? '#231D14' : '#A39686'
             }}
           >
-            📸 Social Posts ({posts.length})
+             Social Posts ({posts.length})
           </button>
         </div>
       </div>
@@ -290,7 +291,7 @@ export default function GymProfileDiscovery() {
           marginBottom: '24px',
           color: '#FF8A80'
         }}>
-          <strong>⚠️ Profile Rejection Notice:</strong> {profile.rejectionReason}
+          <strong> Profile Rejection Notice:</strong> {profile.rejectionReason}
           <div style={{ fontSize: '12px', color: '#A39686', marginTop: '4px' }}>
             Please make the necessary edits below and click "Save & Submit Profile for Review".
           </div>
@@ -318,7 +319,7 @@ export default function GymProfileDiscovery() {
             
             {/* Visual Branding Section */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}>🎨 Visual Branding & Covers</h3>
+              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Visual Branding & Covers</h3>
               
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '13px', color: '#A39686', marginBottom: '6px' }}>Cover Image URL (Hero Banner)</label>
@@ -373,7 +374,7 @@ export default function GymProfileDiscovery() {
 
             {/* Contact & Location Section */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}>📍 Contact & Map Location</h3>
+              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Contact & Map Location</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
                 <div>
@@ -464,7 +465,7 @@ export default function GymProfileDiscovery() {
 
             {/* Operating Schedule & Badges */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}>⏰ Operating Schedule & Badges</h3>
+              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Operating Schedule & Badges</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
                 <div>
@@ -493,13 +494,13 @@ export default function GymProfileDiscovery() {
                 <label style={{ display: 'block', fontSize: '13px', color: '#A39686', marginBottom: '8px' }}>Key Facilities (Badges)</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   {[
-                    { key: 'isAc', label: '❄️ Air Conditioned' },
-                    { key: 'hasParking', label: '🅿️ Parking Available' },
-                    { key: 'hasLockers', label: '🔒 Locker Available' },
-                    { key: 'hasShowers', label: '🚿 Shower Available' },
-                    { key: 'hasPersonalTraining', label: '🏋️ Personal Training' },
-                    { key: 'hasGroupClasses', label: '🧘 Group Classes' },
-                    { key: 'isWomenFriendly', label: '👩 Women Friendly' }
+                    { key: 'isAc', label: ' Air Conditioned' },
+                    { key: 'hasParking', label: ' Parking Available' },
+                    { key: 'hasLockers', label: ' Locker Available' },
+                    { key: 'hasShowers', label: ' Shower Available' },
+                    { key: 'hasPersonalTraining', label: ' Personal Training' },
+                    { key: 'hasGroupClasses', label: ' Group Classes' },
+                    { key: 'isWomenFriendly', label: ' Women Friendly' }
                   ].map(badge => (
                     <label key={badge.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', background: '#231D14', padding: '8px', borderRadius: '6px' }}>
                       <input
@@ -516,7 +517,7 @@ export default function GymProfileDiscovery() {
 
             {/* Amenities & Equipment Checklist */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025', gridColumn: '1 / -1' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}>🛠️ Detailed Amenities & Equipment Checklist</h3>
+              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Detailed Amenities & Equipment Checklist</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div>
@@ -540,7 +541,7 @@ export default function GymProfileDiscovery() {
                             fontWeight: isSelected ? 'bold' : 'normal'
                           }}
                         >
-                          {isSelected ? '✓ ' : '+ '} {item}
+                          {isSelected ? <Check size={13} /> : <Plus size={13} />} {item}
                         </button>
                       );
                     })}
@@ -568,7 +569,7 @@ export default function GymProfileDiscovery() {
                             fontWeight: isSelected ? 'bold' : 'normal'
                           }}
                         >
-                          {isSelected ? '✓ ' : '+ '} {item}
+                          {isSelected ? <Check size={13} /> : <Plus size={13} />} {item}
                         </button>
                       );
                     })}
@@ -659,7 +660,7 @@ export default function GymProfileDiscovery() {
                     )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#6D6154' }}>
-                      <span>🖼️ {post.images?.length || 0} Photos</span>
+                      <span> {post.images?.length || 0} Photos</span>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button
                           onClick={() => openEditPostModal(post)}

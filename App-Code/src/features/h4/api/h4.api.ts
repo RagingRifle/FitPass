@@ -121,7 +121,10 @@ export interface H4DigitalPass {
     id: string;
     name: string;
     phone?: string;
+    planName?: string;
     status?: string;
+    sessionsTotal?: number;
+    sessionsRemaining?: number;
     gymId?: string;
     branchId?: string | null;
   };

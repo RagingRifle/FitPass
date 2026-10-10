@@ -105,7 +105,7 @@ const FitPassAnalyticsPage = () => {
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: '700' }}>Total Sessions Sold</span>
             <h2 style={{ fontSize: '2rem', fontWeight: '800', margin: '0.25rem 0' }}>{analytics?.totalSessionsSold || 0}</h2>
             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              🎟️ {analytics?.remainingSessions || 0} remaining in network
+               {analytics?.remainingSessions || 0} remaining in network
             </p>
           </div>
           <Ticket size={36} style={{ opacity: 0.15, color: '#3b82f6' }} />
@@ -117,7 +117,7 @@ const FitPassAnalyticsPage = () => {
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: '700' }}>Sessions Consumed</span>
             <h2 style={{ fontSize: '2rem', fontWeight: '800', margin: '0.25rem 0' }}>{analytics?.totalSessionsUsed || 0}</h2>
             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              🔥 {analytics?.totalSessionsSold ? ((analytics.totalSessionsUsed / analytics.totalSessionsSold) * 100).toFixed(1) : 0}% utilization rate
+               {analytics?.totalSessionsSold ? ((analytics.totalSessionsUsed / analytics.totalSessionsSold) * 100).toFixed(1) : 0}% utilization rate
             </p>
           </div>
           <Activity size={36} style={{ opacity: 0.15, color: 'var(--success-color)' }} />
@@ -129,7 +129,7 @@ const FitPassAnalyticsPage = () => {
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: '700' }}>Avg Visits / Member</span>
             <h2 style={{ fontSize: '2rem', fontWeight: '800', margin: '0.25rem 0' }}>{analytics?.avgVisitsPerMember || 0}</h2>
             <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              📈 Average check-ins per user
+               Average check-ins per user
             </p>
           </div>
           <TrendingUp size={36} style={{ opacity: 0.15, color: 'var(--accent-color)' }} />
@@ -184,7 +184,7 @@ const FitPassAnalyticsPage = () => {
                 >
                   <div>
                     <div style={{ fontWeight: '700' }}>{member.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>📞 {member.phone}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}> {member.phone}</div>
                   </div>
                   <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
                 </div>
@@ -200,7 +200,7 @@ const FitPassAnalyticsPage = () => {
           ) : selectedMemberSummary ? (
             <div style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '800' }}>💳 FitPass Account Summary</h4>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '800' }}> FitPass Account Summary</h4>
                 <button className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => setSelectedMemberSummary(null)}>
                   Clear
                 </button>

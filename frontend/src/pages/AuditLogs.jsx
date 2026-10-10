@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
-import { LogIn, LogOut, UserPlus, UserCog, UserMinus, IndianRupee, Banknote, TrendingDown, ClipboardList, ClipboardEdit, ClipboardX, CalendarPlus, CalendarMinus, Target, Snowflake, Sun, Building, Settings, QrCode, ShieldAlert, Scale, ScanLine, MapPin } from 'lucide-react';
+import { LogIn, LogOut, UserPlus, UserCog, UserMinus, IndianRupee, Banknote, TrendingDown, ClipboardList, ClipboardEdit, ClipboardX, CalendarPlus, CalendarMinus, Target, Snowflake, Sun, Building, Settings, QrCode, ShieldAlert, Scale, ScanLine, MapPin, Search, Activity } from 'lucide-react';
 
 const ACTION_ICONS = {
     LOGIN: <LogIn size={18} />, LOGOUT: <LogOut size={18} />,
@@ -128,13 +128,13 @@ const AuditLogs = () => {
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>🔍 Audit Logs</h2>
+                    <h2 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.55rem' }}><Search size={25} strokeWidth={2.2} /> Audit Logs</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{total} total events tracked</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => setTab('timeline')} className="btn" style={{ background: tab === 'timeline' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'timeline' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}>📋 Activity</button>
-                    <button onClick={() => setTab('sessions')} className="btn" style={{ background: tab === 'sessions' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'sessions' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}>🏃 Sessions</button>
-                    <button onClick={() => setTab('logins')} className="btn" style={{ background: tab === 'logins' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'logins' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}>🔐 Login History</button>
+                    <button onClick={() => setTab('timeline')} className="btn" style={{ background: tab === 'timeline' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'timeline' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}><ClipboardList size={16} /> Activity</button>
+                    <button onClick={() => setTab('sessions')} className="btn" style={{ background: tab === 'sessions' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'sessions' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}><Activity size={16} /> Sessions</button>
+                    <button onClick={() => setTab('logins')} className="btn" style={{ background: tab === 'logins' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'logins' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}><LogIn size={16} /> Login History</button>
                 </div>
             </div>
 
@@ -192,7 +192,7 @@ const AuditLogs = () => {
                 <div className="card" style={{ padding: '1rem' }}>
                     {displayLogs.length === 0 ? (
                         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '3rem' }}>
-                            <div style={{ fontSize: '2.5rem' }}>🔍</div>
+                            <Search size={30} strokeWidth={1.7} style={{ marginBottom: '0.5rem', color: 'var(--text-muted)' }} />
                             <p>No activity logged yet. Actions will appear here.</p>
                         </div>
                     ) : (
@@ -201,7 +201,7 @@ const AuditLogs = () => {
                             <div style={{ position: 'absolute', left: '19px', top: 0, bottom: 0, width: '2px', background: 'var(--border-color)' }} />
                             {displayLogs.map((log, i) => {
                                 const color = ACTION_COLORS[log.action] || '#6b7280';
-                                const icon = ACTION_ICONS[log.action] || '⚙️';
+                                const icon = ACTION_ICONS[log.action] || ACTION_ICONS.OTHER;
 
                                 return (
                                     <div key={log._id} style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', position: 'relative' }}>

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
-import { LayoutDashboard, Building2, Package, History, LogOut, Shuffle, LayoutGrid, ShieldCheck } from 'lucide-react-native';
+import { LayoutDashboard, Building2, Package, History, LogOut, Shuffle, LayoutGrid, ShieldCheck } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 
 export default function SuperAdminLayout() {
   const logout = useAuth((state) => state.logout);
@@ -25,6 +26,7 @@ export default function SuperAdminLayout() {
         tabBarLabelStyle: styles.tabBarLabel,
         headerRight: () => (
           <View style={styles.headerActions}>
+            <ProfileAvatar size={32} />
             {activeDivision !== null && (
               <TouchableOpacity 
                 onPress={() => changeActiveDivision(null)} 

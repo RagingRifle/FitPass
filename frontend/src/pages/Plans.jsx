@@ -79,15 +79,20 @@ const Plans = () => {
     if (loading) return <div className="spinner"></div>;
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h2>Plans Management</h2>
+        <div className="plans-page fade-in">
+            <div className="plans-page-header">
+                <div>
+                    <span className="plans-page-kicker">Membership setup</span>
+                    <h2>Plans Management</h2>
+                    <p>Set clear terms and pricing for every membership.</p>
+                </div>
                 {isAdmin && (
                     <button className="btn btn-primary" onClick={() => handleOpenModal()}>+ Add New Plan</button>
                 )}
             </div>
 
-            <div className="card" style={{ padding: 0 }}>
+            <div className="card plans-table-card">
+                <div className="plans-table-wrap">
                 <table>
                     <thead>
                         <tr>
@@ -102,7 +107,7 @@ const Plans = () => {
                             <tr>
                                 <td colSpan={isAdmin ? 4 : 3}>
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">📋</div>
+                                        <div className="empty-state-icon"></div>
                                         <h3>No plans found</h3>
                                         <p>Create subscription plans to get started.</p>
                                     </div>
@@ -137,6 +142,7 @@ const Plans = () => {
                         )}
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingPlan ? 'Edit Plan' : 'Add New Plan'}>

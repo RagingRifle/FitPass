@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import Modal from '../components/Modal';
-import { Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Pencil, Trash2, UserPlus, X } from 'lucide-react';
 
 const STATUSES = ['New', 'Contacted', 'Interested', 'Converted', 'Lost'];
 const SOURCES = ['Walk-in', 'Instagram', 'Facebook', 'Referral', 'Google', 'WhatsApp', 'Other'];
@@ -15,7 +15,6 @@ const STATUS_COLORS = {
     Lost: { bg: 'rgba(107,114,128,0.15)', text: '#6b7280' },
 };
 
-const PIPELINE_EMOJIS = { New: '🆕', Contacted: '📞', Interested: '⭐', Converted: '✅', Lost: '❌' };
 
 const emptyForm = { name: '', phone: '', email: '', source: 'Walk-in', interestedPlan: '', notes: '', followUpDate: '', assignedTo: '' };
 
@@ -125,7 +124,7 @@ const Leads = () => {
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>🎯 Lead Management</h2>
+                    <h2 style={{ marginBottom: '0.25rem' }}> Lead Management</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{safeLeads.length} total leads · {summary?.followUpDue || 0} follow-up(s) due</p>
                 </div>
                 <button className="btn btn-primary" onClick={openCreate}>+ Add Lead</button>
@@ -142,14 +141,13 @@ const Leads = () => {
                             <div key={s} className="card"
                                 onClick={() => setFilterStatus(filterStatus === s ? '' : s)}
                                 style={{ cursor: 'pointer', padding: '1rem', border: filterStatus === s ? `2px solid ${col.text}` : '2px solid transparent', transition: 'all 0.2s' }}>
-                                <div style={{ fontSize: '1.5rem' }}>{PIPELINE_EMOJIS[s]}</div>
                                 <div style={{ fontWeight: '800', fontSize: '1.5rem', color: col.text }}>{count}</div>
                                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{s}</div>
                             </div>
                         );
                     })}
                     <div className="card" style={{ padding: '1rem', borderLeft: '4px solid #10b981' }}>
-                        <div style={{ fontSize: '1.5rem' }}>📈</div>
+                        <div style={{ fontSize: '1.5rem' }}></div>
                         <div style={{ fontWeight: '800', fontSize: '1.5rem', color: '#10b981' }}>{summary.conversionRate || 0}%</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>Conversion</div>
                     </div>
@@ -169,10 +167,10 @@ const Leads = () => {
 
             {/* Filters */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input className="input" style={{ maxWidth: '280px', margin: 0 }} placeholder="🔍 Search name / phone..." value={search} onChange={e => setSearch(e.target.value)} />
+                <input className="input" style={{ maxWidth: '280px', margin: 0 }} placeholder=" Search name / phone..." value={search} onChange={e => setSearch(e.target.value)} />
                 {filterStatus && (
                     <button onClick={() => setFilterStatus('')} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
-                        Clear Filter ✕
+                        Clear Filter <X size={14} />
                     </button>
                 )}
             </div>
@@ -196,7 +194,7 @@ const Leads = () => {
                             <tr>
                                 <td colSpan={7}>
                                     <div className="empty-state">
-                                        <div className="empty-state-icon">🎯</div>
+                                        <div className="empty-state-icon"></div>
                                         <h3>No leads found</h3>
                                         <p>Try adjusting your search query or pipeline filter.</p>
                                     </div>
@@ -215,7 +213,7 @@ const Leads = () => {
                                     <td>
                                         {followUp ? (
                                             <span style={{ color: isOverdue ? '#ef4444' : 'var(--text-primary)', fontWeight: isOverdue ? '700' : '400', fontSize: '0.85rem' }}>
-                                                {isOverdue ? '⚠️ ' : ''}{new Date(followUp).toLocaleDateString()}
+                                                {isOverdue ? ' ' : ''}{new Date(followUp).toLocaleDateString()}
                                             </span>
                                         ) : '—'}
                                     </td>
@@ -225,13 +223,13 @@ const Leads = () => {
                                             onChange={e => updateStatus(lead, e.target.value)}
                                             style={{ background: col.bg, color: col.text, border: 'none', borderRadius: '8px', padding: '0.25rem 0.5rem', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
                                         >
-                                            {STATUSES.map(s => <option key={s} value={s}>{PIPELINE_EMOJIS[s]} {s}</option>)}
+                                            {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                                             {lead.status === 'Converted' ? (
-                                                <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '700', whiteSpace: 'nowrap' }}>✅ Converted</span>
+                                                <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '700', whiteSpace: 'nowrap' }}> Converted</span>
                                             ) : (
                                                 <button onClick={() => convertToMember(lead)} className="btn" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
                                                     <UserPlus size={14} /> Convert
@@ -253,7 +251,7 @@ const Leads = () => {
             </div>
 
             {/* Add / Edit Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editLead ? '✏️ Edit Lead' : '🎯 Add New Lead'}>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editLead ? ' Edit Lead' : ' Add New Lead'}>
                 <form onSubmit={handleSubmit}>
                     {error && <div style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
                     <div className="form-grid">
@@ -293,7 +291,7 @@ const Leads = () => {
                         <textarea className="input" rows={2} value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Any notes about this lead..." />
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} disabled={submitting}>
-                        {submitting ? 'Saving...' : editLead ? '💾 Update Lead' : '🎯 Add Lead'}
+                        {submitting ? 'Saving...' : editLead ? ' Update Lead' : ' Add Lead'}
                     </button>
                 </form>
             </Modal>

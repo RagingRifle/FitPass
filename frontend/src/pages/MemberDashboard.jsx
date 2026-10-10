@@ -238,14 +238,14 @@ const MemberDashboard = () => {
         <div className="fade-in">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                    Welcome back, {plan?.name}! 👋
+                    Welcome back, {plan?.name}!
                 </h1>
                 <button
                     onClick={openProfileEditModal}
                     className="btn btn-secondary"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--border-default)', color: 'var(--text-primary)', border: '1px solid var(--border-default)' }}
                 >
-                    👤 Edit Profile
+                     Edit Profile
                 </button>
             </div>
 
@@ -258,7 +258,7 @@ const MemberDashboard = () => {
                     <p style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{plan?.planId?.name || 'No Plan'}</p>
                     {plan?.status === 'Frozen' && (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--primary-muted)', color: 'var(--primary-color)', padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.75rem' }}>
-                            ❄️ Membership Frozen
+                             Membership Frozen
                         </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
@@ -273,7 +273,7 @@ const MemberDashboard = () => {
                                     padding: '0.25rem 0.75rem', borderRadius: '9999px',
                                     fontSize: '0.75rem', fontWeight: '700'
                                 }}>
-                                    🎟️ {sessionsRemaining} left
+                                     {sessionsRemaining} left
                                 </span>
                             </>
                         ) : (
@@ -287,7 +287,7 @@ const MemberDashboard = () => {
                                     padding: '0.25rem 0.75rem', borderRadius: '9999px',
                                     fontSize: '0.75rem', fontWeight: '700'
                                 }}>
-                                    {plan?.status === 'Frozen' ? '❄️ Paused' : daysLeft > 0 ? `${daysLeft} Days Left` : 'Expired'}
+                                    {plan?.status === 'Frozen' ? ' Paused' : daysLeft > 0 ? `${daysLeft} Days Left` : 'Expired'}
                                 </span>
                             </>
                         )}
@@ -318,7 +318,7 @@ const MemberDashboard = () => {
                                 className="btn btn-primary"
                                 style={{ width: '100%', marginTop: '1rem', background: 'var(--accent-color)' }}
                             >
-                                {paying ? 'Processing...' : `💳 Pay Now`}
+                                {paying ? 'Processing...' : ` Pay Now`}
                             </button>
                         )}
                         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Total Paid: ₹{plan?.paidAmount}</p>
@@ -351,14 +351,14 @@ const MemberDashboard = () => {
                             className="btn btn-secondary"
                             style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(16,185,129,0.1)', color: '#10b981' }}
                         >
-                            🔍 Fullscreen
+                             Fullscreen
                         </button>
                         <button
                             onClick={downloadQR}
                             className="btn btn-secondary"
                             style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(99,102,241,0.1)', color: 'var(--primary-color)' }}
                         >
-                            ⬇️ Download
+                             Download
                         </button>
                     </div>
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', margin: 0 }}>
@@ -374,7 +374,7 @@ const MemberDashboard = () => {
                     borderLeft: `5px solid ${activeSession ? '#10b981' : '#f59e0b'}`,
                     display: 'flex', alignItems: 'center', gap: '1rem'
                 }}>
-                    <span style={{ fontSize: '1.6rem' }}>{activeSession ? '🏃' : '⏳'}</span>
+                    <span style={{ fontSize: '1.6rem' }}>{activeSession ? '' : ''}</span>
                     <div>
                         {activeSession ? (
                             <>
@@ -407,7 +407,7 @@ const MemberDashboard = () => {
                             onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                             onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                         >
-                            <span style={{ fontSize: '2rem' }}>🧭</span>
+                            <span style={{ fontSize: '2rem' }}></span>
                             <div>
                                 <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>Explore Partner Gyms</div>
                                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Discover &amp; check-in at FitPass gyms</div>
@@ -425,7 +425,7 @@ const MemberDashboard = () => {
                         onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                         onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                     >
-                        <span style={{ fontSize: '2rem' }}>🏋️</span>
+                        <span style={{ fontSize: '2rem' }}></span>
                         <div>
                             <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>Browse Classes</div>
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Yoga, Zumba, HIIT &amp; more</div>
@@ -588,7 +588,7 @@ const MemberDashboard = () => {
                             border: '1px solid var(--border)'
                         }}
                     >
-                        <h3 style={{ marginBottom: '0.5rem', fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-primary)' }}>💳 Make a Payment</h3>
+                        <h3 style={{ marginBottom: '0.5rem', fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-primary)' }}> Make a Payment</h3>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                             Total Due: <strong style={{ color: 'var(--danger-color)' }}>₹{amountDue}</strong>
                         </p>
@@ -680,7 +680,7 @@ const MemberDashboard = () => {
                     <p style={{ color: '#fff', fontWeight: '700', fontSize: '1.1rem', margin: 0 }}>{plan?.name}</p>
                     <p style={{ color: '#aaa', fontSize: '0.8rem', margin: 0 }}>Show this to gym staff to mark attendance</p>
                     <button onClick={downloadQR} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
-                        ⬇️ Download QR
+                         Download QR
                     </button>
                 </div>
             )}

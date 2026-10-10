@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Text } from 'react-native';
-import { Dumbbell, CheckCircle, Flame, Award, Circle, ShieldCheck } from 'lucide-react-native';
+import { Dumbbell, CheckCircle, Flame, Award, Circle, ShieldCheck } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { Card } from '@/components/ui';

@@ -6,10 +6,11 @@ import { Modal, Skeleton } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { useSessionStatus } from '../api/fitpass.api';
 import { CheckInHistory } from './CheckInHistory';
-import { Mail, Phone, LogOut, BadgeCheck, ChevronRight, User, Lock } from 'lucide-react-native';
+import { Mail, Phone, LogOut, BadgeCheck, ChevronRight, User, Lock } from '@/components/ui/app-icons';
 import { API_CLIENT } from '@/lib/api-client';
 import { useToast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 
 export function FitPassProfile() {
   const user = useAuth((s) => s.user);
@@ -102,9 +103,7 @@ export function FitPassProfile() {
       ) : (
         <View style={styles.memberCard}>
           <View style={styles.memberCardTop}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{(user?.name?.[0] ?? 'F').toUpperCase()}</Text>
-            </View>
+            <ProfileAvatar size={56} editable nameFallback="F" />
 
             <View style={{ flex: 1 }}>
               <Text style={styles.memberName}>{user?.name ?? 'Member'}</Text>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Text } from 'react-native';
-import { LifeBuoy, Send, PlusCircle, ChevronRight, MessageSquare, Award } from 'lucide-react-native';
+import { LifeBuoy, Send, PlusCircle, ChevronRight, MessageSquare, Award } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Badge, Modal } from '@/components/ui';
 import { API_CLIENT } from '@/lib/api-client';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, Alert } from 'react-native';
-import { Trash2, Edit3 } from 'lucide-react-native';
+import { Trash2, Edit3 } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { useToast } from '@/hooks/useToast';
 import { 

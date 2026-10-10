@@ -4,35 +4,35 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Switch,
   Alert,
   TouchableOpacity,
 } from 'react-native';
-import { theme, useThemeStore } from '@/design-system/theme';
+import { theme } from '@/design-system/theme';
 import { Badge, Input, Modal, Button } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { useH4Plan, useH4Payments } from '../api/h4.api';
 import {
-  Mail, Phone, Moon, Sun, Edit2, CreditCard, ChevronRight, LogOut, Shield,
-} from 'lucide-react-native';
+  Mail, Phone, Edit3, CreditCard, ChevronRight, LogOut, ShieldCheck,
+} from '@/components/ui/app-icons';
 import { API_CLIENT } from '@/lib/api-client';
 import { H4TopHeader } from './H4TopHeader';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 
 // ─── Section Block helper ─────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionCard}>{children}</View>
+      <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>{title}</Text>
+      <View style={[styles.sectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>{children}</View>
     </View>
   );
 }
 
 function Row({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
   return (
-    <View style={[styles.row, !last && styles.rowBorder]}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      {typeof value === 'string' ? <Text style={styles.rowValue}>{value}</Text> : value}
+    <View style={[styles.row, !last && [styles.rowBorder, { borderBottomColor: theme.colors.border }]]}>
+      <Text style={[styles.rowLabel, { color: theme.colors.textSecondary }]}>{label}</Text>
+      {typeof value === 'string' ? <Text style={[styles.rowValue, { color: theme.colors.text }]}>{value}</Text> : value}
     </View>
   );
 }
@@ -46,7 +46,6 @@ export function H4Profile() {
   const updateUserLocal = useAuth((s) => s.updateUserLocal);
   const { data: plan } = useH4Plan();
   const { data: paymentsData } = useH4Payments();
-  const { toggleTheme } = useThemeStore();
   const toast = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,24 +91,22 @@ export function H4Profile() {
   const payments = paymentsData?.data ?? [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <H4TopHeader title="Athlete Profile" />
-      <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.root, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* ── Avatar + Name ── */}
       <View style={styles.profileHead}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{(user?.name?.[0] ?? 'H').toUpperCase()}</Text>
-        </View>
+        <ProfileAvatar size={58} editable nameFallback="H" />
         <View style={styles.profileHeadInfo}>
-          <Text style={styles.profileName}>{user?.name ?? '—'}</Text>
+          <Text style={[styles.profileName, { color: theme.colors.text }]}>{user?.name ?? '—'}</Text>
           <View style={styles.memberBadge}>
-            <Shield size={11} color={theme.colors.primary} />
+            <ShieldCheck size={13} color={theme.colors.primary} />
             <Text style={styles.memberBadgeText}>H4 Member</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.editBtn} onPress={handleOpenEdit} activeOpacity={0.7}>
-          <Edit2 size={16} color={theme.colors.primary} />
+          <Edit3 size={16} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -118,13 +115,13 @@ export function H4Profile() {
         <Row label="Email" value={
           <View style={styles.iconVal}>
             <Mail size={13} color={theme.colors.textMuted} />
-            <Text style={styles.rowValue}>{user?.email ?? '—'}</Text>
+            <Text style={[styles.rowValue, { color: theme.colors.text }]}>{user?.email ?? '—'}</Text>
           </View>
         } />
         <Row label="Phone" last value={
           <View style={styles.iconVal}>
             <Phone size={13} color={theme.colors.textMuted} />
-            <Text style={styles.rowValue}>{user?.phone ?? '—'}</Text>
+            <Text style={[styles.rowValue, { color: theme.colors.text }]}>{user?.phone ?? '—'}</Text>
           </View>
         } />
       </Section>
@@ -150,21 +147,21 @@ export function H4Profile() {
         {payments.length === 0 ? (
           <View style={styles.emptyRow}>
             <CreditCard size={20} color={theme.colors.textMuted} />
-            <Text style={styles.emptyText}>No payment records found.</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No payment records found.</Text>
           </View>
         ) : (
           payments.slice(0, 5).map((p: any, i: number) => (
-            <View key={p.id ?? i} style={[styles.row, i < payments.length - 1 && i < 4 && styles.rowBorder]}>
+            <View key={p.id ?? i} style={[styles.row, i < payments.length - 1 && i < 4 && [styles.rowBorder, { borderBottomColor: theme.colors.border }]]}>
               <View>
-                <Text style={styles.payDate}>
+                <Text style={[styles.payDate, { color: theme.colors.text }]}>
                   {p.date
                     ? new Date(p.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                     : '—'}
                 </Text>
-                <Text style={styles.rowLabel}>{p.description ?? 'Membership Payment'}</Text>
+                <Text style={[styles.rowLabel, { color: theme.colors.textSecondary }]}>{p.description ?? 'Membership Payment'}</Text>
               </View>
               <View style={styles.payRight}>
-                <Text style={styles.payAmt}>₹{p.amount}</Text>
+                <Text style={[styles.payAmt, { color: theme.colors.text }]}>₹{p.amount}</Text>
                 <View style={[styles.payStatus, { backgroundColor: p.status === 'Paid' ? 'rgba(46,125,50,0.1)' : 'rgba(198,40,40,0.1)' }]}>
                   <Text style={[styles.payStatusText, { color: p.status === 'Paid' ? '#2E7D32' : '#C62828' }]}>
                     {p.status ?? 'Paid'}
@@ -178,7 +175,7 @@ export function H4Profile() {
 
       {/* ── App Settings ── */}
       <Section title="Settings">
-        <TouchableOpacity
+<TouchableOpacity
           style={styles.row}
           onPress={() => Alert.alert('Logout', 'Are you sure?', [
             { text: 'Cancel', style: 'cancel' },
@@ -210,7 +207,7 @@ export function H4Profile() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1 },
   content: { padding: 18, paddingBottom: 100, gap: 20 },
 
   // Profile head

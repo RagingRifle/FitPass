@@ -71,9 +71,25 @@ const WorkoutPlans = () => {
             setTemplates(Array.isArray(tempData) ? tempData : (tempData?.data || []));
 
             if (isTrainerOrAdmin) {
-                const memRes = await API.get('/members');
-                const memData = memRes.data;
-                setMembers(Array.isArray(memData) ? memData : (memData?.data || []));
+                const firstPageRes = await API.get('/members', { params: { page: 1, limit: 100 } });
+                const firstPage = firstPageRes.data;
+                const firstMembers = Array.isArray(firstPage)
+                    ? firstPage
+                    : (firstPage?.members || firstPage?.data || []);
+                const totalPages = Math.max(Number(firstPage?.pages) || 1, 1);
+
+                const remainingPages = await Promise.all(
+                    Array.from({ length: totalPages - 1 }, (_, index) =>
+                        API.get('/members', { params: { page: index + 2, limit: 100 } })
+                    )
+                );
+                const allMembers = [
+                    ...firstMembers,
+                    ...remainingPages.flatMap(({ data }) =>
+                        Array.isArray(data) ? data : (data?.members || data?.data || [])
+                    )
+                ];
+                setMembers(allMembers);
             }
         } catch {
             setError('Failed to sync workout system datasets');
@@ -150,10 +166,10 @@ const WorkoutPlans = () => {
         try {
             if (editingPlanId) {
                 await API.put(`/workout-plans/${editingPlanId}`, payload);
-                toast.success('Workout plan modified successfully! 💪');
+                toast.success('Workout plan modified successfully! ');
             } else {
                 await API.post('/workout-plans', payload);
-                toast.success('Workout plan assigned successfully! 💪');
+                toast.success('Workout plan assigned successfully! ');
             }
             setShowPlanModal(false);
             resetPlanForm();
@@ -167,7 +183,7 @@ const WorkoutPlans = () => {
 
     const handleEditPlan = (plan) => {
         setEditingPlanId(plan.id || plan._id);
-        setMemberId(plan.memberId);
+        setMemberId(plan.memberId || plan.member?.id || plan.member?._id || '');
         setPlanName(plan.name);
         setStartDate(plan.startDate ? plan.startDate.split('T')[0] : '');
         setEndDate(plan.endDate ? plan.endDate.split('T')[0] : '');
@@ -179,7 +195,7 @@ const WorkoutPlans = () => {
         if (!window.confirm('Delete this assigned plan?')) return;
         try {
             await API.delete(`/workout-plans/${id}`);
-            toast.success('Workout plan deleted successfully! 🗑️');
+            toast.success('Workout plan deleted successfully! ');
             fetchData();
         } catch (err) {
             const errMsg = err.response?.data?.message || 'Error deleting plan';
@@ -211,10 +227,10 @@ const WorkoutPlans = () => {
         try {
             if (editingTemplateId) {
                 await API.put(`/workout-templates/${editingTemplateId}`, payload);
-                toast.success('Workout template modified! 📋');
+                toast.success('Workout template modified! ');
             } else {
                 await API.post('/workout-templates', payload);
-                toast.success('Workout template created! 📋');
+                toast.success('Workout template created! ');
             }
             setShowTemplateModal(false);
             resetTemplateForm();
@@ -238,7 +254,7 @@ const WorkoutPlans = () => {
         if (!window.confirm('Delete this workout template?')) return;
         try {
             await API.delete(`/workout-templates/${id}`);
-            toast.success('Workout template deleted! 🗑️');
+            toast.success('Workout template deleted! ');
             fetchData();
         } catch (err) {
             const errMsg = err.response?.data?.message || 'Error deleting template';
@@ -269,7 +285,7 @@ const WorkoutPlans = () => {
             ...prev,
             [index]: next
         }));
-        toast.info(next ? 'Exercise completed! 💪' : 'Exercise unmarked 🏋️');
+        toast.info(next ? 'Exercise completed! ' : 'Exercise unmarked ');
     };
 
     const handleCompleteWorkout = () => {
@@ -292,7 +308,7 @@ const WorkoutPlans = () => {
         localStorage.setItem(`streak_${user.id}`, nextStreak.toString());
 
         setCompletedExercises({});
-        toast.success('🎉 Awesome job! Today\'s training session has been logged to your streak profile.');
+        toast.success(' Awesome job! Today\'s training session has been logged to your streak profile.');
     };
 
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -594,7 +610,7 @@ const WorkoutPlans = () => {
                                                                         )}
                                                                     </div>
                                                                     {ex.notes && (
-                                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>💡 {ex.notes}</div>
+                                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}> {ex.notes}</div>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -673,15 +689,20 @@ const WorkoutPlans = () => {
                                 >
                                     <option value="">Choose member...</option>
                                     {members.map(m => (
-                                        <option key={m._id} value={m._id}>{m.name} ({m.phone})</option>
+                                        <option key={m._id || m.id} value={m._id || m.id}>{m.name} ({m.phone || 'No phone'})</option>
                                     ))}
                                 </select>
+                                {members.length === 0 && (
+                                    <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
+                                        No members found for this gym. Add a member before assigning a workout plan.
+                                    </small>
+                                )}
                             </div>
 
                             {/* Load Template Quick Option */}
                             {!editingPlanId && templates.length > 0 && (
                                 <div className="form-group" style={{ marginBottom: '1rem', background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '700', fontSize: '0.8rem', color: 'var(--primary)' }}>⚡ QUICK TEMPLATE LOADER</label>
+                                    <label style={{ display: 'block', marginBottom: '0.25rem', fontWeight: '700', fontSize: '0.8rem', color: 'var(--primary)' }}> QUICK TEMPLATE LOADER</label>
                                     <select 
                                         className="form-control" 
                                         style={{ width: '100%', fontSize: '0.8rem' }}

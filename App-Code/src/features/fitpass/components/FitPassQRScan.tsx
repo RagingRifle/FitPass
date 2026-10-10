@@ -3,14 +3,14 @@ import { View, StyleSheet, Alert, TouchableOpacity, ScrollView, Modal, Text, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { X, QrCode, Building2, ChevronLeft, MapPin, Search, ShieldCheck, CheckCircle2, ArrowRight, Activity, Flame } from 'lucide-react-native';
+import { X, QrCode, Building2, ChevronLeft, MapPin, Search, ShieldCheck, CheckCircle2, ArrowRight, Activity, Flame } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { useCheckIn, usePartnerGyms, useSessionStatus } from '../api/fitpass.api';
 
-type ScanState = 'idle' | 'scanning' | 'processing' | 'done' | 'error';
+type ScanState = 'idle' | 'scanning' | 'confirming' | 'processing' | 'done' | 'error';
 
 export function FitPassQRScan() {
   const router = useRouter();
@@ -21,17 +21,53 @@ export function FitPassQRScan() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const checkIn = useCheckIn();
   const { data: gyms } = usePartnerGyms();
-  const { data: sessionData } = useSessionStatus();
+  const { data: sessionData, refetch: refreshSessionStatus } = useSessionStatus();
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [manualSearch, setManualSearch] = useState('');
 
+  const confirmCheckIn = useCallback(async (payload: { gymId: string; branchId?: string; qrCode: string; gymName?: string }) => {
+    const refreshedStatus = await refreshSessionStatus().catch(() => null);
+    const remaining = refreshedStatus?.data?.sessionsRemaining ?? sessionData?.sessionsRemaining ?? 0;
+    setScanState('confirming');
+    Alert.alert(
+      'Confirm attendance',
+      `${payload.gymName || 'This gym'}\n\nYou have ${remaining} session${remaining === 1 ? '' : 's'} remaining. Confirm attendance?`,
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => setScanState('idle') },
+        {
+          text: 'Confirm attendance',
+          onPress: async () => {
+            setScanState('processing');
+            try {
+              const result = await checkIn.mutateAsync({ gymId: payload.gymId, branchId: payload.branchId, qrCode: payload.qrCode });
+              setScanState('done');
+              Alert.alert(
+                'Attendance confirmed',
+                `${payload.gymName || 'Gym'} check-in is complete. You have ${result.sessionsRemaining ?? Math.max(remaining - 1, 0)} session${(result.sessionsRemaining ?? Math.max(remaining - 1, 0)) === 1 ? '' : 's'} remaining.`,
+                [{ text: 'Go to Dashboard', onPress: () => router.push(targetDashboard as any) }],
+              );
+            } catch (err: any) {
+              const msg = err?.response?.data?.message || err?.message || 'Check-in failed. Please try again.';
+              setErrorMessage(msg);
+              setScanState('error');
+              Alert.alert('Check-in Failed', msg, [
+                { text: 'Try Again', onPress: () => { setScanState('idle'); setErrorMessage(null); } },
+                { text: 'Cancel', onPress: () => router.back() },
+              ]);
+            }
+          },
+        },
+      ],
+    );
+  }, [checkIn, refreshSessionStatus, router, sessionData?.sessionsRemaining, targetDashboard]);
+
   const handleBarCodeScanned = useCallback(
-    async ({ data }: { data: string }) => {
+    ({ data }: { data: string }) => {
       if (scanState !== 'idle') return;
       setScanState('scanning');
 
       try {
-        let payload: { gymId: string; branchId?: string };
+        let payload: { gymId: string; branchId?: string; gymName?: string };
         try {
           payload = JSON.parse(data);
         } catch {
@@ -39,14 +75,9 @@ export function FitPassQRScan() {
         }
 
         if (!payload?.gymId) throw new Error('Invalid QR code — missing gymId');
-
-        setScanState('processing');
-        await checkIn.mutateAsync({ gymId: payload.gymId, branchId: payload.branchId, qrCode: data });
-
-        setScanState('done');
-        Alert.alert('✅ Entry Authorized!', 'Your attendance check-in is complete.', [
-          { text: 'Go to Dashboard', onPress: () => router.push(targetDashboard as any) },
-        ]);
+        const gym = (gyms || []).find(g => (g.id || g._id) === payload.gymId);
+        const branch = gym?.branches?.find(b => (b.id || b._id) === payload.branchId);
+        confirmCheckIn({ ...payload, gymName: branch?.name || gym?.name || payload.gymName, qrCode: data });
       } catch (err: any) {
         const msg =
           err?.response?.data?.message ||
@@ -60,28 +91,13 @@ export function FitPassQRScan() {
         ]);
       }
     },
-    [scanState, checkIn, router, targetDashboard],
+    [scanState, confirmCheckIn, gyms],
   );
 
   const handleManualCheckIn = async (gym: any) => {
     setIsManualModalOpen(false);
-    setScanState('processing');
-    try {
-      const gymId = gym.id || gym._id;
-      const qrCode = JSON.stringify({ gymId, gymName: gym.name });
-      await checkIn.mutateAsync({ gymId, qrCode });
-      setScanState('done');
-      Alert.alert('✅ Entry Authorized', `Checked in at ${gym.name}!`, [
-        { text: 'Go to Dashboard', onPress: () => router.push(targetDashboard as any) },
-      ]);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Manual check-in failed.';
-      setErrorMessage(msg);
-      setScanState('error');
-      Alert.alert('Check-in Error', msg, [
-        { text: 'OK', onPress: () => setScanState('idle') },
-      ]);
-    }
+    const gymId = gym.id || gym._id;
+    confirmCheckIn({ gymId, qrCode: JSON.stringify({ gymId, gymName: gym.name }), gymName: gym.name });
   };
 
   const filteredGyms = (gyms || []).filter(g =>
@@ -253,6 +269,7 @@ export function FitPassQRScan() {
           <Text style={styles.scanStatusText}>
             {scanState === 'idle' && 'Align gym counter QR code inside frame'}
             {scanState === 'scanning' && 'Reading FitPass QR code…'}
+            {scanState === 'confirming' && 'Confirm attendance in the popup…'}
             {scanState === 'processing' && 'Validating pass & deducting 1 session…'}
             {scanState === 'done' && '✅ Entry Authorized!'}
             {scanState === 'error' && `❌ ${errorMessage ?? 'Check-in failed'}`}

@@ -31,13 +31,14 @@ import {
   Plus,
   Minus,
   Play,
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { Skeleton } from '@/components/ui';
 import { useH4Dashboard, useH4Plan, useH4Classes, useH4BookClass, useH4CancelClass, useH4WorkoutPlans, useH4DietPlans } from '../api/h4.api';
 import { useAuth } from '@/features/auth';
 import { storage } from '@/lib/storage';
 import { H4TopHeader } from './H4TopHeader';
 import { Alert, ActivityIndicator } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -65,17 +66,25 @@ function MemberHeroBanner() {
   return (
     <TouchableOpacity
       activeOpacity={0.97}
-      onPress={() => router.push('/(h4)/membership')}
+      onPress={() => router.push('/(h4)/attendance')}
       style={styles.heroCard}
     >
+      <LinearGradient
+        colors={['#DDEEEF', '#F8FBFB', '#FFF3E5']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View pointerEvents="none" style={styles.heroOrbitOuter} />
+      <View pointerEvents="none" style={styles.heroOrbitInner} />
       <View style={styles.heroInner}>
         {/* Top row: eyebrow + status pill */}
         <View style={styles.heroTopRow}>
           <Text style={styles.heroEyebrow}>MEMBERSHIP</Text>
-          <View style={[styles.heroStatusPill, { backgroundColor: isActive ? '#F0FDF4' : '#FEF2F2' }]}>
-            <View style={[styles.heroStatusDot, { backgroundColor: isActive ? '#16A34A' : '#DC2626' }]} />
-            <Text style={[styles.heroStatusLabel, { color: isActive ? '#16A34A' : '#DC2626' }]}>
-              {isActive ? 'Active' : 'Inactive'}
+          <View style={[styles.heroStatusPill, { backgroundColor: isActive ? '#E5F2EC' : '#F9E9E8' }]}>
+            <CheckCircle2 size={14} color={isActive ? theme.colors.success : theme.colors.error} />
+            <Text style={[styles.heroStatusLabel, { color: isActive ? theme.colors.success : theme.colors.error }]}>
+              {isActive ? 'MEMBERSHIP ACTIVE' : 'MEMBERSHIP INACTIVE'}
             </Text>
           </View>
         </View>
@@ -138,13 +147,35 @@ function HomeStudioClassesSection() {
     try {
       setActionId(classId);
       await bookMutation.mutateAsync(classId);
-      Alert.alert('✅ Seat Reserved!', `You are booked for ${cls.name}.`);
+      Alert.alert('Seat reserved', `You are booked for ${cls.name}.`);
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Could not book class';
       Alert.alert('Booking Error', msg);
     } finally {
       setActionId(null);
     }
+  };
+
+  const confirmBook = (cls: any) => {
+    const details = [
+      cls.description?.trim(),
+      `Time: ${cls.startTime || 'To be announced'}`,
+      `Coach: ${cls.trainerName || 'H4 Trainer'}`,
+    ].filter(Boolean).join('\n\n');
+    Alert.alert(`Book ${cls.name}?`, details, [
+      { text: 'Keep browsing', style: 'cancel' },
+      { text: 'Confirm booking', onPress: () => { void handleBook(cls); } },
+    ]);
+  };
+
+  const showClassDetails = (cls: any) => {
+    const details = [
+      cls.description?.trim() || 'No class description has been added yet.',
+      `Time: ${cls.startTime || 'To be announced'}`,
+      `Coach: ${cls.trainerName || 'H4 Trainer'}`,
+      `Seats left: ${cls.seatsAvailable ?? '—'}`,
+    ].join('\n\n');
+    Alert.alert(cls.name || 'Class details', details, [{ text: 'Close' }]);
   };
 
   const handleCancel = async (cls: any) => {
@@ -193,12 +224,18 @@ function HomeStudioClassesSection() {
                       <Dumbbell size={16} color={theme.colors.primary} />
                     </View>
                   )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.classNameText}>{cls.name}</Text>
-                    <Text style={styles.classMetaText}>
-                      {cls.startTime} • Coach: {cls.trainerName || 'H4 Trainer'}
+                  <TouchableOpacity
+                    style={{ flex: 1, minWidth: 0, marginRight: 4, paddingVertical: 3 }}
+                    onPress={() => showClassDetails(cls)}
+                    activeOpacity={0.72}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View details for ${cls.name}`}
+                  >
+                    <Text style={styles.classNameText} numberOfLines={2}>{cls.name}</Text>
+                    <Text style={styles.classMetaText} numberOfLines={2}>
+                      {cls.description?.trim() || `${cls.startTime || 'Time TBA'} · Coach: ${cls.trainerName || 'H4 Trainer'}`}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
 
                   {cls.isBooked ? (
                     <TouchableOpacity
@@ -211,7 +248,7 @@ function HomeStudioClassesSection() {
                   ) : (
                     <TouchableOpacity
                       style={[styles.bookTextBtn, isFull && { opacity: 0.5 }]}
-                      onPress={() => handleBook(cls)}
+                      onPress={() => confirmBook(cls)}
                       disabled={isFull || isPending}
                     >
                       <Text style={styles.bookTextBtnLabel}>
@@ -327,17 +364,17 @@ function TodayWorkoutSummaryCard() {
           {/* Quick-stat strip */}
           <View style={styles.wktStatStrip}>
             <View style={styles.wktStat}>
-              <Clock size={13} color="#FF5F1F" strokeWidth={2.5} />
+              <Clock size={13} color="#246B78" strokeWidth={2.5} />
               <Text style={styles.wktStatValue}>45 min</Text>
             </View>
             <View style={styles.wktStatDot} />
             <View style={styles.wktStat}>
-              <Dumbbell size={13} color="#FF5F1F" strokeWidth={2.5} />
+              <Dumbbell size={13} color="#246B78" strokeWidth={2.5} />
               <Text style={styles.wktStatValue}>{exercises.length || 0} exercises</Text>
             </View>
             <View style={styles.wktStatDot} />
             <View style={styles.wktStat}>
-              <Flame size={13} color="#FF5F1F" strokeWidth={2.5} />
+              <Flame size={13} color="#246B78" strokeWidth={2.5} />
               <Text style={styles.wktStatValue}>High</Text>
             </View>
           </View>
@@ -369,7 +406,7 @@ function TodayWorkoutSummaryCard() {
             activeOpacity={0.82}
           >
             <Text style={styles.wktCtaText}>Begin Session</Text>
-            <ChevronRight size={15} color="#FF5F1F" strokeWidth={3} />
+            <ChevronRight size={15} color="#246B78" strokeWidth={3} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -555,9 +592,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#EAE7E1',
+    borderColor: '#D8E1E4',
     overflow: 'hidden',
-    shadowColor: '#1A1510',
+    shadowColor: '#182630',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 12,
@@ -566,7 +603,7 @@ const styles = StyleSheet.create({
   },
   heroAccentBar: {
     width: 4,
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#246B78',
   },
   heroInner: {
     flex: 1,
@@ -574,6 +611,26 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 18,
     gap: 0,
+  },
+  heroOrbitOuter: {
+    position: 'absolute',
+    width: 156,
+    height: 156,
+    borderRadius: 78,
+    borderWidth: 1,
+    borderColor: 'rgba(36,107,120,0.13)',
+    top: -64,
+    right: -42,
+  },
+  heroOrbitInner: {
+    position: 'absolute',
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 1,
+    borderColor: 'rgba(197,106,53,0.16)',
+    top: -40,
+    right: -18,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -584,32 +641,27 @@ const styles = StyleSheet.create({
   heroEyebrow: {
     fontSize: 9,
     fontWeight: '900',
-    color: '#9B9084',
+    color: '#819098',
     letterSpacing: 2,
     fontFamily: theme.typography.caption.fontFamily,
   },
   heroStatusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  heroStatusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 10,
   },
   heroStatusLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     fontFamily: theme.typography.caption.fontFamily,
   },
   heroPlanName: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#1A1510',
+    color: '#182630',
     fontFamily: theme.typography.h1.fontFamily,
     lineHeight: 28,
     letterSpacing: -0.3,
@@ -624,12 +676,12 @@ const styles = StyleSheet.create({
   heroMeta: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#9B9084',
+    color: '#819098',
     fontFamily: theme.typography.caption.fontFamily,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: '#EAE7E1',
+    backgroundColor: '#D8E1E4',
     marginBottom: 14,
   },
   heroStatRow: {
@@ -644,21 +696,21 @@ const styles = StyleSheet.create({
   heroStatNum: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#1A1510',
+    color: '#182630',
     fontFamily: theme.typography.h2.fontFamily,
     lineHeight: 22,
   },
   heroStatLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#9B9084',
+    color: '#819098',
     letterSpacing: 0.5,
     fontFamily: theme.typography.caption.fontFamily,
   },
   heroStatRule: {
     width: 1,
     height: 32,
-    backgroundColor: '#EAE7E1',
+    backgroundColor: '#D8E1E4',
   },
 
   passSkeleton: { height: 140, borderRadius: 20 },
@@ -673,8 +725,8 @@ const styles = StyleSheet.create({
   // Classes (Typographic List)
   classRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
     paddingVertical: 8,
   },
   classThumbnail: {
@@ -694,20 +746,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  classNameText: { fontSize: 14, fontWeight: '800', color: theme.colors.text, fontFamily: theme.typography.h2.fontFamily },
-  classMetaText: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
+  classNameText: { fontSize: 14, fontWeight: '800', color: theme.colors.text, fontFamily: theme.typography.h2.fontFamily, flexShrink: 1 },
+  classMetaText: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 3, flexShrink: 1 },
   bookTextBtn: {
+    minWidth: 68,
+    alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: theme.colors.text,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+    flexShrink: 0,
   },
-  bookTextBtnLabel: { fontSize: 11, fontWeight: '900', color: theme.colors.text, fontFamily: theme.typography.h3.fontFamily },
+  bookTextBtnLabel: { fontSize: 11, fontWeight: '900', color: '#FFFFFF', fontFamily: theme.typography.h3.fontFamily },
   cancelTextBtn: {
+    minWidth: 68,
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
     borderColor: theme.colors.error,
+    borderRadius: 10,
+    flexShrink: 0,
   },
   cancelTextBtnLabel: { fontSize: 11, fontWeight: '900', color: theme.colors.error, fontFamily: theme.typography.h3.fontFamily },
 
@@ -782,7 +841,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    shadowColor: '#FF5F1F',
+    shadowColor: '#246B78',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.10,
     shadowRadius: 16,
@@ -790,7 +849,7 @@ const styles = StyleSheet.create({
   },
   // Orange header band
   wktHeader: {
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#246B78',
     paddingTop: 20,
     paddingBottom: 22,
     paddingHorizontal: 20,
@@ -925,7 +984,7 @@ const styles = StyleSheet.create({
   wktExNum: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#FF5F1F',
+    color: '#246B78',
     width: 22,
     fontFamily: theme.typography.h1.fontFamily,
     letterSpacing: 0.5,
@@ -964,7 +1023,7 @@ const styles = StyleSheet.create({
   wktCtaText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#246B78',
     fontFamily: theme.typography.h3.fontFamily,
     letterSpacing: 0.2,
   },

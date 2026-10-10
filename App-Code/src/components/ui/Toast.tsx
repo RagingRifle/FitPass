@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, Animated, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckCircle2, AlertCircle, AlertTriangle, Info } from 'lucide-react-native';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info } from '@/components/ui/app-icons';
 import { fontFamilies } from '@/design-system/tokens';
 import { useToast } from '@/hooks/useToast';
 

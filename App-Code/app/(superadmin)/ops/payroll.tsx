@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Tabs, useRouter } from 'expo-router';
-import { ArrowLeft, PlusCircle, Sparkles, Settings } from 'lucide-react-native';
+import { ArrowLeft, PlusCircle, Sparkles, Settings } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Select, Button, Modal, Input, EmptyState, Badge } from '@/components/ui';
 import { SafeAreaWrapper } from '@/components/layout';

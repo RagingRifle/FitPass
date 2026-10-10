@@ -182,7 +182,7 @@ const BodyAssessments = () => {
         <div className="fade-in">
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}>🏋️‍♂️ Fitness & InBody Assessment</h2>
+                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}> Fitness & InBody Assessment</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Track body composition history and fitness trends</p>
                 </div>
                 {isStaff && selectedMemberId && (
@@ -295,7 +295,7 @@ const BodyAssessments = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                                 {/* Weight & Muscle Mass Trend */}
                                 <div className="card">
-                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '700' }}>📈 Weight & Muscle Mass Trend (kg)</h3>
+                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '700' }}> Weight & Muscle Mass Trend (kg)</h3>
                                     <div style={{ width: '100%', height: 260 }}>
                                         <ResponsiveContainer width="100%" height={260}>
                                             <LineChart data={chartData}>
@@ -313,7 +313,7 @@ const BodyAssessments = () => {
 
                                 {/* Body Fat & BMI Trend */}
                                 <div className="card">
-                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '700' }}>🔥 Body Fat % & BMI Trend</h3>
+                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: '700' }}> Body Fat % & BMI Trend</h3>
                                     <div style={{ width: '100%', height: 260 }}>
                                         <ResponsiveContainer width="100%" height={260}>
                                             <LineChart data={chartData}>
@@ -332,7 +332,7 @@ const BodyAssessments = () => {
 
                             {/* History Table */}
                             <div className="card">
-                                <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}>📜 Historical Assessment Records</h3>
+                                <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}> Historical Assessment Records</h3>
                                 <div className="table-container">
                                     <table>
                                         <thead>

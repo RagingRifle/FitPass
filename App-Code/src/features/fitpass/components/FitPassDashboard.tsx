@@ -23,12 +23,14 @@ import {
   Activity,
   Flame,
   BadgeCheck,
-} from 'lucide-react-native';
+} from '@/components/ui/app-icons';
 import { Skeleton } from '@/components/ui';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { useSessionStatus, usePartnerGyms } from '../api/fitpass.api';
 import { useAuth } from '@/features/auth';
+import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const DEFAULT_IMAGE =
   'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop&q=80';
@@ -44,9 +46,7 @@ function Header({ onScanQR }: { onScanQR: () => void }) {
     <View style={styles.header}>
       <View style={styles.headerLeft}>
         <View style={styles.avatarWrap}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(user?.name?.[0] ?? 'F').toUpperCase()}</Text>
-          </View>
+          <ProfileAvatar size={48} nameFallback="F" />
           <View style={styles.onlineDot} />
         </View>
         <View>
@@ -87,6 +87,12 @@ function PassCard() {
 
   return (
     <View style={styles.passCard}>
+      <LinearGradient
+        colors={['#E8EEFC', '#FFFFFF', '#F1F4FB']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={styles.passCardTop}>
         <View>
           <View style={styles.passBadgeRow}>
@@ -109,12 +115,7 @@ function PassCard() {
           onPress={() => router.push('/(fitpass)/plans')}
           activeOpacity={0.8}
         >
-          <View
-            style={[
-              styles.statusDot,
-              { backgroundColor: hasPlan ? '#4CAF50' : theme.colors.primary },
-            ]}
-          />
+          <BadgeCheck size={14} color={hasPlan ? theme.colors.success : theme.colors.primary} />
           <Text
             style={[
               styles.statusText,
@@ -454,6 +455,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     gap: 16,
+    overflow: 'hidden',
   },
   passCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   passBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -480,7 +482,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: {
     fontFamily: fontFamilies.header,
     fontSize: 11,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Skeleton } from '@/components/ui';
 import { useH4Payments } from '../api/h4.api';
-import { CreditCard, Award } from 'lucide-react-native';
+import { CreditCard, Award } from '@/components/ui/app-icons';
 import { H4TopHeader } from './H4TopHeader';
 
 export function H4PaymentHistory() {
