@@ -28,6 +28,11 @@ startCronJobs();
 const app = express();
 const requestId = require('./middleware/requestId');
 
+// The API sits behind the local Nginx reverse proxy on the VPS. Trust exactly
+// that one hop so Express and express-rate-limit use the original client IP
+// from X-Forwarded-For instead of treating every request as localhost.
+app.set('trust proxy', 1);
+
 // --- Request ID Context (Phase 6.2) ---
 app.use(requestId);
 
