@@ -4,9 +4,9 @@ import { AuthContext } from '../context/AuthContext';
 import { Shield, Award, Dumbbell, Building, User, Users, ArrowLeft } from 'lucide-react';
 import PasswordInput from '../components/ui/PasswordInput';
 
-const Login = () => {
-    const [currentView, setCurrentView] = useState('main'); // 'main' | 'admin_sub' | 'gym_sub' | 'gym_admin_branch_sub' | 'member_sub' | 'login_form'
-    const [selectedRole, setSelectedRole] = useState(null);
+const Login = ({ portal, restrictedAdmin = false }) => {
+    const [currentView, setCurrentView] = useState(portal ? 'login_form' : restrictedAdmin ? 'admin_sub' : 'main');
+    const [selectedRole, setSelectedRole] = useState(portal || null);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -63,7 +63,7 @@ const Login = () => {
             const isPartnerAdmin = role === 'partner' || (role === 'admin' && !isH4Gym);
 
             if (role === 'superadmin') {
-                navigate('/dashboard');
+                navigate('/superadmin/dashboard');
             } else if (role === 'fitpass_admin') {
                 navigate('/superadmin/dashboard');
             } else if (isPartnerAdmin) {
@@ -280,10 +280,10 @@ const Login = () => {
                     zIndex: 10,
                     textAlign: 'center'
                 }}>
-                    <button type="button" onClick={handleBack} className="back-btn">
+                    {!restrictedAdmin && <button type="button" onClick={handleBack} className="back-btn">
                         <ArrowLeft size={16} />
                         <span>Back to Main Menu</span>
-                    </button>
+                    </button>}
 
                     <h2 style={{ color: 'var(--text-primary)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit', marginTop: '1rem' }}>Admin Classifications</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500, marginBottom: '1.5rem' }}>Choose your admin portal type</p>
@@ -342,6 +342,11 @@ const Login = () => {
                                 </p>
                             </div>
                         </button>
+
+                        <button type="button" onClick={() => setCurrentView('gym_sub')} className="portal-card">
+                            <div className="portal-icon-wrapper" style={{ color: 'var(--primary)' }}><Building size={22} /></div>
+                            <div><h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 700, marginBottom: '0.2rem' }}>Branch Admin</h4><p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: '1.3' }}>Sign in to a partner or H4 branch workspace</p></div>
+                        </button>
                     </div>
                 </div>
             )}
@@ -358,10 +363,10 @@ const Login = () => {
                     zIndex: 10,
                     textAlign: 'center'
                 }}>
-                    <button type="button" onClick={handleBack} className="back-btn">
+                    {!restrictedAdmin && <button type="button" onClick={handleBack} className="back-btn">
                         <ArrowLeft size={16} />
                         <span>Back to Main Menu</span>
-                    </button>
+                    </button>}
 
                     <h2 style={{ color: 'var(--text-primary)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit', marginTop: '1rem' }}>Gym Roles Classifications</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500, marginBottom: '1.5rem' }}>Select your gym classification</p>
@@ -385,7 +390,7 @@ const Login = () => {
                             </div>
                         </button>
 
-                        <button
+                        {!restrictedAdmin && <button
                             type="button"
                             onClick={() => { setSelectedRole('staff'); setCurrentView('login_form'); }}
                             className="portal-card"
@@ -401,7 +406,7 @@ const Login = () => {
                                     Coaches, trainers, receptionists, and staff members
                                 </p>
                             </div>
-                        </button>
+                        </button>}
                     </div>
                 </div>
             )}
@@ -418,10 +423,10 @@ const Login = () => {
                     zIndex: 10,
                     textAlign: 'center'
                 }}>
-                    <button type="button" onClick={handleBack} className="back-btn">
+                    {!portal && !restrictedAdmin && <button type="button" onClick={() => navigate('/')} className="back-btn">
                         <ArrowLeft size={16} />
                         <span>Back</span>
-                    </button>
+                    </button>}
 
                     <h2 style={{ color: 'var(--text-primary)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit', marginTop: '1rem' }}>Gym Admin Branch</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500, marginBottom: '1.5rem' }}>Select your branch type</p>
@@ -478,10 +483,10 @@ const Login = () => {
                     zIndex: 10,
                     textAlign: 'center'
                 }}>
-                    <button type="button" onClick={handleBack} className="back-btn">
+                    {!restrictedAdmin && <button type="button" onClick={handleBack} className="back-btn">
                         <ArrowLeft size={16} />
                         <span>Back to Main Menu</span>
-                    </button>
+                    </button>}
 
                     <h2 style={{ color: 'var(--text-primary)', fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit', marginTop: '1rem' }}>Member Classification</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500, marginBottom: '1.5rem' }}>Select your membership type</p>
@@ -601,6 +606,7 @@ const Login = () => {
                     >
                         {loading ? 'Authenticating...' : 'Sign In to Dashboard'}
                     </button>
+                    {portal === 'fitpass_member' && <p style={{ textAlign: 'center', marginTop: '1.25rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>New to FitPass? <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 700 }}>Create an account</Link></p>}
                 </form>
             )}
         </div>

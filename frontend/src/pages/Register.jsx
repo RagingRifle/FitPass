@@ -6,23 +6,33 @@ const Register = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [gymName, setGymName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+    const [verificationPending, setVerificationPending] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { register } = useContext(AuthContext);
+    const { register, verifyRegistration } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
-        const result = await register(name, email, password, gymName);
+        const result = await register(name, email, password, phone);
         setLoading(false);
         if (result.success) {
-            navigate('/dashboard');
+            setRegisteredEmail(result.email);
+            setVerificationPending(true);
         } else {
             setError(result.message);
         }
+    };
+
+    const verify = async (event) => {
+        event.preventDefault(); setError(''); setLoading(true);
+        const result = await verifyRegistration(registeredEmail, otp); setLoading(false);
+        if (result.success) navigate('/member-dashboard'); else setError(result.message);
     };
 
     return (
@@ -36,7 +46,7 @@ const Register = () => {
             position: 'relative',
             padding: '2rem'
         }}>
-            <form onSubmit={handleSubmit} className="fade-in" style={{
+            <form onSubmit={verificationPending ? verify : handleSubmit} className="fade-in" style={{
                 padding: '3rem',
                 borderRadius: 'var(--radius-xl)',
                 background: 'var(--bg)',
@@ -46,16 +56,16 @@ const Register = () => {
                 maxWidth: '480px',
                 zIndex: 10
             }}>
-                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                     <div style={{
                         width: '60px', height: '60px', background: 'var(--primary)', borderRadius: 'var(--radius-lg)',
                         margin: '0 auto 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: 'var(--shadow-sm)', transform: 'rotate(5deg)', border: '1px solid var(--border)'
                     }}>
-                        <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-inverse)' }}>G</span>
+                        <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-inverse)' }}>F</span>
                     </div>
-                    <h2 style={{ color: 'var(--text-primary)', fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit' }}>Join GYM CRM PRO</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Empower your fitness business today.</p>
+                    <h2 style={{ color: 'var(--text-primary)', fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem', fontFamily: 'Outfit' }}>{verificationPending ? 'Check your inbox' : 'Create your FitPass'}</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>{verificationPending ? `Enter the 6-digit code sent to ${registeredEmail}.` : 'One account for every way you want to move.'}</p>
                 </div>
 
                 {error && (
@@ -67,8 +77,8 @@ const Register = () => {
                     </div>
                 )}
 
-                <div className="input-group">
-                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Owner Name</label>
+                {!verificationPending && <><div className="input-group">
+                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Your name</label>
                     <input
                         type="text"
                         className="input"
@@ -80,31 +90,24 @@ const Register = () => {
                 </div>
 
                 <div className="input-group">
-                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Gym Name</label>
-                    <input
-                        type="text"
-                        className="input"
-                        placeholder="Titan Fitness"
-                        value={gymName}
-                        onChange={(e) => setGymName(e.target.value)}
-                        required
-                    />
-                </div>
-
-                <div className="input-group">
                     <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Email Address</label>
                     <input
                         type="email"
                         className="input"
-                        placeholder="owner@gym.com"
+                        placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
                     />
                 </div>
 
+                <div className="input-group">
+                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Phone number</label>
+                    <input type="tel" className="input" placeholder="98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                </div>
+
                 <div className="input-group" style={{ marginBottom: '2.5rem' }}>
-                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Create Password</label>
+                    <label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Create password</label>
                     <input
                         type="password"
                         className="input"
@@ -114,6 +117,9 @@ const Register = () => {
                         required
                     />
                 </div>
+                </>}
+
+                {verificationPending && <div className="input-group"><label style={{ display: 'block', color: 'var(--text-secondary)', marginBottom: '0.6rem', fontSize: '0.875rem', fontWeight: '600', fontFamily: 'Outfit' }}>Verification code</label><input className="input" inputMode="numeric" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} required placeholder="6-digit code" /></div>}
 
                 <button
                     type="submit"
@@ -126,11 +132,11 @@ const Register = () => {
                     }}
                     disabled={loading}
                 >
-                    {loading ? 'Setting up...' : 'Create Gym Account'}
+                    {loading ? 'Please wait…' : verificationPending ? 'Verify and create account' : 'Create FitPass account'}
                 </button>
 
                 <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '2rem' }}>
-                    Member already? <Link to="/login" style={{ color: 'var(--text-primary)', fontWeight: '700', textDecoration: 'none', borderBottom: '2px solid var(--primary)' }}>Sign In to Portal</Link>
+                    Member already? <Link to="/member-login" style={{ color: 'var(--text-primary)', fontWeight: '700', textDecoration: 'none', borderBottom: '2px solid var(--primary)' }}>Sign in</Link>
                 </p>
             </form>
         </div>

@@ -1,20 +1,9 @@
-import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import AppHeader from './AppHeader';
 import { SidebarProvider, useSidebar } from '../context/SidebarContext';
 
 const Layout = ({ children }) => {
     const { mobileOpen, closeMobile } = useSidebar();
-    const [theme, setTheme] = useState(() => {
-        const savedTheme = localStorage.getItem('gymcrm-theme');
-        return ['light', 'dark', 'hybrid'].includes(savedTheme) ? savedTheme : 'light';
-    });
-
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('gymcrm-theme', theme);
-    }, [theme]);
-
     return (
         <div className="app-container">
             <Sidebar />
@@ -23,12 +12,7 @@ const Layout = ({ children }) => {
                 onClick={closeMobile}
             />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                <AppHeader
-                    theme={theme}
-                    onThemeToggle={() => setTheme(current => (
-                        current === 'light' ? 'dark' : current === 'dark' ? 'hybrid' : 'light'
-                    ))}
-                />
+                <AppHeader />
                 <main className="main-content fade-in">
                     <div className="page-content">
                         {children}

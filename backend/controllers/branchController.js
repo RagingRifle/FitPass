@@ -6,6 +6,17 @@ const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { logAudit } = require('../utils/auditLogger');
 
+// Public branch directory used only to let staff choose their workplace at sign in.
+const getPublicBranches = catchAsync(async (req, res, next) => {
+    try {
+        const branches = await Branch.find({}).lean();
+        const gyms = await Promise.all([...new Set(branches.map((branch) => String(branch.gymId || '')).filter(Boolean))]
+            .map(async (id) => [id, await require('../models/Gym').findById(id).lean()]));
+        const gymNames = new Map(gyms.map(([id, gym]) => [id, gym?.name || 'Gym']));
+        res.json(branches.map(({ _id, id, name, gymId }) => ({ id: _id || id, name, gymId, gymName: gymNames.get(String(gymId)) || 'Gym' })));
+    } catch (err) { next(err); }
+});
+
 // @desc    Get all branches for a gym
 // @route   GET /api/branches
 const getBranches = catchAsync(async (req, res, next) => {
@@ -143,4 +154,4 @@ const getBranchMembers = catchAsync(async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
-module.exports = { getBranches, createBranch, updateBranch, deleteBranch, getBranchMembers };
+module.exports = { getPublicBranches, getBranches, createBranch, updateBranch, deleteBranch, getBranchMembers };

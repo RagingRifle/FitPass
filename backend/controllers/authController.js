@@ -427,10 +427,10 @@ const authUser = catchAsync(async (req, res, next) => {
                 throw new Error('Access Denied: This portal is restricted to Fitpass Partner Admins.');
             }
         } else if (portalType === 'staff') {
-            const isStaff = ['superadmin', 'trainer', 'partner', 'admin', 'receptionist', 'fitpass_admin', 'h4_admin'].includes(userRole);
+            const isStaff = ['trainer', 'receptionist'].includes(userRole);
             if (!isStaff) {
                 res.status(403);
-                throw new Error('Access Denied: This portal is restricted to Staffs and Partners.');
+                throw new Error('Access Denied: This portal is restricted to branch staff and trainers.');
             }
         } else if (portalType === 'h4' || portalType === 'h4_member') {
             const isH4Member = userRole === 'member' && isH4Gym;

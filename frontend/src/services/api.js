@@ -28,7 +28,8 @@ API.interceptors.response.use(
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('user');
             localStorage.removeItem('token');
-            if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            const publicAuthPaths = ['/login', '/member-login', '/h4/login', '/staff-login', '/control-room', '/register'];
+            if (!publicAuthPaths.includes(window.location.pathname)) {
                 window.location.href = '/login';
             }
         }

@@ -21,12 +21,17 @@ const getMetroHostIp = () => {
 
 const hostIp = getMetroHostIp() || 'localhost';
 
-const DEV_API_URL = process.env.EXPO_PUBLIC_API_URL || Platform.select({
-  android: `http://${hostIp}:5000/api/v1`,
-  ios: `http://${hostIp}:5000/api/v1`,
-  web: 'http://localhost:5000/api/v1',
-  default: `http://${hostIp}:5000/api/v1`,
-});
+// Release builds must always use the VPS. Keep the environment override for
+// Metro/dev work, where developers may point at a local backend.
+const VPS_API_URL = 'http://50.6.44.247/api/v1';
+const DEV_API_URL = __DEV__
+  ? process.env.EXPO_PUBLIC_API_URL || Platform.select({
+      android: `http://${hostIp}:5000/api/v1`,
+      ios: `http://${hostIp}:5000/api/v1`,
+      web: 'http://localhost:5000/api/v1',
+      default: `http://${hostIp}:5000/api/v1`,
+    })
+  : VPS_API_URL;
 
 if (__DEV__) {
   console.log('[API_CLIENT] Configured Base URL:', DEV_API_URL);

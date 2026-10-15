@@ -23,8 +23,28 @@ export const AuthProvider = ({ children }) => {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             
-            let division = localStorage.getItem('activeDivision');
-            if (parsedUser.role === 'superadmin' || parsedUser.role === 'h4_admin' || (parsedUser.gymName && parsedUser.gymName.toUpperCase() === 'H4') || parsedUser.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
+            let division = localStorage.getItem('activeDivision') || 'fitpass';
+            if (parsedUser.role === 'superadmin') {
+                if (window.location.pathname === '/dashboard') {
+                    division = 'h4';
+                    if (!localStorage.getItem('selectedGymId')) {
+                        API.get('/superadmin/h4-gym').then(({ data: h4Gym }) => {
+                            const h4Id = h4Gym?._id || h4Gym?.id;
+                            if (h4Id) {
+                                localStorage.setItem('selectedGymId', h4Id);
+                                setSelectedGymId(h4Id);
+                            }
+                        }).catch(() => {});
+                    }
+                }
+                else if (window.location.pathname.startsWith('/superadmin/')) {
+                    division = 'fitpass';
+                    localStorage.removeItem('selectedGymId');
+                    localStorage.removeItem('selectedBranchId');
+                    setSelectedGymId('');
+                    setSelectedBranchId('');
+                }
+            } else if (parsedUser.role === 'h4_admin' || (parsedUser.gymName && parsedUser.gymName.toUpperCase() === 'H4') || parsedUser.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
                 division = 'h4';
             } else if (parsedUser.role === 'fitpass_admin') {
                 division = 'fitpass';
@@ -89,7 +109,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('token', data.token);
             
             let division = 'fitpass';
-            if (data.role === 'superadmin' || data.role === 'h4_admin' || (data.gymName && data.gymName.toUpperCase() === 'H4') || data.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
+            if (data.role === 'h4_admin' || (data.gymName && data.gymName.toUpperCase() === 'H4') || data.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
                 division = 'h4';
             } else if (data.role === 'fitpass_admin') {
                 division = 'fitpass';
@@ -98,16 +118,10 @@ export const AuthProvider = ({ children }) => {
             setActiveDivision(division);
 
             if (data.role === 'superadmin') {
-                try {
-                    const { data: h4Gym } = await API.get('/superadmin/h4-gym');
-                    if (h4Gym) {
-                        const h4Id = h4Gym._id || h4Gym.id;
-                        localStorage.setItem('selectedGymId', h4Id);
-                        setSelectedGymId(h4Id);
-                    }
-                } catch (err) {
-                    console.error('Failed to set default H4 gym on superadmin login:', err);
-                }
+                localStorage.removeItem('selectedGymId');
+                localStorage.removeItem('selectedBranchId');
+                setSelectedGymId('');
+                setSelectedBranchId('');
             } else if (data.gymId) {
                 localStorage.setItem('selectedGymId', data.gymId);
                 setSelectedGymId(data.gymId);
@@ -128,26 +142,25 @@ export const AuthProvider = ({ children }) => {
         }
     };
  
-    const register = async (name, email, password, gymName) => {
+    const register = async (name, email, password, phone) => {
         try {
-            const { data } = await API.post('/auth/register', { name, email, password, gymName });
+            const { data } = await API.post('/auth/register', { name, email, password, phone });
+            return { success: true, email: data.email || email };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || 'Registration failed' };
+        }
+    };
+
+    const verifyRegistration = async (email, otp) => {
+        try {
+            const { data } = await API.post('/auth/verify-otp', { email, otp });
             setUser(data);
             localStorage.setItem('user', JSON.stringify(data));
             localStorage.setItem('token', data.token);
-            if (data.gymId) {
-                localStorage.setItem('selectedGymId', data.gymId);
-                setSelectedGymId(data.gymId);
-            }
-            if (data.branchId) {
-                localStorage.setItem('selectedBranchId', data.branchId);
-                setSelectedBranchId(data.branchId);
-            } else {
-                localStorage.removeItem('selectedBranchId');
-                setSelectedBranchId('');
-            }
-            return { success: true };
+            if (data.gymId) { localStorage.setItem('selectedGymId', data.gymId); setSelectedGymId(data.gymId); }
+            return { success: true, user: data };
         } catch (error) {
-            return { success: false, message: error.response?.data?.message || 'Registration failed' };
+            return { success: false, message: error.response?.data?.message || 'Verification failed' };
         }
     };
 
@@ -190,6 +203,7 @@ export const AuthProvider = ({ children }) => {
             loading, 
             login, 
             register, 
+            verifyRegistration,
             logout, 
             selectedGymId, 
             changeSelectedGym, 

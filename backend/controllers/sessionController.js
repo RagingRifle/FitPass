@@ -395,7 +395,21 @@ const getSessionStatus = catchAsync(async (req, res, next) => {
   try {
     const member = await loadMemberForUser(req);
     if (!member) {
-      return res.status(404).json({ success: false, message: 'Member profile not found.' });
+      // A FitPass account may be created before its first subscription. Keep
+      // the portal usable so the member can browse and purchase a plan; the
+      // Member row is created after the first successful plan purchase.
+      return res.json({
+        success: true,
+        sessionsRemaining: 0,
+        sessionsTotal: 0,
+        currentSessionEndsAt: null,
+        currentSessionGymId: null,
+        cooldownEndsAt: null,
+        planName: null,
+        expiryDate: null,
+        planStatus: 'Inactive',
+        lastCheckInAt: null,
+      });
     }
 
     const now = new Date();

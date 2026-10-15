@@ -2,8 +2,9 @@ import { useContext, useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
-import { Search, Sun, Moon, Contrast, Bell, Menu, ChevronDown, X } from 'lucide-react';
+import { Search, Bell, Menu, ChevronDown, X, Sun, Moon } from 'lucide-react';
 import API from '../services/api';
+import { useTheme } from '../context/ThemeContext';
 
 const PAGE_TITLES = {
     '/dashboard': 'Dashboard Overview',
@@ -27,7 +28,8 @@ const PAGE_TITLES = {
     '/partner/fitpass-leads': 'FitPass Member Audit & Leads',
 };
 
-const AppHeader = ({ onThemeToggle, theme }) => {
+const AppHeader = () => {
+    const { theme, toggleTheme } = useTheme();
     const { user, selectedGymId, changeSelectedGym, activeDivision, selectedBranchId, changeSelectedBranch } = useContext(AuthContext);
     const { toggleMobile } = useSidebar();
     const location = useLocation();
@@ -359,14 +361,13 @@ const AppHeader = ({ onThemeToggle, theme }) => {
 
             <div className="header-right">
                 <button
-                    className="header-btn"
-                    onClick={onThemeToggle}
-                    title={`Current theme: ${theme}. Click to cycle themes.`}
-                    aria-label={`Current theme: ${theme}. Click to cycle themes.`}
+                    className="header-btn theme-toggle-btn"
+                    onClick={toggleTheme}
+                    title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                    aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                 >
-                    {theme === 'light' ? <Sun size={20} /> : theme === 'dark' ? <Moon size={20} /> : <Contrast size={20} />}
+                    {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                 </button>
-
                 {/* Notification Bell */}
                 <div ref={notifRef} style={{ position: 'relative' }}>
                     <button

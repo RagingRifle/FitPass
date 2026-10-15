@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getBranches, createBranch, updateBranch, deleteBranch, getBranchMembers } = require('../controllers/branchController');
+const { getPublicBranches, getBranches, createBranch, updateBranch, deleteBranch, getBranchMembers } = require('../controllers/branchController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
+router.get('/public', getPublicBranches);
 router.use(protect);
 router.route('/')
     .get(authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'partner'), getBranches)

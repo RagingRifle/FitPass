@@ -79,7 +79,11 @@ export const LoginForm: React.FC = () => {
         toast.show('Verification code sent to your email', 'success');
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || 'Verification failed';
+      const endpoint = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+      const message = error.response?.data?.message
+        || (error.request && `No response from ${endpoint || 'the API server'} (${error.message || 'network error'}).`)
+        || error.message
+        || 'Verification failed';
       toast.show(message, 'error');
     } finally {
       setLoading(false);
@@ -342,6 +346,15 @@ export const LoginForm: React.FC = () => {
                       )}
                     </LinearGradient>
                   </TouchableOpacity>
+                  {!isH4 && (
+                    <TouchableOpacity
+                      style={styles.backLink}
+                      onPress={() => router.push('/register' as any)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={styles.backLinkText}>New to FitPass? Create an account</Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : showOTPField ? (
                 <>

@@ -208,7 +208,8 @@ export const useAuth = create<AuthState>((set, get) => {
             message = resData;
           }
         } else if (error.request) {
-          message = 'No response from server. Verify the backend API is running and reachable.';
+          const endpoint = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
+          message = `No response from ${endpoint || 'the API server'} (${error.message || 'network error'}).`;
         } else {
           message = error.message || 'An unexpected error occurred';
         }

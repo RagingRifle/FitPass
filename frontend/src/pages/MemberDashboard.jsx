@@ -3,6 +3,11 @@ import { QRCodeCanvas } from 'qrcode.react';
 import API from '../services/api';
 import { useToast } from '../components/ui/Toast';
 import PasswordInput from '../components/ui/PasswordInput';
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
+import { Activity, ArrowUpRight, CalendarDays, Flame, MapPin, Sparkles } from 'lucide-react';
+import './fitpass.css';
+import './member-dashboard.css';
+import './member-featured.css';
 
 const MemberDashboard = () => {
     const toast = useToast();
@@ -234,20 +239,96 @@ const MemberDashboard = () => {
     const inCooldown = sessionStatus?.inCooldown;
     // amountDue is already computed above
 
+    const activityRows = isFitPrimeMember
+        ? fitPassHistory.filter((row) => row.accessStatus === 'Success').map((row) => row.checkInTimestamp)
+        : attendance.map((row) => row.date);
+    const today = new Date();
+    const weekDays = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(today);
+        date.setDate(today.getDate() - (6 - index));
+        return { date, key: date.toLocaleDateString('en-CA'), label: date.toLocaleDateString('en-IN', { weekday: 'short' }) };
+    });
+    const weeklyActivity = weekDays.map((day) => ({
+        day: day.label,
+        visits: activityRows.filter((value) => value && new Date(value).toLocaleDateString('en-CA') === day.key).length,
+    }));
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyVisits = activityRows.filter((value) => value && new Date(value) >= monthStart).length;
+    const visitDates = new Set(activityRows.filter(Boolean).map((value) => new Date(value).toLocaleDateString('en-CA')));
+    let streak = 0;
+    const streakCursor = new Date(today);
+    if (!visitDates.has(streakCursor.toLocaleDateString('en-CA'))) streakCursor.setDate(streakCursor.getDate() - 1);
+    while (visitDates.has(streakCursor.toLocaleDateString('en-CA'))) {
+        streak += 1;
+        streakCursor.setDate(streakCursor.getDate() - 1);
+    }
+    const successfulVisits = activityRows.length;
+    const progressPercent = isFitPrimeMember
+        ? (sessionStatus?.sessionsTotal ? Math.max(0, Math.min(100, (sessionsRemaining / sessionStatus.sessionsTotal) * 100)) : 0)
+        : (plan?.expiryDate ? Math.max(0, Math.min(100, (daysLeft / 30) * 100)) : 0);
+
     return (
-        <div className="fade-in">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                    Welcome back, {plan?.name}!
-                </h1>
-                <button
-                    onClick={openProfileEditModal}
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'var(--border-default)', color: 'var(--text-primary)', border: '1px solid var(--border-default)' }}
-                >
-                     Edit Profile
-                </button>
-            </div>
+        <div className="fade-in fitpass-member-dashboard">
+            <section className="member-overview-hero">
+                <div className="member-overview-copy">
+                    <div className="member-overview-eyebrow"><Sparkles size={14} /> {isFitPrimeMember ? 'FITPASS NETWORK' : 'YOUR H4 MEMBERSHIP'}</div>
+                    <h1>Good {today.getHours() < 12 ? 'morning' : today.getHours() < 17 ? 'afternoon' : 'evening'},<br /><em>{(plan?.name || 'athlete').split(' ')[0]}.</em></h1>
+                    <p>Your movement, membership and progress — all in one place.</p>
+                    <div className="member-overview-actions">
+                        {isFitPrimeMember && <a href="/explore-gyms">Explore gyms <ArrowUpRight size={15} /></a>}
+                        <a href="/member-classes">Find a class <ArrowUpRight size={15} /></a>
+                        <button type="button" className="member-profile-action" onClick={openProfileEditModal}>Edit profile</button>
+                    </div>
+                </div>
+                <div className="member-pass-summary">
+                    <div className="member-pass-summary-top"><span>{isFitPrimeMember ? 'FITPASS PASS' : 'MEMBERSHIP PASS'}</span><span className="member-active-pill"><i />{plan?.status || 'No plan'}</span></div>
+                    <strong>{plan?.planId?.name || 'Choose your next plan'}</strong>
+                    <div className="member-pass-meta">{isFitPrimeMember ? `${sessionsRemaining} sessions remaining` : plan?.expiryDate ? `Valid until ${new Date(plan.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Your training journey starts here'}</div>
+                    <div className="member-pass-progress"><span style={{ width: `${progressPercent}%` }} /></div>
+                    <div className="member-pass-progress-label"><span>{isFitPrimeMember ? 'SESSION BALANCE' : 'MEMBERSHIP STATUS'}</span><span>{isFitPrimeMember ? `${sessionsRemaining} left` : daysLeft > 0 ? `${daysLeft} days left` : 'Check plan'}</span></div>
+                </div>
+                <div className="member-overview-mark"><Activity size={24} /></div>
+            </section>
+
+            <section className="member-metric-grid" aria-label="Your activity summary">
+                <article className="member-metric-card"><span className="member-metric-icon"><Activity size={17} /></span><small>VISITS THIS MONTH</small><strong>{monthlyVisits}</strong><span>{successfulVisits} all-time check-ins</span></article>
+                <article className="member-metric-card"><span className="member-metric-icon"><Flame size={17} /></span><small>ACTIVE STREAK</small><strong>{streak}<i> days</i></strong><span>{streak ? 'Keep your rhythm going' : 'Your next visit starts it'}</span></article>
+                <article className="member-metric-card"><span className="member-metric-icon"><CalendarDays size={17} /></span><small>THIS WEEK</small><strong>{weeklyActivity.reduce((sum, item) => sum + item.visits, 0)}<i> visits</i></strong><span>Across the last 7 days</span></article>
+                <article className="member-metric-card"><span className="member-metric-icon"><MapPin size={17} /></span><small>{isFitPrimeMember ? 'NETWORK ACCESS' : 'MEMBERSHIP DUE'}</small><strong>{isFitPrimeMember ? gyms.length : `₹${amountDue.toLocaleString('en-IN')}`}</strong><span>{isFitPrimeMember ? 'partner gyms to explore' : amountDue > 0 ? 'Balance remaining' : 'All caught up'}</span></article>
+            </section>
+
+            <section className="member-analytics-grid">
+                <article className="member-activity-panel">
+                    <div className="member-panel-heading"><div><small>YOUR CONSISTENCY</small><h2>Weekly activity</h2></div><span className="member-panel-tag"><i /> LAST 7 DAYS</span></div>
+                    <div className="member-chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={weeklyActivity} margin={{ top: 12, right: 8, left: -20, bottom: 0 }}>
+                        <defs><linearGradient id="memberActivityFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e9b91e" stopOpacity={0.32}/><stop offset="100%" stopColor="#e9b91e" stopOpacity={0.02}/></linearGradient></defs>
+                        <CartesianGrid vertical={false} stroke="#e9e3d5" strokeDasharray="3 5" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#817c6f', fontSize: 11 }} dy={9}/>
+                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#817c6f', fontSize: 10 }} width={30}/>
+                        <Tooltip contentStyle={{ border: '1px solid #e7e1d4', borderRadius: 8, background: '#fffef9', fontSize: 12 }} />
+                        <Area type="monotone" dataKey="visits" name="Check-ins" stroke="#c69b08" strokeWidth={3} fill="url(#memberActivityFill)" activeDot={{ r: 5, fill: '#171817', stroke: '#f1c934', strokeWidth: 3 }}/>
+                    </AreaChart></ResponsiveContainer></div>
+                    <div className="member-chart-footer"><span>One visit at a time adds up.</span><b>{weeklyActivity.reduce((sum, item) => sum + item.visits, 0)} check-ins this week</b></div>
+                </article>
+                <article className="member-next-panel"><div className="member-panel-heading"><div><small>GOOD TO KNOW</small><h2>Your next step</h2></div></div>
+                    <div className="member-next-content"><span className="member-next-icon"><CalendarDays size={20}/></span><div><b>{plan?.status === 'Frozen' ? 'Your plan is paused' : daysLeft <= 7 && !isFitPrimeMember ? 'Renewal is coming up' : isFitPrimeMember && inCooldown ? 'Rest, then go again' : 'Keep building your routine'}</b><p>{plan?.status === 'Frozen' ? 'Resume your membership when you are ready to return.' : daysLeft <= 7 && !isFitPrimeMember ? `Your plan ${daysLeft > 0 ? `expires in ${daysLeft} days` : 'has expired'}. Renew to keep your momentum.` : isFitPrimeMember && inCooldown ? 'Your cooldown is active. Your next check-in opens after the timer ends.' : 'Check your weekly activity and explore a new way to train.'}</p></div></div>
+                    {amountDue > 0 && <button className="member-next-button" onClick={openPaymentModal}>Clear ₹{amountDue.toLocaleString('en-IN')} balance <ArrowUpRight size={15}/></button>}
+                    {amountDue <= 0 && <a className="member-next-button" href={isFitPrimeMember ? '/explore-gyms' : '/member-classes'}>{isFitPrimeMember ? 'Find your next gym' : 'Explore classes'} <ArrowUpRight size={15}/></a>}
+                </article>
+            </section>
+
+            {isFitPrimeMember && gyms.length > 0 && <section className="member-featured-section">
+                <div className="member-panel-heading"><div><small>THE FITPASS NETWORK</small><h2>Places to move next</h2></div><a href="/explore-gyms">Explore all gyms <ArrowUpRight size={15}/></a></div>
+                <div className="member-featured-grid">{gyms.slice(0, 3).map((gym) => {
+                    const image = gym.images?.[0] || gym.imageUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80';
+                    return <a className="member-featured-gym" href="/explore-gyms" key={gym.id || gym._id || gym.name}>
+                        <img src={image} alt={gym.name || 'FitPass partner gym'} loading="lazy"/>
+                        <span className="member-featured-overlay"/>
+                        <span className="member-featured-content"><small><MapPin size={12}/> FITPASS PARTNER</small><b>{gym.name}</b><span>{gym.address || 'Explore this gym'}</span></span>
+                        <ArrowUpRight className="member-featured-arrow" size={18}/>
+                    </a>;
+                })}</div>
+            </section>}
 
             {/* Top row: Plan + Balance + QR */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -435,7 +516,7 @@ const MemberDashboard = () => {
             </div>
 
             {/* History Tables */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+            <div className="member-history-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
                 {/* Attendance or FitPass History */}
                 {isFitPrimeMember ? (
                     <div className="card">

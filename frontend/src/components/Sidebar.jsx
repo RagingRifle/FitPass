@@ -152,6 +152,10 @@ const Sidebar = () => {
     const handleDivisionChange = async (division) => {
         changeActiveDivision(division);
         if (division === 'fitpass') {
+            if (role === 'superadmin') {
+                changeSelectedGym('');
+                changeSelectedBranch('');
+            }
             navigate('/superadmin/dashboard');
         } else {
             try {
@@ -160,8 +164,8 @@ const Sidebar = () => {
                 if (data) {
                     const h4GymId = data._id || data.id;
                     changeSelectedGym(h4GymId);
+                    changeSelectedBranch('');
                     navigate('/dashboard');
-                    window.location.reload();
                 } else {
                     navigate('/superadmin/gyms');
                 }
@@ -209,7 +213,6 @@ const Sidebar = () => {
                 
                 const gymMgmtItems = [
                     { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
-
                     { name: `Members${suffix}`, path: '/members', icon: Users },
                     { name: `Leads${suffix}`, path: '/leads', icon: Target },
                     { name: `Plans${suffix}`, path: '/plans', icon: Package },
