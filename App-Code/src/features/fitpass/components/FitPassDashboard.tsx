@@ -56,10 +56,10 @@ function Header({ onScanQR }: { onScanQR: () => void }) {
       </View>
       <View style={styles.headerRightRow}>
         <TouchableOpacity style={styles.scanBtn} onPress={onScanQR} activeOpacity={0.85}>
-          <QrCode size={18} color="#fff" />
+          <QrCode size={18} color="#171713" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.7}>
-          <LogOut size={16} color={theme.colors.error} />
+          <LogOut size={16} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -88,7 +88,7 @@ function PassCard() {
   return (
     <View style={styles.passCard}>
       <LinearGradient
-        colors={['#E8EEFC', '#FFFFFF', '#F1F4FB']}
+        colors={['#FFF9E5', '#FFFFFF', '#F8F5ED']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -175,7 +175,7 @@ function PassCard() {
 
       {inCooldown && (
         <View style={styles.cooldownBanner}>
-          <Clock size={15} color="#4FC3F7" />
+          <Clock size={15} color="#5F4A00" />
           <Text style={styles.cooldownText}>
             Cooldown active until{' '}
             {new Date(data!.cooldownEndsAt!).toLocaleTimeString([], {
@@ -379,14 +379,18 @@ export function FitPassDashboard({ onScanQR }: { onScanQR: () => void }) {
 // ─── Styles ────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 90, gap: 24 },
+  content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 110, gap: 24 },
 
   // Top Custom Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
+    marginHorizontal: -20,
+    marginTop: -12,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#171713',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarWrap: { position: 'relative' },
@@ -394,9 +398,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(240,160,32,0.15)',
+    backgroundColor: '#F5B800',
     borderWidth: 1.5,
-    borderColor: 'rgba(240,160,32,0.3)',
+    borderColor: '#F5B800',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -404,7 +408,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 20,
     fontWeight: '900',
-    color: theme.colors.primary,
+    color: '#171713',
   },
   onlineDot: {
     position: 'absolute',
@@ -415,18 +419,18 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#4CAF50',
     borderWidth: 1.5,
-    borderColor: theme.colors.background,
+    borderColor: '#171713',
   },
   greeting: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
-    color: theme.colors.textMuted,
+    color: '#D4D0C6',
   },
   userName: {
     fontFamily: fontFamilies.header,
     fontSize: 20,
     fontWeight: '800',
-    color: theme.colors.text,
+    color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   headerRightRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -434,7 +438,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#F5B800',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -442,7 +446,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(198,40,40,0.10)',
+    backgroundColor: '#34332E',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -550,16 +554,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(25,118,210,0.12)',
+    backgroundColor: '#FFF4C6',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(79,195,247,0.25)',
+    borderColor: '#F0E1A8',
   },
   cooldownText: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
-    color: '#4FC3F7',
+    color: '#5F4A00',
     fontWeight: '700',
   },
 

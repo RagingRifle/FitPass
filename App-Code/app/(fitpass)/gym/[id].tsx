@@ -50,12 +50,12 @@ const FALLBACK_IMAGES = [
 ];
 
 const AMENITIES = [
-  { label: 'Air Conditioned', icon: '❄️' },
-  { label: 'Lockers & Showers', icon: '🚿' },
-  { label: 'Free Parking', icon: '🅿️' },
-  { label: 'Cardio & Strength', icon: '🏋️' },
-  { label: 'Personal Trainers', icon: '🧑‍🏫' },
-  { label: 'Free Wi-Fi', icon: '📶' },
+  { label: 'Air Conditioned', icon: 'AC' },
+  { label: 'Lockers & Showers', icon: 'LS' },
+  { label: 'Free Parking', icon: 'P' },
+  { label: 'Cardio & Strength', icon: 'CS' },
+  { label: 'Personal Trainers', icon: 'PT' },
+  { label: 'Free Wi-Fi', icon: 'Wi-Fi' },
 ];
 
 export default function GymDetailsScreen() {
@@ -183,7 +183,7 @@ export default function GymDetailsScreen() {
               </TouchableOpacity>
 
               <View style={styles.fitpassBadge}>
-                <BadgeCheck size={13} color="#FF5F1F" />
+                <BadgeCheck size={13} color="#171713" />
                 <Text style={styles.fitpassBadgeText}>FITPASS VERIFIED</Text>
               </View>
             </View>
@@ -225,7 +225,7 @@ export default function GymDetailsScreen() {
           <View style={styles.metaBox}>
             {gym.address ? (
               <View style={styles.metaRow}>
-                <MapPin size={16} color="#FF5F1F" />
+                <MapPin size={16} color="#171713" />
                 <Text style={styles.metaText}>{gym.address}</Text>
               </View>
             ) : null}
@@ -236,20 +236,20 @@ export default function GymDetailsScreen() {
                 onPress={() => Linking.openURL(`tel:${gym.phone}`)}
                 activeOpacity={0.7}
               >
-                <Phone size={16} color="#FF5F1F" />
+                <Phone size={16} color="#171713" />
                 <Text style={[styles.metaText, styles.linkText]}>Call Gym: {gym.phone}</Text>
               </TouchableOpacity>
             ) : null}
 
             <View style={styles.metaRow}>
-              <Clock size={16} color="#FF5F1F" />
+              <Clock size={16} color="#171713" />
               <Text style={styles.metaText}>
-                Open Daily • 06:00 AM - 10:00 PM ({gym.defaultSessionDurationMinutes ?? 120} min limit)
+                Open Daily  06:00 AM - 10:00 PM ({gym.defaultSessionDurationMinutes ?? 120} min limit)
               </Text>
             </View>
 
             <View style={styles.metaRow}>
-              <Users size={16} color="#FF5F1F" />
+              <Users size={16} color="#171713" />
               <Text style={styles.metaText}>
                 Live Occupancy:{' '}
                 <Text style={{ fontWeight: '800', color: theme.colors.text }}>
@@ -274,7 +274,7 @@ export default function GymDetailsScreen() {
 
           {/* FitPass Security Policy */}
           <View style={styles.policyCard}>
-            <ShieldCheck size={20} color="#FF5F1F" />
+            <ShieldCheck size={20} color="#171713" />
             <View style={{ flex: 1 }}>
               <Text style={styles.policyTitle}>Verified FitPass Entry</Text>
               <Text style={styles.policyText}>
@@ -288,11 +288,11 @@ export default function GymDetailsScreen() {
             <View style={styles.sectionHeaderRow}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={styles.sectionTitle}>Verified Member Reviews</Text>
-                <Text style={styles.sectionSub}>Gated rating system — verified check-in required</Text>
+                <Text style={styles.sectionSub}>Gated rating system  verified check-in required</Text>
               </View>
 
               <TouchableOpacity
-                style={[styles.writeReviewBtn, myReview && { backgroundColor: '#2563EB' }]}
+                style={[styles.writeReviewBtn, myReview && { backgroundColor: '#5F4A00' }]}
                 onPress={handleOpenReviewModal}
                 activeOpacity={0.8}
               >
@@ -374,7 +374,7 @@ export default function GymDetailsScreen() {
                             selectedStarFilter === star && styles.filterPillTextActive,
                           ]}
                         >
-                          {star} ★ ({count})
+                          {star}  ({count})
                         </Text>
                       </TouchableOpacity>
                     );
@@ -391,7 +391,7 @@ export default function GymDetailsScreen() {
                 <Text style={styles.emptyReviewTitle}>
                   {selectedStarFilter === 'ALL'
                     ? 'No Reviews Yet'
-                    : `No ${selectedStarFilter}★ Reviews Found`}
+                    : `No ${selectedStarFilter} Reviews Found`}
                 </Text>
                 <Text style={styles.emptyReviewText}>
                   {selectedStarFilter === 'ALL'
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
     letterSpacing: 0.5,
   },
 
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 24,
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#171713',
   },
 
   // Details Container Below Image
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   parentBranchText: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
-    color: '#FF5F1F',
+    color: '#171713',
     fontWeight: '700',
     marginTop: 2,
   },
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
-  linkText: { color: '#FF5F1F', fontWeight: '700' },
+  linkText: { color: '#171713', fontWeight: '700' },
 
   section: { gap: 12 },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#171713',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -787,8 +787,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   filterPillActive: {
-    backgroundColor: '#FF5F1F',
-    borderColor: '#FF5F1F',
+    backgroundColor: '#171713',
+    borderColor: '#171713',
   },
   filterPillText: {
     fontFamily: fontFamilies.header,
@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 15,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
   },
   reviewUserName: {
     fontFamily: fontFamilies.header,
@@ -897,7 +897,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
     letterSpacing: 0.5,
   },
   stickyValue: {
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#171713',
     paddingHorizontal: 22,
     paddingVertical: 12,
     borderRadius: 12,
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
   submitReviewBtn: {
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#171713',
     height: 48,
     borderRadius: 14,
     justifyContent: 'center',

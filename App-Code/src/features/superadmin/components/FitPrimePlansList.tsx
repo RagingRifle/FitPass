@@ -82,7 +82,7 @@ export const FitPrimePlansList: React.FC = () => {
         },
         {
           onSuccess: () => {
-            toast.show('FitPrime global plan created!', 'success');
+            toast.show('FitPass member plan created!', 'success');
             setShowModal(false);
           },
           onError: (err: any) => {
@@ -96,7 +96,7 @@ export const FitPrimePlansList: React.FC = () => {
   const handleDelete = (planId: string) => {
     Alert.alert(
       'Delete FitPrime Plan',
-      'Are you sure you want to delete this global plan? Current members will retain remaining session balances.',
+      'Are you sure you want to delete this FitPass member plan? Current members will retain remaining session balances.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -105,7 +105,7 @@ export const FitPrimePlansList: React.FC = () => {
           onPress: () => {
             deletePlanMutation.mutate(planId, {
               onSuccess: () => {
-                toast.show('FitPrime global plan deleted.', 'success');
+                toast.show('FitPass member plan deleted.', 'success');
               },
               onError: (err: any) => {
                 toast.show(err.response?.data?.message || 'Failed to delete plan', 'error');
@@ -144,14 +144,14 @@ export const FitPrimePlansList: React.FC = () => {
           <View style={styles.badgePill}>
             <Sparkles size={12} color={theme.colors.primary} />
             <Typography variant="caption" style={styles.badgePillText}>
-              FITPRIME GLOBAL SUBSCRIPTIONS
+              FITPASS MEMBER SUBSCRIPTIONS
             </Typography>
           </View>
           <Typography variant="h1" style={styles.bannerTitle}>
             Subscription Plans Management
           </Typography>
           <Typography variant="caption" color="secondary">
-            Configure global passport tiers, session allocations, and pricing across the network.
+            Configure the session passes FitPass members can purchase or renew in their portal.
           </Typography>
         </View>
 
@@ -170,8 +170,8 @@ export const FitPrimePlansList: React.FC = () => {
       {plans?.length === 0 ? (
         <EmptyState
           iconText="📋"
-          title="No Global Plans Found"
-          description="Create session-based subscription plans to offer across your partner gyms network."
+          title="No FitPass Plans Found"
+          description="Create session passes for FitPass members to purchase or renew themselves."
         />
       ) : (
         <View style={styles.grid}>
@@ -182,11 +182,11 @@ export const FitPrimePlansList: React.FC = () => {
                   <Typography variant="body" style={styles.planName} numberOfLines={1}>
                     {plan.name}
                   </Typography>
-                  <Badge label="Global" variant="info" />
+                  <Badge label="FitPass only" variant="info" />
                 </View>
 
                 <View style={styles.priceRow}>
-                  <Typography variant="h1" style={styles.priceLabel}>₹{plan.price}</Typography>
+                  <Typography variant="h1" style={styles.priceLabel}>INR {plan.price}</Typography>
                 </View>
 
                 <View style={styles.sessionsRow}>
@@ -246,7 +246,7 @@ export const FitPrimePlansList: React.FC = () => {
             keyboardType="numeric"
           />
           <Input
-            label="Price (₹) *"
+            label="Price (INR) *"
             value={price}
             onChangeText={setPrice}
             placeholder="e.g. 1499"
@@ -254,7 +254,7 @@ export const FitPrimePlansList: React.FC = () => {
           />
 
           <Button
-            title={editingPlan ? 'Save Changes' : 'Create Global Plan'}
+            title={editingPlan ? 'Save Changes' : 'Create FitPass Plan'}
             loading={createPlanMutation.isPending || updatePlanMutation.isPending}
             onPress={handleSave}
             style={{ marginTop: theme.spacing.md }}

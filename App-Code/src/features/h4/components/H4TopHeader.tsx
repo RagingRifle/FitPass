@@ -17,44 +17,47 @@ export function H4TopHeader({ title, subtitle, showScanBtn = true }: H4TopHeader
   const router = useRouter();
 
   return (
-    <View style={[styles.headerRoot, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
-      <View style={styles.leftGroup}>
-        <ProfileAvatar size={36} nameFallback="H" />
-        <View style={styles.titleWrap}>
-          <Text style={[styles.headerTitle, { color: theme.colors.text }]} numberOfLines={1}>
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text style={[styles.headerSub, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-              {subtitle}
+    <>
+      <StatusBar barStyle="light-content" backgroundColor="#171713" />
+      <View style={[styles.headerRoot, { backgroundColor: '#171713', borderBottomColor: '#34332E' }]}>
+        <View style={styles.leftGroup}>
+          <ProfileAvatar size={36} nameFallback="H" />
+          <View style={styles.titleWrap}>
+            <Text style={[styles.headerTitle, { color: '#FFFFFF' }]} numberOfLines={1}>
+              {title}
             </Text>
-          ) : null}
+            {subtitle ? (
+              <Text style={[styles.headerSub, { color: '#D4D0C6' }]} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.rightGroup}>
+          {showScanBtn && (
+            <TouchableOpacity
+              style={[styles.iconBtn, { borderColor: '#F5B800', backgroundColor: '#F5B800' }]}
+              onPress={() => router.push('/(h4)/scan' as any)}
+              activeOpacity={0.8}
+              accessibilityLabel="Scan QR"
+            >
+              <QrCode size={18} color="#171713" />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            onPress={logout}
+            activeOpacity={0.8}
+            accessibilityLabel="Logout"
+          >
+            <LogOut size={14} color="#FFFFFF" />
+            <Text style={[styles.logoutText, { color: '#FFFFFF' }]}>Exit</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.rightGroup}>
-        {showScanBtn && (
-          <TouchableOpacity
-            style={[styles.iconBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.bgTertiary }]}
-            onPress={() => router.push('/(h4)/scan' as any)}
-            activeOpacity={0.8}
-            accessibilityLabel="Scan QR"
-          >
-            <QrCode size={18} color={theme.colors.primary} />
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.logoutBtn}
-          onPress={logout}
-          activeOpacity={0.8}
-          accessibilityLabel="Logout"
-        >
-          <LogOut size={14} color={theme.colors.error} />
-          <Text style={styles.logoutText}>Exit</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </>
   );
 }
 
@@ -66,9 +69,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 36) + 12 : 54,
     paddingBottom: 16,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#171713',
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: '#34332E',
   },
   leftGroup: {
     flexDirection: 'row',

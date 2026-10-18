@@ -6,6 +6,7 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { theme } from '@/design-system/theme';
 import { Badge, Input, Modal, Button } from '@/components/ui';
@@ -18,7 +19,7 @@ import { API_CLIENT } from '@/lib/api-client';
 import { H4TopHeader } from './H4TopHeader';
 import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 
-// ─── Section Block helper ─────────────────────────────────────────────────────
+//  Section Block helper 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
@@ -39,7 +40,7 @@ function Row({ label, value, last }: { label: string; value: React.ReactNode; la
 
 import { useToast } from '@/hooks/useToast';
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+//  Main Component 
 export function H4Profile() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
@@ -54,12 +55,15 @@ export function H4Profile() {
   const [profilePhone, setProfilePhone] = useState(user?.phone ?? '');
   const [profilePassword, setProfilePassword] = useState('');
   const [updating, setUpdating] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(user?.profileImageUrl ?? '');
+  const avatarChoices = ['https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn'];
 
   const handleOpenEdit = () => {
     setProfileName(user?.name ?? '');
     setProfileEmail(user?.email ?? '');
     setProfilePhone(user?.phone ?? '');
     setProfilePassword('');
+    setSelectedAvatar(user?.profileImageUrl ?? '');
     setIsModalOpen(true);
   };
 
@@ -72,12 +76,10 @@ export function H4Profile() {
     setUpdating(true);
     try {
       const res = await API_CLIENT.put('/member-portal/profile', {
-        name: profileName,
-        email: profileEmail,
-        phone: profilePhone,
         password: profilePassword || undefined,
+        avatarUrl: selectedAvatar || null,
       });
-      await updateUserLocal({ name: profileName, email: profileEmail, phone: profilePhone });
+      await updateUserLocal({ profileImageUrl: selectedAvatar || null });
       setProfilePassword('');
       toast.show(res.data?.message || 'Profile and password updated successfully!', 'success');
       setIsModalOpen(false);
@@ -95,11 +97,11 @@ export function H4Profile() {
       <H4TopHeader title="Athlete Profile" />
       <ScrollView style={[styles.root, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Avatar + Name ── */}
+        {/*  Avatar + Name  */}
       <View style={styles.profileHead}>
         <ProfileAvatar size={58} editable nameFallback="H" />
         <View style={styles.profileHeadInfo}>
-          <Text style={[styles.profileName, { color: theme.colors.text }]}>{user?.name ?? '—'}</Text>
+          <Text style={[styles.profileName, { color: theme.colors.text }]}>{user?.name ?? ''}</Text>
           <View style={styles.memberBadge}>
             <ShieldCheck size={13} color={theme.colors.primary} />
             <Text style={styles.memberBadgeText}>H4 Member</Text>
@@ -110,25 +112,25 @@ export function H4Profile() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Contact Info ── */}
+      {/*  Contact Info  */}
       <Section title="Contact">
         <Row label="Email" value={
           <View style={styles.iconVal}>
             <Mail size={13} color={theme.colors.textMuted} />
-            <Text style={[styles.rowValue, { color: theme.colors.text }]}>{user?.email ?? '—'}</Text>
+            <Text style={[styles.rowValue, { color: theme.colors.text }]}>{user?.email ?? ''}</Text>
           </View>
         } />
         <Row label="Phone" last value={
           <View style={styles.iconVal}>
             <Phone size={13} color={theme.colors.textMuted} />
-            <Text style={[styles.rowValue, { color: theme.colors.text }]}>{user?.phone ?? '—'}</Text>
+            <Text style={[styles.rowValue, { color: theme.colors.text }]}>{user?.phone ?? ''}</Text>
           </View>
         } />
       </Section>
 
-      {/* ── Membership ── */}
+      {/*  Membership  */}
       <Section title="Membership">
-        <Row label="Plan" value={plan?.planName ?? '—'} />
+        <Row label="Plan" value={plan?.planName ?? ''} />
         <Row label="Status" value={
           <Badge
             label={plan?.status ?? 'Unknown'}
@@ -138,11 +140,11 @@ export function H4Profile() {
         <Row label="Valid Until" last value={
           plan?.expiryDate
             ? new Date(plan.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
-            : '—'
+            : ''
         } />
       </Section>
 
-      {/* ── Payment History ── */}
+      {/*  Payment History  */}
       <Section title="Payment History">
         {payments.length === 0 ? (
           <View style={styles.emptyRow}>
@@ -156,12 +158,12 @@ export function H4Profile() {
                 <Text style={[styles.payDate, { color: theme.colors.text }]}>
                   {p.date
                     ? new Date(p.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                    : '—'}
+                    : ''}
                 </Text>
                 <Text style={[styles.rowLabel, { color: theme.colors.textSecondary }]}>{p.description ?? 'Membership Payment'}</Text>
               </View>
               <View style={styles.payRight}>
-                <Text style={[styles.payAmt, { color: theme.colors.text }]}>₹{p.amount}</Text>
+                <Text style={[styles.payAmt, { color: theme.colors.text }]}>INR {p.amount}</Text>
                 <View style={[styles.payStatus, { backgroundColor: p.status === 'Paid' ? 'rgba(46,125,50,0.1)' : 'rgba(198,40,40,0.1)' }]}>
                   <Text style={[styles.payStatusText, { color: p.status === 'Paid' ? '#2E7D32' : '#C62828' }]}>
                     {p.status ?? 'Paid'}
@@ -173,7 +175,7 @@ export function H4Profile() {
         )}
       </Section>
 
-      {/* ── App Settings ── */}
+      {/*  App Settings  */}
       <Section title="Settings">
 <TouchableOpacity
           style={styles.row}
@@ -191,9 +193,10 @@ export function H4Profile() {
         </TouchableOpacity>
       </Section>
 
-      {/* ── Edit Profile Modal ── */}
+      {/*  Edit Profile Modal  */}
       <Modal visible={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Profile">
         <View style={{ gap: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>{avatarChoices.map((avatar) => <TouchableOpacity key={avatar} onPress={() => setSelectedAvatar(avatar)} style={{ borderWidth: selectedAvatar === avatar ? 3 : 1, borderColor: selectedAvatar === avatar ? theme.colors.primary : theme.colors.border, borderRadius: 40, padding: 2 }}><Image source={{ uri: avatar }} style={{ width: 52, height: 52, borderRadius: 26 }} /></TouchableOpacity>)}</View>
           <Input label="Name" value={profileName} onChangeText={setProfileName} placeholder="Your name" />
           <Input label="Email" value={profileEmail} onChangeText={setProfileEmail} placeholder="Email address" keyboardType="email-address" />
           <Input label="Phone" value={profilePhone} onChangeText={setProfilePhone} placeholder="Phone number" keyboardType="phone-pad" />
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'rgba(240,160,32,0.3)',
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarText: { fontSize: 22, fontWeight: '800', color: '#F0A020' },
+  avatarText: { fontSize: 22, fontWeight: '800', color: '#F5B800' },
   profileHeadInfo: { flex: 1, gap: 4 },
   profileName: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
   memberBadge: {
@@ -230,7 +233,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20,
     borderWidth: 1, borderColor: 'rgba(240,160,32,0.25)',
   },
-  memberBadgeText: { fontSize: 11, fontWeight: '700', color: '#F0A020' },
+  memberBadgeText: { fontSize: 11, fontWeight: '700', color: '#F5B800' },
   editBtn: {
     width: 36, height: 36, borderRadius: 18,
     borderWidth: 1, borderColor: '#E2E8F0',

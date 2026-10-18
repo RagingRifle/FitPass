@@ -62,14 +62,14 @@ function FitPassMembers() {
             setLoading(true);
             const [rosterRes, plansRes] = await Promise.all([
                 API.get('/superadmin/fitpass/members'),
-                API.get('/plans')
+                API.get('/superadmin/plans')
             ]);
             setMembers(rosterRes.data?.data || []);
 
             let fetchedPlans = rosterRes.data?.plans || [];
             if (!fetchedPlans || fetchedPlans.length === 0) {
                 const allPlans = Array.isArray(plansRes.data) ? plansRes.data : [];
-                fetchedPlans = allPlans.filter(p => p.gymId === 'SYSTEM' || !p.gymId);
+                fetchedPlans = allPlans.filter(p => p.gymId === 'SYSTEM' && Number(p.sessions) > 0);
             }
             setPlans(fetchedPlans);
             if (fetchedPlans.length > 0) {

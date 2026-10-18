@@ -99,7 +99,7 @@ export function H4Diets() {
       await storage.setItem(`h4_water_${userId}_${todayKey()}`, clamped.toString());
     }
     if (newCups !== waterCups) {
-      toast.show(isAdding ? 'Water logged! 💧' : 'Water log updated 💧', 'success');
+      toast.show(isAdding ? 'Water logged! ' : 'Water log updated ', 'success');
     }
   };
 
@@ -109,7 +109,7 @@ export function H4Diets() {
     if (userId) {
       await storage.setItem(`h4_consumed_${userId}_${todayKey()}`, JSON.stringify(next));
     }
-    toast.show(next[idx] ? 'Meal completed! 🥗' : 'Meal unmarked 🥣', 'info');
+    toast.show(next[idx] ? 'Meal completed! ' : 'Meal unmarked ', 'info');
   };
 
   const targets = activeDiet?.meals?.reduce(
@@ -178,9 +178,9 @@ export function H4Diets() {
       await storage.setItem(`h4_nutrition_history_${userId}`, JSON.stringify(updatedHistory));
 
       if (fullyCompleted) {
-        toast.show('🎉 Today\'s Nutrition Goals Completed! Coach notified.', 'success');
+        toast.show(' Today\'s Nutrition Goals Completed! Coach notified.', 'success');
       } else {
-        toast.show(`🥗 Progress saved! ${consumedMacros.calories} kcal logged.`, 'success');
+        toast.show(` Progress saved! ${consumedMacros.calories} kcal logged.`, 'success');
       }
     } catch (e: any) {
       console.warn('[H4Diets] Nutrition API log failed:', e?.response?.data || e?.message);
@@ -203,10 +203,10 @@ export function H4Diets() {
   const waterPercent = Math.min(100, Math.round((waterCups / TOTAL_CUPS) * 100));
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F5ED' }}>
       <H4TopHeader title="Nutrition & Diet" />
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      {/* ── Hydration Tracker ── */}
+      {/*  Hydration Tracker  */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View>
@@ -215,7 +215,7 @@ export function H4Diets() {
             <Text style={styles.cardSub}>{waterCups} of {TOTAL_CUPS} Glasses (250 mL each)</Text>
           </View>
           <View style={styles.dropletBadge}>
-            <Droplets size={24} color="#1976D2" />
+            <Droplets size={24} color="#5F4A00" />
           </View>
         </View>
 
@@ -236,7 +236,7 @@ export function H4Diets() {
               onPress={() => updateWater(i < waterCups && i + 1 === waterCups ? i : i + 1)}
               activeOpacity={0.7}
             >
-              <Droplets size={16} color={i < waterCups ? '#FFFFFF' : '#1976D2'} />
+              <Droplets size={16} color={i < waterCups ? '#FFFFFF' : '#5F4A00'} />
             </TouchableOpacity>
           ))}
         </View>
@@ -271,7 +271,7 @@ export function H4Diets() {
         </View>
       </View>
 
-      {/* ── Diet Plan / Macros ── */}
+      {/*  Diet Plan / Macros  */}
       {!activeDiet ? (
         <View style={styles.emptyCard}>
           <Apple size={40} color={theme.colors.primary} />
@@ -368,7 +368,7 @@ export function H4Diets() {
           {isNutritionLoggedToday ? (
             <View style={[styles.logNutritionBtn, { backgroundColor: '#16A34A' }]}>
               <CheckCircle size={20} color="#FFFFFF" />
-              <Text style={styles.logNutritionBtnText} numberOfLines={1} adjustsFontSizeToFit>Today's Goal Completed! 🎉</Text>
+              <Text style={styles.logNutritionBtnText} numberOfLines={1} adjustsFontSizeToFit>Today's Goal Completed! </Text>
             </View>
           ) : (
             <TouchableOpacity
@@ -394,7 +394,7 @@ export function H4Diets() {
         </>
       )}
 
-      {/* ── Nutrition & Hydration History Section ── */}
+      {/*  Nutrition & Hydration History Section  */}
       <Text style={[styles.sectionTitle, { marginTop: 14 }]}>Nutrition & Hydration History</Text>
       <View style={styles.historyCard}>
         <View style={styles.historyRow}>
@@ -402,7 +402,7 @@ export function H4Diets() {
           <View style={{ flex: 1 }}>
             <Text style={styles.historyDate}>Today ({new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })})</Text>
             <Text style={styles.historyMeta}>
-              {consumedMacros.calories} / {targets.calories} kcal • {consumedMacros.protein}g Protein • {waterCups}/{TOTAL_CUPS} Water Glasses
+              {consumedMacros.calories} / {targets.calories} kcal  {consumedMacros.protein}g Protein  {waterCups}/{TOTAL_CUPS} Water Glasses
             </Text>
           </View>
           <View style={styles.todayPill}>
@@ -411,7 +411,7 @@ export function H4Diets() {
         </View>
       </View>
 
-      {/* ── Trainer Attribution Card (Bottom) ── */}
+      {/*  Trainer Attribution Card (Bottom)  */}
       <View style={styles.trainerFooterCard}>
         <View style={styles.trainerAvatarBg}>
           <UserCheck size={22} color={theme.colors.primary} />
@@ -432,9 +432,9 @@ export function H4Diets() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFC' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F5ED' },
 
   card: {
     borderRadius: 16,
@@ -459,8 +459,8 @@ const styles = StyleSheet.create({
 
   progressContainer: { gap: 6 },
   progressBg: { height: 8, backgroundColor: '#E2E8F0', borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#0075FF', borderRadius: 4 },
-  progressText: { fontSize: 11, fontWeight: '600', color: '#0075FF', textAlign: 'right' },
+  progressFill: { height: '100%', backgroundColor: '#5F4A00', borderRadius: 4 },
+  progressText: { fontSize: 11, fontWeight: '600', color: '#5F4A00', textAlign: 'right' },
 
   cupsGrid: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
   cupBox: {
@@ -468,12 +468,12 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#0075FF',
+    borderColor: '#5F4A00',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  cupBoxFilled: { backgroundColor: '#0075FF', borderColor: '#0075FF' },
+  cupBoxFilled: { backgroundColor: '#5F4A00', borderColor: '#5F4A00' },
 
   cupActions: { flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 6 },
   addCupBtn: {
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#0075FF',
+    backgroundColor: '#5F4A00',
   },
   addCupBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   iconBtn: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   macroLbl: { fontSize: 13, fontWeight: '600', color: '#0F172A' },
   macroVal: { fontSize: 12, color: '#64748B' },
   barBg: { height: 7, backgroundColor: '#E2E8F0', borderRadius: 4, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: '#F0A020', borderRadius: 4 },
+  barFill: { height: '100%', backgroundColor: '#F5B800', borderRadius: 4 },
   macroGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#0075FF',
+    backgroundColor: '#5F4A00',
   },
   addBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
   controlIconBtn: {

@@ -222,7 +222,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     <DollarSign size={16} color={theme.colors.success} />
                   </View>
                 </View>
-                <Typography variant="h2" style={styles.kpiValue}>₹{monthlyRevenue.toLocaleString()}</Typography>
+                <Typography variant="h2" style={styles.kpiValue}>INR {monthlyRevenue.toLocaleString()}</Typography>
                 <Typography variant="caption" color="secondary" style={styles.kpiSub}>
                   {h4Stats?.newMembersThisMonth || 0} New Registrations
                 </Typography>
@@ -237,7 +237,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     <ArrowDownRight size={16} color={theme.colors.error} />
                   </View>
                 </View>
-                <Typography variant="h2" style={styles.kpiValue}>₹{monthlyExpenses.toLocaleString()}</Typography>
+                <Typography variant="h2" style={styles.kpiValue}>INR {monthlyExpenses.toLocaleString()}</Typography>
                 <Typography variant="caption" color="secondary" style={styles.kpiSub}>
                   Operational Costs
                 </Typography>
@@ -253,7 +253,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   </View>
                 </View>
                 <Typography variant="h2" style={[styles.kpiValue, { color: netProfit >= 0 ? theme.colors.success : theme.colors.error }]}>
-                  ₹{netProfit.toLocaleString()}
+                  INR {netProfit.toLocaleString()}
                 </Typography>
                 <Typography variant="caption" color="secondary" style={styles.kpiSub}>
                   Net Surplus Margin

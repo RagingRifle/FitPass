@@ -199,8 +199,8 @@ const AppHeader = () => {
                             <div className="header-context-static" style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                background: '#FBF6EC',
-                                border: '1px solid #E5D5C0',
+                                background: '#FFFFFF',
+                                border: '1.5px solid #DFD7C7',
                                 borderRadius: '20px',
                                 padding: '0.35rem 1rem',
                                 color: '#231D14',
@@ -211,12 +211,12 @@ const AppHeader = () => {
                                 {gyms.find(b => (b._id || b.id) === user.branchId)?.name || 'H4 Branch'}
                             </div>
                         ) : (
-                            <div className="header-context-picker" style={{
+                            <div className="header-context-picker header-context-picker--division" style={{
                                 position: 'relative',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                background: '#FBF6EC',
-                                border: '1px solid #E5D5C0',
+                                background: '#FFFFFF',
+                                border: '1.5px solid #DFD7C7',
                                 borderRadius: '20px',
                                 padding: '0.2rem 0.6rem 0.2rem 1rem',
                                 cursor: 'pointer',

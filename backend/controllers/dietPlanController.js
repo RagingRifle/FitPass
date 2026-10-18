@@ -5,33 +5,62 @@ const Member = require('../models/Member');
 const User = require('../models/User');
 const { H4_GYM_IDS } = require('../config/constants');
 
+const getGymScope = (req) => {
+    const gymId = String(req.user?.gymId || '');
+    const isH4Scope = req.user?.role === 'h4_admin' || H4_GYM_IDS.includes(gymId);
+    const gymIds = isH4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId];
+    return { gymId, gymIds, isH4Scope };
+};
+
+const loadMembersForAssignment = async (memberIds, gymIds, branchId, existingIds = []) => {
+    // Use findById for each member here. Apart from avoiding adapter edge cases
+    // with Mongo-style `$in`, this lets us distinguish a legacy assignment
+    // from a newly added member and validate each one against the active scope.
+    const existing = new Set(existingIds.map(String));
+    const records = await Promise.all(memberIds.map((id) => Member.findById(id).lean()));
+    const found = records.filter(Boolean);
+    const valid = found.filter((member) => {
+        const gymMatches = gymIds.includes(String(member.gymId || ''));
+        const branchMatches = !branchId || String(member.branchId || '') === String(branchId);
+        return (gymMatches && branchMatches) || existing.has(String(member.id || member._id));
+    });
+    return { found, valid };
+};
+
 // @desc    Create a diet plan for a member
 // @route   POST /api/diet-plans
 // @access  Private/Admin/Trainer
 const createPlan = catchAsync(async (req, res, next) => {
     try {
-        const { memberId, name, startDate, endDate, meals } = req.body;
+        const memberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : [req.body.memberId]).filter(Boolean).map(String))];
+        const { name, startDate, endDate, meals } = req.body;
 
-        if (!memberId || !name) {
-            return res.status(400).json({ success: false, message: 'Member ID and Plan name are required' });
+        if (!memberIds.length || !name) {
+            return res.status(400).json({ success: false, message: 'At least one member and a plan name are required' });
         }
 
-        // Validate member exists within the gym (across all branches)
-        const member = await Member.findOne({ _id: memberId, gymId: req.user.gymId });
-        if (!member) {
-            return res.status(404).json({ success: false, message: 'Member not found' });
+        const { gymId, gymIds } = getGymScope(req);
+        const { found: assignedMembers, valid } = await loadMembersForAssignment(memberIds, gymIds, req.user.branchId);
+        if (valid.length !== memberIds.length) {
+            return res.status(404).json({ success: false, message: 'One or more members were not found in this gym' });
         }
+        const member = assignedMembers[0];
 
         const plan = await DietPlan.create({
-            memberId,
+            memberId: memberIds[0],
+            memberIds: JSON.stringify(memberIds),
             trainerId: req.user.role === 'trainer' ? req.user.id : (req.body.trainerId || null),
             name,
             startDate: startDate ? new Date(startDate) : null,
             endDate: endDate ? new Date(endDate) : null,
             meals: meals ? (typeof meals === 'string' ? meals : JSON.stringify(meals)) : null,
-            gymId: req.user.gymId,
-            branchId: req.user.branchId || member.branchId || null
+            gymId,
+            branchId: req.user.branchId || (new Set(assignedMembers.map((item) => String(item.branchId || ''))).size === 1 ? member.branchId || null : null)
         });
+
+        const Notification = require('../models/Notification');
+        const recipients = await User.find({ memberId: { $in: memberIds } }).lean();
+        await Promise.all(recipients.map((recipient) => Notification.create({ recipientId: recipient.id || recipient._id, gymId: member.gymId, type: 'plan_update', message: `A diet plan was added: ${name}.` })));
 
         res.status(201).json(plan);
     } catch (error) { next(error); }
@@ -43,20 +72,22 @@ const createPlan = catchAsync(async (req, res, next) => {
 const getPlans = catchAsync(async (req, res, next) => {
     try {
         // Query by gymId so plans are accessible across all branches of the gym
-        let query = { gymId: req.user.gymId };
+        const { gymId, gymIds, isH4Scope } = getGymScope(req);
+        let query = { gymId: isH4Scope ? { $in: gymIds } : gymId };
 
         if (req.query.branchId) {
             query.branchId = req.query.branchId;
         }
 
         // If member is fetching, only show their plans
-        if (req.user.role === 'member') {
-            query.memberId = req.user.memberId;
-        } else if (req.user.role === 'trainer') {
+        if (req.user.role === 'trainer') {
             query.trainerId = req.user.id;
         }
 
-        if (req.query.memberId) {
+        if (req.user.role === 'member') {
+            const memberId = String(req.user.memberId || '');
+            query.$or = [{ memberId }, { memberIds: { $regex: `\"${memberId}\"` } }];
+        } else if (req.query.memberId) {
             query.memberId = req.query.memberId;
         }
 
@@ -73,7 +104,10 @@ const getPlans = catchAsync(async (req, res, next) => {
             .lean();
 
         // Batched multi-entity lookup (Trainer + Member)
-        const memberIds = [...new Set(plans.map(p => p.memberId).filter(Boolean))];
+        const memberIds = [...new Set(plans.flatMap((p) => {
+            try { return [...(p.memberIds ? JSON.parse(p.memberIds) : []), p.memberId].filter(Boolean).map(String); }
+            catch (error) { return [p.memberId].filter(Boolean).map(String); }
+        }))];
         const trainerIds = [...new Set(plans.map(p => p.trainerId).filter(Boolean))];
 
         const [members, trainers] = await Promise.all([
@@ -81,7 +115,10 @@ const getPlans = catchAsync(async (req, res, next) => {
             trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
         ]);
 
-        const memberMap = new Map((members || []).map(m => [m._id ? m._id.toString() : m.id, m]));
+        const memberMap = new Map();
+        (members || []).forEach((member) => {
+            [member.id, member._id].filter(Boolean).forEach((id) => memberMap.set(String(id), member));
+        });
         const trainerMap = new Map((trainers || []).map(t => [t._id ? t._id.toString() : t.id, t]));
 
         const formatted = plans.map(p => {
@@ -91,12 +128,17 @@ const getPlans = catchAsync(async (req, res, next) => {
                     parsedMeals = JSON.parse(p.meals);
                 } catch (e) {}
             }
-            const m = p.memberId ? memberMap.get(p.memberId.toString()) : null;
+            let assignedMemberIds = [p.memberId].filter(Boolean).map(String);
+            try { if (p.memberIds) assignedMemberIds = JSON.parse(p.memberIds).map(String); } catch (error) {}
+            const assignedMembers = assignedMemberIds.map((id) => memberMap.get(String(id))).filter(Boolean);
+            const m = assignedMembers.find((member) => String(member.id || member._id) === String(p.memberId)) || assignedMembers[0] || null;
             const t = p.trainerId ? trainerMap.get(p.trainerId.toString()) : null;
 
             return {
                 ...p,
                 meals: parsedMeals,
+                memberIds: assignedMemberIds,
+                members: assignedMembers.map((member) => ({ id: member.id || member._id, name: member.name, phone: member.phone, email: member.email })),
                 member: m ? { id: m.id || m._id, name: m.name, phone: m.phone, email: m.email } : null,
                 trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
             };
@@ -115,10 +157,13 @@ const getPlans = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer/Member
 const getPlanById = catchAsync(async (req, res, next) => {
     try {
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: req.user.gymId });
+        const { gymId, gymIds, isH4Scope } = getGymScope(req);
+        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId });
 
         if (plan) {
-            if (req.user.role === 'member' && plan.memberId !== req.user.memberId) {
+            let assignedMemberIds = [plan.memberId].filter(Boolean).map(String);
+            try { if (plan.memberIds) assignedMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
+            if (req.user.role === 'member' && !assignedMemberIds.includes(String(req.user.memberId))) {
                 return res.status(403).json({ success: false, message: 'Not authorized to view this plan' });
             }
 
@@ -147,11 +192,28 @@ const getPlanById = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer
 const updatePlan = catchAsync(async (req, res, next) => {
     try {
-        const { name, startDate, endDate, meals, trainerId } = req.body;
+        const { memberId, name, startDate, endDate, meals, trainerId } = req.body;
 
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: req.user.gymId });
+        const { gymId, gymIds, isH4Scope } = getGymScope(req);
+        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId });
 
         if (plan) {
+            let priorMemberIds = [plan.memberId].filter(Boolean).map(String);
+            try { if (plan.memberIds) priorMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
+            if (memberId !== undefined || req.body.memberIds !== undefined) {
+                const nextMemberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : [memberId]).filter(Boolean).map(String))];
+                if (!nextMemberIds.length) return res.status(400).json({ success: false, message: 'At least one member must be assigned' });
+                let currentMemberIds = [plan.memberId].filter(Boolean).map(String);
+                try { if (plan.memberIds) currentMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
+                const { found: assignedMembers, valid } = await loadMembersForAssignment(
+                    nextMemberIds, gymIds, req.user.branchId, currentMemberIds
+                );
+                if (valid.length !== nextMemberIds.length) return res.status(404).json({ success: false, message: 'One or more newly added members are outside this gym or branch' });
+                plan.memberId = nextMemberIds[0];
+                plan.memberIds = JSON.stringify(nextMemberIds);
+                const branchIds = new Set(assignedMembers.map((item) => String(item.branchId || '')));
+                plan.branchId = req.user.branchId || (branchIds.size === 1 ? assignedMembers[0].branchId || null : null);
+            }
             plan.name = name || plan.name;
             if (startDate !== undefined) plan.startDate = startDate ? new Date(startDate) : null;
             if (endDate !== undefined) plan.endDate = endDate ? new Date(endDate) : null;
@@ -161,6 +223,10 @@ const updatePlan = catchAsync(async (req, res, next) => {
             if (trainerId !== undefined) plan.trainerId = trainerId || null;
 
             const updatedPlan = await plan.save();
+            let assignedIds = [...new Set([...priorMemberIds, plan.memberId].filter(Boolean))];
+            try { if (plan.memberIds) assignedIds = [...new Set([...assignedIds, ...JSON.parse(plan.memberIds).map(String)])]; } catch (error) {}
+            const recipients = await User.find({ memberId: { $in: assignedIds } }).lean();
+            await Promise.all(recipients.map((recipient) => require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId: plan.gymId, type: 'plan_update', message: `Your diet plan "${updatedPlan.name}" was updated.` })));
             if (updatedPlan.meals && typeof updatedPlan.meals === 'string') {
                 try {
                     updatedPlan.meals = JSON.parse(updatedPlan.meals);
@@ -178,10 +244,17 @@ const updatePlan = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer
 const deletePlan = catchAsync(async (req, res, next) => {
     try {
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: req.user.gymId });
+        const { gymId, gymIds, isH4Scope } = getGymScope(req);
+        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId });
 
         if (plan) {
+            let assignedIds = [plan.memberId];
+            try { if (plan.memberIds) assignedIds = JSON.parse(plan.memberIds); } catch (error) {}
+            const planName = plan.name;
+            const gymId = plan.gymId;
             await plan.deleteOne();
+            const recipients = await User.find({ memberId: { $in: assignedIds } }).lean();
+            await Promise.all(recipients.map((recipient) => require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId, type: 'plan_update', message: `Your diet plan "${planName}" was removed.` })));
             res.json({ message: 'Diet plan removed' });
         } else {
             res.status(404).json({ success: false, message: 'Diet plan not found' });

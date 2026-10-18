@@ -5,6 +5,41 @@ const Member = require('../models/Member');
 const User = require('../models/User');
 const { H4_GYM_IDS } = require('../config/constants');
 
+// Return only the fields needed by the assignment picker. Trainers may assign
+// across their gym (the plan creation check is gym-wide), while admins retain
+// their selected branch scope.
+const getAssignableMembers = catchAsync(async (req, res, next) => {
+    try {
+        const gymId = req.user.gymId;
+        if (!gymId) {
+            return res.status(400).json({ success: false, message: 'Select a gym before loading assignable members.' });
+        }
+
+        const query = { gymId };
+        if (req.user.role !== 'trainer' && req.user.branchId) query.branchId = req.user.branchId;
+
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 100);
+        const skip = (page - 1) * limit;
+        const [total, members] = await Promise.all([
+            Member.countDocuments(query),
+            Member.find(query)
+                .select('id name phone email branchId')
+                .sort({ name: 1 })
+                .skip(skip)
+                .limit(limit)
+                .lean()
+        ]);
+
+        res.json({
+            members,
+            page,
+            pages: Math.ceil(total / limit),
+            total
+        });
+    } catch (error) { next(error); }
+});
+
 // @desc    Create a workout plan for a member
 // @route   POST /api/workout-plans
 // @access  Private/Admin/Trainer
@@ -32,6 +67,9 @@ const createPlan = catchAsync(async (req, res, next) => {
             gymId: req.user.gymId,
             branchId: req.user.branchId || member.branchId || null
         });
+
+        const recipient = await User.findOne({ memberId: member.id }).lean();
+        if (recipient) await require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId: member.gymId, type: 'plan_update', message: `A workout plan was added: ${name}.` });
 
         res.status(201).json(plan);
     } catch (error) { next(error); }
@@ -162,6 +200,8 @@ const updatePlan = catchAsync(async (req, res, next) => {
             if (trainerId !== undefined) plan.trainerId = trainerId || null;
 
             const updatedPlan = await plan.save();
+            const recipient = await User.findOne({ memberId: plan.memberId }).lean();
+            if (recipient) await require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId: plan.gymId, type: 'plan_update', message: `Your workout plan "${updatedPlan.name}" was updated.` });
             if (updatedPlan.exercises && typeof updatedPlan.exercises === 'string') {
                 try {
                     updatedPlan.exercises = JSON.parse(updatedPlan.exercises);
@@ -182,7 +222,12 @@ const deletePlan = catchAsync(async (req, res, next) => {
         const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: req.user.gymId });
 
         if (plan) {
+            const memberId = plan.memberId;
+            const planName = plan.name;
+            const gymId = plan.gymId;
             await plan.deleteOne();
+            const recipient = await User.findOne({ memberId }).lean();
+            if (recipient) await require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId, type: 'plan_update', message: `Your workout plan "${planName}" was removed.` });
             res.json({ message: 'Workout plan removed' });
         } else {
             res.status(404).json({ success: false, message: 'Workout plan not found' });
@@ -269,6 +314,7 @@ const logCompletedWorkout = catchAsync(async (req, res, next) => {
 });
 
 module.exports = {
+    getAssignableMembers,
     createPlan,
     getPlans,
     getPlanById,

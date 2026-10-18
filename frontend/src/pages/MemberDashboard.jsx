@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { QRCodeCanvas } from 'qrcode.react';
+import { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 import PasswordInput from '../components/ui/PasswordInput';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
@@ -10,17 +10,18 @@ import './member-dashboard.css';
 import './member-featured.css';
 
 const MemberDashboard = () => {
+    const { user, updateUserLocal } = useContext(AuthContext);
     const toast = useToast();
+    const usesMockFitPassGateway = (import.meta.env.VITE_FITPASS_PAYMENT_GATEWAY || 'mock') === 'mock';
     const [plan, setPlan] = useState(null);
     const [attendance, setAttendance] = useState([]);
     const [payments, setPayments] = useState([]);
     const [sessionStatus, setSessionStatus] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [qrFullscreen, setQrFullscreen] = useState(false);
     const [paying, setPaying] = useState(false);
     const [paymentModal, setPaymentModal] = useState(false);
     const [customAmount, setCustomAmount] = useState('');
-    const qrRef = useRef(null);
+    const [selectedAvatar, setSelectedAvatar] = useState('');
 
     // Profile edit states
     const [profileModal, setProfileModal] = useState(false);
@@ -37,6 +38,9 @@ const MemberDashboard = () => {
     const [filterStatus, setFilterStatus] = useState('');
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
+    const [fitPassPlans, setFitPassPlans] = useState([]);
+    const [renewalModalOpen, setRenewalModalOpen] = useState(false);
+    const [selectedRenewalPlan, setSelectedRenewalPlan] = useState(null);
 
     const fetchFitPassHistory = async (params = {}) => {
         try {
@@ -64,15 +68,31 @@ const MemberDashboard = () => {
             setPlan(memberPlan);
             setAttendance(attRes.data);
             setPayments(payRes.data);
+            const isH4Member = memberPlan?.isH4Member === true;
+            if (isH4Member && memberPlan.homeGym) {
+                setGyms([{ ...memberPlan.homeGym, name: memberPlan.homeGym.branchName || memberPlan.homeGym.name, address: memberPlan.homeGym.branchAddress || memberPlan.homeGym.address }]);
+            }
             // Fetch FitPrime session status (sessionsRemaining / active session / cooldown).
             // Non-fatal: traditional (non-FitPrime) members just have no session balance.
-            try {
-                const { data } = await API.get('/member-portal/sessions/status');
-                setSessionStatus(data);
-            } catch { setSessionStatus(null); }
+            if (!isH4Member && memberPlan?.planId?.gymId === 'SYSTEM') {
+                try {
+                    const { data } = await API.get('/member-portal/sessions/status');
+                    setSessionStatus(data);
+                } catch { setSessionStatus(null); }
+                try {
+                    const { data } = await API.get('/member-portal/fitprime-plans');
+                    setFitPassPlans(Array.isArray(data) ? data : data?.data || []);
+                } catch (e) {
+                    console.error('Error fetching FitPass plans:', e);
+                    setFitPassPlans([]);
+                }
+            } else {
+                setSessionStatus(null);
+                setFitPassPlans([]);
+            }
 
             // If it is a FitPass member, fetch partners list and history
-            if (memberPlan?.planId?.gymId === 'SYSTEM') {
+            if (!isH4Member && memberPlan?.planId?.gymId === 'SYSTEM') {
                 try {
                     const gymRes = await API.get('/member-portal/gyms');
                     setGyms(gymRes.data || []);
@@ -83,6 +103,15 @@ const MemberDashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching member data:', error);
+            const fallbackGymId = user?.gymId?._id || user?.gymId?.id || user?.gymId || '';
+            if (String(fallbackGymId) === 'SYSTEM' && !String(user?.gymName || '').toLowerCase().includes('h4')) {
+                try {
+                    const { data } = await API.get('/member-portal/fitprime-plans');
+                    setFitPassPlans(Array.isArray(data) ? data : data?.data || []);
+                } catch (plansError) {
+                    console.error('Error fetching FitPass plans:', plansError);
+                }
+            }
         } finally {
             setLoading(false);
         }
@@ -107,6 +136,7 @@ const MemberDashboard = () => {
         setProfileEmail(plan?.email || '');
         setProfilePhone(plan?.phone || '');
         setProfilePassword('');
+        setSelectedAvatar(user?.profileImageUrl || '');
         setProfileModal(true);
     };
 
@@ -114,10 +144,12 @@ const MemberDashboard = () => {
         e.preventDefault();
         setUpdatingProfile(true);
         try {
-            await API.put('/member-portal/profile', {
-                password: profilePassword || undefined
+            const { data } = await API.put('/member-portal/profile', {
+                password: profilePassword || undefined,
+                ...(selectedAvatar ? { avatarUrl: selectedAvatar } : {})
             });
-            toast.success('Password updated successfully!');
+            updateUserLocal(data.user);
+            toast.success('Profile updated successfully!');
             setProfileModal(false);
             fetchMemberData();
         } catch (error) {
@@ -204,7 +236,7 @@ const MemberDashboard = () => {
                     contact: plan?.phone
                 },
                 theme: {
-                    color: "#F0A020"
+                    color: "#F5B800"
                 }
             };
 
@@ -218,22 +250,73 @@ const MemberDashboard = () => {
         }
     };
 
-    const downloadQR = () => {
-        const canvas = qrRef.current?.querySelector('canvas');
-        if (!canvas) return;
-        const url = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `${plan?.name || 'member'}-QR.png`;
-        link.href = url;
-        link.click();
+    const handleFitPassRenewal = async () => {
+        if (!selectedRenewalPlan) return;
+        setPaying(true);
+        let externalCheckout = false;
+        try {
+            const { data: order } = await API.post('/member-portal/purchase-plan/create-order', {
+                planId: selectedRenewalPlan.id || selectedRenewalPlan._id,
+                gateway: import.meta.env.VITE_FITPASS_PAYMENT_GATEWAY || 'mock',
+            });
+            const planId = selectedRenewalPlan.id || selectedRenewalPlan._id;
+            const finishPurchase = async (payment) => {
+                await API.post('/member-portal/purchase-plan/verify', {
+                    razorpay_order_id: payment.razorpay_order_id || order.id,
+                    razorpay_payment_id: payment.razorpay_payment_id || `pay_demo_${Date.now()}`,
+                    razorpay_signature: payment.razorpay_signature,
+                    mock_token: order.mock_token,
+                    planId,
+                });
+                toast.success('Pass renewed. Your sessions and expiry have been updated.');
+                setRenewalModalOpen(false);
+                setSelectedRenewalPlan(null);
+                await fetchMemberData();
+            };
+
+            if (order.is_mock) {
+                if (!order.mock_token) throw new Error('The demo checkout could not verify its order.');
+                await finishPurchase({});
+            } else {
+                const RazorpayCheckout = window.Razorpay;
+                const key = order.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID;
+                if (!RazorpayCheckout || !key) throw new Error('Razorpay checkout is not available in this browser.');
+                externalCheckout = true;
+                const checkout = new RazorpayCheckout({
+                    key,
+                    amount: order.amount,
+                    currency: order.currency,
+                    name: 'FitPass',
+                    description: `${selectedRenewalPlan.name} membership`,
+                    order_id: order.id,
+                    prefill: { name: plan?.name, email: plan?.email, contact: plan?.phone },
+                    theme: { color: '#F5B800' },
+                    handler: async (response) => {
+                        try { await finishPurchase(response); }
+                        catch (error) { toast.error(error.response?.data?.message || 'Payment verification failed.'); }
+                        finally { setPaying(false); }
+                    },
+                    modal: { ondismiss: () => setPaying(false) },
+                });
+                checkout.open();
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || 'Could not renew your FitPass.');
+        } finally {
+            if (!externalCheckout) setPaying(false);
+        }
     };
 
     if (loading) return <div className="spinner"></div>;
 
     const daysLeft = plan ? Math.ceil((new Date(plan.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
-    const memberId = plan?._id || '';
-    // A FitPrime member holds a session-based plan (gymId === 'SYSTEM').
-    const isFitPrimeMember = plan?.planId?.gymId === 'SYSTEM';
+    // H4 access follows the member's assigned gym, even if the plan was linked
+    // to the global SYSTEM gym. Only non-H4 SYSTEM-plan members use FitPass.
+    const userGymId = user?.gymId?._id || user?.gymId?.id || user?.gymId || '';
+    const isH4Member = plan?.isH4Member === true
+        || String(user?.gymName || '').toLowerCase().includes('h4')
+        || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(userGymId));
+    const isFitPrimeMember = !isH4Member && (plan?.planId?.gymId === 'SYSTEM' || String(userGymId) === 'SYSTEM');
     const sessionsRemaining = sessionStatus?.sessionsRemaining ?? plan?.sessionsRemaining ?? 0;
     const activeSession = sessionStatus?.active;
     const inCooldown = sessionStatus?.inCooldown;
@@ -271,17 +354,18 @@ const MemberDashboard = () => {
         <div className="fade-in fitpass-member-dashboard">
             <section className="member-overview-hero">
                 <div className="member-overview-copy">
-                    <div className="member-overview-eyebrow"><Sparkles size={14} /> {isFitPrimeMember ? 'FITPASS NETWORK' : 'YOUR H4 MEMBERSHIP'}</div>
+                <div className="member-overview-eyebrow"><Sparkles size={14} /> {isFitPrimeMember ? 'FITPASS NETWORK' : isH4Member ? 'H4 MEMBERSHIP' : 'YOUR MEMBERSHIP'}</div>
                     <h1>Good {today.getHours() < 12 ? 'morning' : today.getHours() < 17 ? 'afternoon' : 'evening'},<br /><em>{(plan?.name || 'athlete').split(' ')[0]}.</em></h1>
                     <p>Your movement, membership and progress — all in one place.</p>
                     <div className="member-overview-actions">
+                        {user?.profileImageUrl && <img src={user.profileImageUrl} alt="Your profile avatar" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #F5B800' }} />}
                         {isFitPrimeMember && <a href="/explore-gyms">Explore gyms <ArrowUpRight size={15} /></a>}
                         <a href="/member-classes">Find a class <ArrowUpRight size={15} /></a>
                         <button type="button" className="member-profile-action" onClick={openProfileEditModal}>Edit profile</button>
                     </div>
                 </div>
                 <div className="member-pass-summary">
-                    <div className="member-pass-summary-top"><span>{isFitPrimeMember ? 'FITPASS PASS' : 'MEMBERSHIP PASS'}</span><span className="member-active-pill"><i />{plan?.status || 'No plan'}</span></div>
+                    <div className="member-pass-summary-top"><span>{isFitPrimeMember ? 'FITPASS PASS' : isH4Member ? 'H4 MEMBERSHIP' : 'MEMBERSHIP PASS'}</span><span className={`member-active-pill ${isFitPrimeMember && sessionStatus?.planStatus !== 'Active' ? 'is-renewal-due' : ''}`}><i />{isFitPrimeMember ? (sessionStatus?.planStatus || 'No pass') : (plan?.status || 'No plan')}</span></div>
                     <strong>{plan?.planId?.name || 'Choose your next plan'}</strong>
                     <div className="member-pass-meta">{isFitPrimeMember ? `${sessionsRemaining} sessions remaining` : plan?.expiryDate ? `Valid until ${new Date(plan.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Your training journey starts here'}</div>
                     <div className="member-pass-progress"><span style={{ width: `${progressPercent}%` }} /></div>
@@ -294,19 +378,19 @@ const MemberDashboard = () => {
                 <article className="member-metric-card"><span className="member-metric-icon"><Activity size={17} /></span><small>VISITS THIS MONTH</small><strong>{monthlyVisits}</strong><span>{successfulVisits} all-time check-ins</span></article>
                 <article className="member-metric-card"><span className="member-metric-icon"><Flame size={17} /></span><small>ACTIVE STREAK</small><strong>{streak}<i> days</i></strong><span>{streak ? 'Keep your rhythm going' : 'Your next visit starts it'}</span></article>
                 <article className="member-metric-card"><span className="member-metric-icon"><CalendarDays size={17} /></span><small>THIS WEEK</small><strong>{weeklyActivity.reduce((sum, item) => sum + item.visits, 0)}<i> visits</i></strong><span>Across the last 7 days</span></article>
-                <article className="member-metric-card"><span className="member-metric-icon"><MapPin size={17} /></span><small>{isFitPrimeMember ? 'NETWORK ACCESS' : 'MEMBERSHIP DUE'}</small><strong>{isFitPrimeMember ? gyms.length : `₹${amountDue.toLocaleString('en-IN')}`}</strong><span>{isFitPrimeMember ? 'partner gyms to explore' : amountDue > 0 ? 'Balance remaining' : 'All caught up'}</span></article>
+                <article className="member-metric-card"><span className="member-metric-icon"><MapPin size={17} /></span><small>{isFitPrimeMember ? 'NETWORK ACCESS' : isH4Member ? 'HOME GYM' : 'MEMBERSHIP DUE'}</small><strong>{isFitPrimeMember ? gyms.length : isH4Member ? (plan?.homeGym?.branchName || plan?.homeGym?.name || 'H4') : `₹${amountDue.toLocaleString('en-IN')}`}</strong><span>{isFitPrimeMember ? 'partner gyms to explore' : isH4Member ? 'your assigned H4 gym' : amountDue > 0 ? 'Balance remaining' : 'All caught up'}</span></article>
             </section>
 
             <section className="member-analytics-grid">
                 <article className="member-activity-panel">
                     <div className="member-panel-heading"><div><small>YOUR CONSISTENCY</small><h2>Weekly activity</h2></div><span className="member-panel-tag"><i /> LAST 7 DAYS</span></div>
                     <div className="member-chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={weeklyActivity} margin={{ top: 12, right: 8, left: -20, bottom: 0 }}>
-                        <defs><linearGradient id="memberActivityFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e9b91e" stopOpacity={0.32}/><stop offset="100%" stopColor="#e9b91e" stopOpacity={0.02}/></linearGradient></defs>
-                        <CartesianGrid vertical={false} stroke="#e9e3d5" strokeDasharray="3 5" />
-                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#817c6f', fontSize: 11 }} dy={9}/>
-                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#817c6f', fontSize: 10 }} width={30}/>
-                        <Tooltip contentStyle={{ border: '1px solid #e7e1d4', borderRadius: 8, background: '#fffef9', fontSize: 12 }} />
-                        <Area type="monotone" dataKey="visits" name="Check-ins" stroke="#c69b08" strokeWidth={3} fill="url(#memberActivityFill)" activeDot={{ r: 5, fill: '#171817', stroke: '#f1c934', strokeWidth: 3 }}/>
+                                                <defs><linearGradient id="memberActivityFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F5B800" stopOpacity={0.4}/><stop offset="100%" stopColor="#F5B800" stopOpacity={0.02}/></linearGradient></defs>
+                        <CartesianGrid vertical={false} stroke="#EDE8DE" strokeDasharray="3 5" />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontSize: 11, fontWeight: 700 }} dy={9}/>
+                        <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#000000', fontSize: 10, fontWeight: 700 }} width={30}/>
+                        <Tooltip contentStyle={{ border: '1.5px solid #DFD7C7', borderRadius: 10, background: '#FFFFFF', color: '#000000', fontWeight: 700, fontSize: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
+                        <Area type="monotone" dataKey="visits" name="Check-ins" stroke="#F5B800" strokeWidth={3.5} fill="url(#memberActivityFill)" activeDot={{ r: 6, fill: '#000000', stroke: '#F5B800', strokeWidth: 3 }}/>
                     </AreaChart></ResponsiveContainer></div>
                     <div className="member-chart-footer"><span>One visit at a time adds up.</span><b>{weeklyActivity.reduce((sum, item) => sum + item.visits, 0)} check-ins this week</b></div>
                 </article>
@@ -317,24 +401,27 @@ const MemberDashboard = () => {
                 </article>
             </section>
 
-            {isFitPrimeMember && gyms.length > 0 && <section className="member-featured-section">
-                <div className="member-panel-heading"><div><small>THE FITPASS NETWORK</small><h2>Places to move next</h2></div><a href="/explore-gyms">Explore all gyms <ArrowUpRight size={15}/></a></div>
+            {(isFitPrimeMember ? gyms.length > 0 : isH4Member && gyms.length > 0) && <section className="member-featured-section">
+                <div className="member-panel-heading"><div><small>{isFitPrimeMember ? 'THE FITPASS NETWORK' : 'YOUR H4 MEMBERSHIP'}</small><h2>{isFitPrimeMember ? 'Places to move next' : 'Your assigned gym'}</h2></div>{isFitPrimeMember && <a href="/explore-gyms">Explore all gyms <ArrowUpRight size={15}/></a>}</div>
                 <div className="member-featured-grid">{gyms.slice(0, 3).map((gym) => {
                     const image = gym.images?.[0] || gym.imageUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80';
-                    return <a className="member-featured-gym" href="/explore-gyms" key={gym.id || gym._id || gym.name}>
-                        <img src={image} alt={gym.name || 'FitPass partner gym'} loading="lazy"/>
+                    const content = <>
+                        <img src={image} alt={gym.name || (isFitPrimeMember ? 'FitPass partner gym' : 'H4 gym')} loading="lazy"/>
                         <span className="member-featured-overlay"/>
-                        <span className="member-featured-content"><small><MapPin size={12}/> FITPASS PARTNER</small><b>{gym.name}</b><span>{gym.address || 'Explore this gym'}</span></span>
-                        <ArrowUpRight className="member-featured-arrow" size={18}/>
-                    </a>;
+                        <span className="member-featured-content"><small><MapPin size={12}/> {isFitPrimeMember ? 'FITPASS PARTNER' : 'ASSIGNED H4 GYM'}</small><b>{gym.name}</b><span>{gym.address || gym.branchAddress || (isFitPrimeMember ? 'Explore this gym' : 'Your home gym')}</span></span>
+                        {isFitPrimeMember && <ArrowUpRight className="member-featured-arrow" size={18}/>}
+                    </>;
+                    return isFitPrimeMember
+                        ? <a className="member-featured-gym" href="/explore-gyms" key={gym.id || gym._id || gym.name}>{content}</a>
+                        : <div className="member-featured-gym" key={gym.id || gym._id || gym.name}>{content}</div>;
                 })}</div>
             </section>}
 
-            {/* Top row: Plan + Balance + QR */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            {/* Top row: Plan + Balance */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
 
                 {/* Plan Card */}
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px', borderLeft: `6px solid ${plan?.status === 'Frozen' ? 'var(--primary-color)' : 'var(--primary-hover)'}` }}>
+                <div className="glass" style={{ padding: '1.1rem', borderRadius: '16px', borderLeft: '6px solid #F5B800' }}>
                     <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Plan</h3>
                     <p style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{plan?.planId?.name || 'No Plan'}</p>
                     {plan?.status === 'Frozen' && (
@@ -373,10 +460,19 @@ const MemberDashboard = () => {
                             </>
                         )}
                     </div>
+                    {isFitPrimeMember && (
+                        <button
+                            type="button"
+                            className="btn btn-primary fitpass-renew-trigger"
+                            onClick={() => { setSelectedRenewalPlan(null); setRenewalModalOpen(true); }}
+                        >
+                            Renew or change pass <ArrowUpRight size={16} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Due Balance */}
-                <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px', borderLeft: '6px solid var(--accent-color)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div className="glass" style={{ padding: '1.1rem', borderRadius: '16px', borderLeft: '6px solid #000000', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                         <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Balance</h3>
                         <p style={{
@@ -397,7 +493,7 @@ const MemberDashboard = () => {
                                 onClick={openPaymentModal}
                                 disabled={paying}
                                 className="btn btn-primary"
-                                style={{ width: '100%', marginTop: '1rem', background: 'var(--accent-color)' }}
+                                style={{ width: '100%', marginTop: '1rem', background: '#F5B800', color: '#000000', fontWeight: '900', border: '1.5px solid #DF9E00' }}
                             >
                                 {paying ? 'Processing...' : ` Pay Now`}
                             </button>
@@ -406,46 +502,6 @@ const MemberDashboard = () => {
                     </div>
                 </div>
 
-                {/* QR Code Card */}
-                <div className="glass" style={{
-                    padding: '1.5rem', borderRadius: '16px',
-                    borderLeft: '6px solid #10b981',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem'
-                }}>
-                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em', alignSelf: 'flex-start' }}>
-                        My Attendance QR
-                    </h3>
-                    <div ref={qrRef} style={{
-                        background: '#fff', padding: '12px', borderRadius: '12px',
-                        cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
-                    }} onClick={() => setQrFullscreen(true)} title="Click to enlarge">
-                        <QRCodeCanvas
-                            value={memberId}
-                            size={130}
-                            level="H"
-                            includeMargin={false}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
-                        <button
-                            onClick={() => setQrFullscreen(true)}
-                            className="btn btn-secondary"
-                            style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(16,185,129,0.1)', color: '#10b981' }}
-                        >
-                             Fullscreen
-                        </button>
-                        <button
-                            onClick={downloadQR}
-                            className="btn btn-secondary"
-                            style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(99,102,241,0.1)', color: 'var(--primary-color)' }}
-                        >
-                             Download
-                        </button>
-                    </div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', margin: 0 }}>
-                        Show this QR to gym staff to mark attendance
-                    </p>
-                </div>
             </div>
 
             {/* FitPrime session status banner (active session or cooldown) */}
@@ -650,6 +706,56 @@ const MemberDashboard = () => {
                 </div>
             </div>
 
+            {/* FitPass self-serve renewal with the development demo gateway. */}
+            {renewalModalOpen && (
+                <div className="fitpass-renewal-overlay" onMouseDown={(event) => {
+                    if (event.target === event.currentTarget && !paying) {
+                        setRenewalModalOpen(false);
+                        setSelectedRenewalPlan(null);
+                    }
+                }}>
+                    <section className="fitpass-renewal-modal" role="dialog" aria-modal="true" aria-labelledby="fitpass-renewal-title">
+                        <button type="button" className="fitpass-renewal-close" aria-label="Close renewal" onClick={() => {
+                            if (!paying) { setRenewalModalOpen(false); setSelectedRenewalPlan(null); }
+                        }}>×</button>
+                        <span className="fitpass-renewal-kicker">FITPASS MEMBERSHIP</span>
+                        <h2 id="fitpass-renewal-title">{selectedRenewalPlan ? 'Review your pass' : 'Renew your pass'}</h2>
+                        {selectedRenewalPlan ? (
+                            <>
+                                <div className="fitpass-renewal-summary">
+                                    <strong>{selectedRenewalPlan.name}</strong>
+                                    <span>₹{Number(selectedRenewalPlan.price).toLocaleString('en-IN')}</span>
+                                    <small>{selectedRenewalPlan.sessions} sessions · {selectedRenewalPlan.duration || 30} {selectedRenewalPlan.durationUnit || 'days'}</small>
+                                </div>
+                                <p className="fitpass-demo-note">
+                                    {usesMockFitPassGateway
+                                        ? 'Demo checkout · No real payment will be collected. This temporary mock gateway can be switched to Razorpay when ready.'
+                                        : 'Secure checkout by Razorpay. Your pass renews after Razorpay confirms the payment.'}
+                                </p>
+                                <div className="fitpass-renewal-actions">
+                                    <button type="button" className="btn btn-secondary" disabled={paying} onClick={() => setSelectedRenewalPlan(null)}>Back to passes</button>
+                                    <button type="button" className="btn btn-primary" disabled={paying} onClick={handleFitPassRenewal}>
+                                        {paying ? 'Processing…' : `${usesMockFitPassGateway ? 'Confirm demo payment' : 'Continue to payment'} · ₹${Number(selectedRenewalPlan.price).toLocaleString('en-IN')}`}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <p className="fitpass-renewal-copy">Choose a session pass. If your current pass is still active, its remaining time carries forward.</p>
+                                <div className="fitpass-renewal-options">
+                                    {fitPassPlans.map((fitPassPlan) => (
+                                        <button type="button" key={fitPassPlan.id || fitPassPlan._id} className="fitpass-renewal-option" onClick={() => setSelectedRenewalPlan(fitPassPlan)}>
+                                            <span><strong>{fitPassPlan.name}</strong><small>{fitPassPlan.sessions} sessions · {fitPassPlan.duration || 30} {fitPassPlan.durationUnit || 'days'}</small></span>
+                                            <b>₹{Number(fitPassPlan.price).toLocaleString('en-IN')} <ArrowUpRight size={16} /></b>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </section>
+                </div>
+            )}
+
             {/* Partial Payment Modal */}
             {paymentModal && (
                 <div
@@ -743,29 +849,6 @@ const MemberDashboard = () => {
                 </div>
             )}
 
-            {/* Fullscreen QR Modal */}
-            {qrFullscreen && (
-                <div
-                    onClick={() => setQrFullscreen(false)}
-                    style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 2000, gap: '1.5rem', cursor: 'pointer'
-                    }}
-                >
-                    <p style={{ color: '#fff', fontSize: '0.875rem', opacity: 0.6 }}>Tap anywhere to close</p>
-                    <div style={{ background: '#fff', padding: '24px', borderRadius: '20px', boxShadow: '0 20px 80px rgba(0,0,0,0.5)' }}
-                        onClick={e => e.stopPropagation()}>
-                        <QRCodeCanvas value={memberId} size={280} level="H" includeMargin={false} />
-                    </div>
-                    <p style={{ color: '#fff', fontWeight: '700', fontSize: '1.1rem', margin: 0 }}>{plan?.name}</p>
-                    <p style={{ color: '#aaa', fontSize: '0.8rem', margin: 0 }}>Show this to gym staff to mark attendance</p>
-                    <button onClick={downloadQR} className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
-                         Download QR
-                    </button>
-                </div>
-            )}
-
             {/* Edit Profile Modal */}
             {profileModal && (
                 <div
@@ -787,6 +870,7 @@ const MemberDashboard = () => {
                         }}
                     >
                         <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800' }}>Edit Profile &amp; Credentials</h3>
+                        <div><strong>Choose an avatar</strong><div style={{ display: 'flex', gap: 12, marginTop: 10 }}>{['https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn'].map((avatar) => <button type="button" key={avatar} onClick={() => setSelectedAvatar(avatar)} aria-label="Choose cartoon avatar" style={{ padding: 3, border: selectedAvatar === avatar ? '3px solid #F5B800' : '2px solid #ddd', borderRadius: '50%', background: 'white' }}><img src={avatar} alt="Cartoon avatar" width="54" height="54" /></button>)}</div></div>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
                             Your name, email, and mobile number are locked. Contact your gym admin to change them.
                         </p>
@@ -849,7 +933,7 @@ const MemberDashboard = () => {
                                 type="submit"
                                 className="btn btn-primary"
                                 style={{ flex: 1 }}
-                                disabled={updatingProfile || !profilePassword}
+                                disabled={updatingProfile || (!profilePassword && !selectedAvatar)}
                             >
                                 {updatingProfile ? 'Saving...' : 'Save Changes'}
                             </button>

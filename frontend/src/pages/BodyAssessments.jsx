@@ -22,6 +22,7 @@ const BodyAssessments = () => {
     const [selectedMemberId, setSelectedMemberId] = useState('');
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showSamplePreview, setShowSamplePreview] = useState(false);
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -147,9 +148,16 @@ const BodyAssessments = () => {
 
     const safeAssessments = Array.isArray(assessments) ? assessments : [];
     const safeMembers = Array.isArray(members) ? members : [];
+    const sampleAssessments = [
+        { _id: 'sample-1', assessmentDate: new Date(Date.now() - 60 * 86400000).toISOString(), weight: 78.5, bmi: 24.8, bodyFat: 19.2, muscleMass: 62.1, bmr: 1750, inBodyScore: 72 },
+        { _id: 'sample-2', assessmentDate: new Date(Date.now() - 30 * 86400000).toISOString(), weight: 76.8, bmi: 24.3, bodyFat: 18.1, muscleMass: 62.6, bmr: 1738, inBodyScore: 76 },
+        { _id: 'sample-3', assessmentDate: new Date().toISOString(), weight: 75.6, bmi: 23.9, bodyFat: 17.4, muscleMass: 63.0, bmr: 1725, inBodyScore: 80 }
+    ];
+    const isSamplePreview = safeAssessments.length === 0 && showSamplePreview;
+    const displayedAssessments = isSamplePreview ? sampleAssessments : safeAssessments;
 
     // Calculate charts data
-    const chartData = safeAssessments.map(a => ({
+    const chartData = displayedAssessments.map(a => ({
         date: new Date(a.assessmentDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
         Weight: a.weight,
         BMI: a.bmi,
@@ -160,7 +168,7 @@ const BodyAssessments = () => {
     }));
 
     // Get latest assessment for quick metrics
-    const latest = safeAssessments[safeAssessments.length - 1];
+    const latest = displayedAssessments[displayedAssessments.length - 1];
 
     // Helper to evaluate BMI status
     const getBmiStatus = (bmi) => {
@@ -283,14 +291,21 @@ const BodyAssessments = () => {
                         </div>
                     ) : null}
 
-                    {safeAssessments.length === 0 ? (
+                    {displayedAssessments.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                             <Activity size={48} style={{ margin: '0 auto 1rem', color: 'var(--primary-color)', opacity: 0.5 }} />
                             <h3>No assessments logged yet</h3>
-                            <p>There are no historical InBody assessments recorded for this member.</p>
+                            <p>A trainer or admin can record this member’s readings after an InBody assessment.</p>
+                            <button className="btn btn-secondary" onClick={() => setShowSamplePreview(true)}>Preview sample data</button>
                         </div>
                     ) : (
                         <div>
+                            {isSamplePreview && (
+                                <div role="status" style={{ background: '#fff6d8', border: '1px solid #e8c95c', color: '#4b3b00', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
+                                    <strong>Sample preview only.</strong> These example readings are not stored in this member’s account.{' '}
+                                    <button className="btn btn-secondary" style={{ marginLeft: '0.75rem' }} onClick={() => setShowSamplePreview(false)}>Close preview</button>
+                                </div>
+                            )}
                             {/* Charts Visualization Row */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                                 {/* Weight & Muscle Mass Trend */}
@@ -344,11 +359,11 @@ const BodyAssessments = () => {
                                                 <th>Muscle Mass (kg)</th>
                                                 <th>BMR (kcal)</th>
                                                 <th>InBody Score</th>
-                                                {isStaff && <th>Actions</th>}
+                                                {isStaff && !isSamplePreview && <th>Actions</th>}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {[...safeAssessments].reverse().map(item => (
+                                            {[...displayedAssessments].reverse().map(item => (
                                                 <tr key={item._id}>
                                                     <td style={{ fontWeight: '600' }}>
                                                         {new Date(item.assessmentDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -367,7 +382,7 @@ const BodyAssessments = () => {
                                                     <td>{item.muscleMass} kg</td>
                                                     <td>{item.bmr} kcal</td>
                                                     <td>{item.inBodyScore || '—'}</td>
-                                                    {isStaff && (
+                                                    {isStaff && !isSamplePreview && (
                                                         <td>
                                                             <div style={{ display: 'flex', gap: '0.4rem' }}>
                                                                 <button

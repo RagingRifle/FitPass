@@ -355,7 +355,7 @@ export const PartnerGymsList: React.FC = () => {
                   <View style={styles.statMetric}>
                     <DollarSign size={14} color={theme.colors.success} />
                     <Typography variant="caption" color="success">
-                      ₹{branch.totalRevenue || 0} Revenue
+                      INR {branch.totalRevenue || 0} Revenue
                     </Typography>
                   </View>
                 </View>

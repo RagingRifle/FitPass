@@ -174,13 +174,16 @@ export const usePurchasePlan = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (planId: string) => {
-      // 1. Create order
-      const { data: order } = await API_CLIENT.post('/member-portal/purchase-plan/create-order', { planId });
-      // 2. Verify payment (supports mock / auto-verify in test environments)
+      // The mock gateway exercises the same signed order/verification path as Razorpay.
+      // Replace this adapter with the native Razorpay SDK when mobile checkout is enabled.
+      const { data: order } = await API_CLIENT.post('/member-portal/purchase-plan/create-order', { planId, gateway: 'mock' });
+      if (!order.is_mock || !order.mock_token) {
+        throw new Error('Mobile checkout is not configured for live payments yet.');
+      }
       const { data: verifyResult } = await API_CLIENT.post('/member-portal/purchase-plan/verify', {
         razorpay_order_id: order.id,
         razorpay_payment_id: `pay_test_${Date.now()}`,
-        razorpay_signature: 'mock_test_signature',
+        mock_token: order.mock_token,
         planId,
       });
       return verifyResult;

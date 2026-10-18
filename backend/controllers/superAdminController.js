@@ -355,7 +355,7 @@ const deleteFitPrimePlan = catchAsync(async (req, res, next) => {
 // @route   GET /api/superadmin/plans
 // @access  Private (Super Admin)
 const getFitPrimePlans = catchAsync(async (req, res, next) => {
-    const plans = await Plan.find({ gymId: 'SYSTEM' });
+    const plans = await Plan.find({ gymId: 'SYSTEM', sessions: { $gt: 0 } });
     res.json(plans);
 });
 
@@ -536,7 +536,7 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
 
     // Get all SYSTEM plan IDs
     const fitPassPlans = await prisma.plan.findMany({
-        where: { gymId: 'SYSTEM' },
+        where: { gymId: 'SYSTEM', sessions: { gt: 0 } },
         select: { id: true, name: true, sessions: true, price: true },
     });
     const fitPassPlanIds = fitPassPlans.map(p => p.id);
@@ -614,7 +614,7 @@ const getFitPassOverview = catchAsync(async (req, res, next) => {
 
     // All SYSTEM plans
     const fitPassPlans = await prisma.plan.findMany({
-        where: { gymId: 'SYSTEM' },
+        where: { gymId: 'SYSTEM', sessions: { gt: 0 } },
         select: { id: true, name: true, sessions: true, price: true },
     });
     const fitPassPlanIds = fitPassPlans.map(p => p.id);

@@ -156,7 +156,7 @@ function FitPrimePlans() {
                         <Ticket size={28} />
                     </div>
                     <div className="fitprime-header-text">
-                        <h2>FitPrime (Global) Plans</h2>
+                        <h2>FitPass Member Plans</h2>
                         <p>Session-based membership tiers granting universal gym check-ins across all partner locations.</p>
                     </div>
                 </div>
@@ -191,7 +191,7 @@ function FitPrimePlans() {
                     </div>
                     <div>
                         <div className="fitprime-stat-val">{totalPlans}</div>
-                        <div className="fitprime-stat-lbl">Active Global Tiers</div>
+                        <div className="fitprime-stat-lbl">Active FitPass passes</div>
                     </div>
                 </div>
 
@@ -249,7 +249,7 @@ function FitPrimePlans() {
                     <Ticket size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem', opacity: 0.5 }} />
                     <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>No FitPrime Plans Found</h3>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
-                        {searchTerm ? 'No plans match your current search query.' : 'Get started by creating your first global session-based plan.'}
+                        {searchTerm ? 'No plans match your current search query.' : 'Create a session pass for FitPass members to purchase or renew themselves.'}
                     </p>
                     {!searchTerm && (
                         <button className="btn btn-primary" onClick={handleOpenCreateModal}>
@@ -272,7 +272,7 @@ function FitPrimePlans() {
                                         <h3 className="fitprime-card-title">{plan.name}</h3>
                                         <span className="fitprime-badge-global">
                                             <Globe size={12} />
-                                            {plan.gymId === 'SYSTEM' ? 'Global' : plan.gymId}
+                                            {plan.gymId === 'SYSTEM' ? 'FitPass only' : plan.gymId}
                                         </span>
                                     </div>
 

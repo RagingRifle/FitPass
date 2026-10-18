@@ -11,7 +11,6 @@ import {
   ScanLine,
   User,
 } from '@/components/ui/app-icons';
-import { theme } from '@/design-system/theme';
 
 interface CustomTabBarProps {
   state: any;
@@ -25,10 +24,9 @@ const FITPASS_TABS = ['dashboard', 'gyms', 'scan', 'plans', 'profile'];
 export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, portalType }) => {
   const insets = useSafeAreaInsets();
   const isH4 = portalType === 'h4';
-  const activeColor = isH4 ? '#246B78' : '#3F63C8';
-  const activeBackground = isH4
-    ? '#E4F0F1'
-    : '#E9EEFC';
+  const activeColor = '#F5B800';
+  const inactiveColor = '#E8E2D6';
+  const activeBackground = '#2B2A25';
   const visibleRoutes = (isH4 ? H4_TABS : FITPASS_TABS)
     .map((name) => state.routes.find((route: any) => route.name === name))
     .filter(Boolean);
@@ -57,11 +55,11 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, p
 
   return (
     <View style={[styles.mainWrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View style={[styles.bar, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={styles.bar}>
         {visibleRoutes.map((route: any) => {
           const focused = selectedRouteName === route.name;
           const { label, Icon } = getTab(route.name);
-          const color = focused ? activeColor : theme.colors.textSecondary;
+          const color = focused ? activeColor : inactiveColor;
           const onPress = () => {
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
             if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
@@ -95,20 +93,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    backgroundColor: '#171713',
   },
   bar: {
     height: 68,
-    borderRadius: 23,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#34332E',
+    borderWidth: 0,
     padding: 6,
     flexDirection: 'row',
     alignItems: 'stretch',
     ...Platform.select({
-      ios: { shadowColor: '#15222A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-      android: { elevation: 8 },
+      ios: { shadowColor: '#000000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.18, shadowRadius: 8 },
+      android: { elevation: 10 },
     }),
   },
   tab: {

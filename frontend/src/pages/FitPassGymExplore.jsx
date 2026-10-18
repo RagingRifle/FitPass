@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { discoveryService } from '../services/discoveryService';
 import { Skeleton } from '../components/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { Check, Dumbbell, X } from 'lucide-react';
+import { Check, Dumbbell, X, MapPin, Star, Phone, Navigation } from 'lucide-react';
 
 export default function FitPassGymExplore() {
   const [loading, setLoading] = useState(true);
@@ -100,65 +100,97 @@ export default function FitPassGymExplore() {
   };
 
   const categories = [
-    { id: 'all', label: ' All Partner Gyms' },
-    { id: 'nearby', label: ' Nearby Gyms' },
-    { id: 'recommended', label: ' Recommended' },
-    { id: 'trending', label: ' Trending' },
-    { id: 'newly_added', label: ' Newly Added' },
-    { id: 'highest_rated', label: ' Highest Rated' },
-    { id: 'most_visited', label: ' Most Visited' },
-    { id: 'open_now', label: ' Open Right Now' }
+    { id: 'all', label: 'All Partner Gyms' },
+    { id: 'nearby', label: 'Nearby Gyms' },
+    { id: 'recommended', label: 'Recommended' },
+    { id: 'trending', label: 'Trending' },
+    { id: 'newly_added', label: 'Newly Added' },
+    { id: 'highest_rated', label: 'Highest Rated' },
+    { id: 'most_visited', label: 'Most Visited' },
+    { id: 'open_now', label: 'Open Right Now' }
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1300px', margin: '0 auto', color: '#FFFFFF' }}>
+    <div style={{ padding: '24px 16px', maxWidth: '1300px', margin: '0 auto', color: '#000000' }}>
       
       {/* Hero Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #2D251C 0%, #1A150F 100%)',
-        padding: '32px 24px',
+        background: '#000000',
+        padding: '36px 28px',
         borderRadius: '20px',
-        border: '1px solid #3A3025',
-        marginBottom: '24px',
+        border: '2px solid #000000',
+        marginBottom: '28px',
         textAlign: 'center',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', margin: '0 0 8px 0', background: 'linear-gradient(90deg, #F0A020 0%, #FCE6B8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Explore & Discover FitPass Partner Gyms
+        {/* Subtle decorative glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-120px',
+          right: '-100px',
+          width: '320px',
+          height: '320px',
+          borderRadius: '50%',
+          border: '2px solid rgba(245, 184, 0, 0.25)',
+          boxShadow: '0 0 0 30px rgba(245, 184, 0, 0.05)',
+          pointerEvents: 'none'
+        }} />
+
+        <h1 style={{
+          fontSize: '32px',
+          fontWeight: '900',
+          margin: '0 0 10px 0',
+          color: '#FFFFFF',
+          letterSpacing: '-0.03em',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          Explore & Discover <span style={{ color: '#F5B800' }}>FitPass Partner Gyms</span>
         </h1>
-        <p style={{ color: '#A39686', fontSize: '15px', maxWidth: '600px', margin: '0 auto 24px auto' }}>
+        <p style={{
+          color: '#E2DDD2',
+          fontSize: '15px',
+          maxWidth: '650px',
+          margin: '0 auto 28px auto',
+          lineHeight: '1.6'
+        }}>
           Browse verified workout centers, compare real-time amenities, view gym highlights, and check in seamlessly using your FitPass subscription.
         </p>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '12px', maxWidth: '700px', margin: '0 auto' }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '12px', maxWidth: '720px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search by gym name, location, city, or amenities (e.g., Treadmills, Steam Bath)..."
+            placeholder="Search by gym name, location, city, or amenities..."
             style={{
               flex: 1,
-              padding: '14px 20px',
+              padding: '14px 22px',
               borderRadius: '30px',
-              background: '#231D14',
-              border: '1px solid #F0A020',
-              color: '#FFFFFF',
-              fontSize: '15px',
-              outline: 'none'
+              background: '#FFFFFF',
+              border: '2px solid #DFD7C7',
+              color: '#000000',
+              fontWeight: '600',
+              fontSize: '14px',
+              outline: 'none',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.1)'
             }}
           />
           <button
             type="submit"
             style={{
-              padding: '14px 28px',
+              padding: '14px 30px',
               borderRadius: '30px',
-              background: '#F0A020',
-              color: '#231D14',
-              fontWeight: 'bold',
+              background: '#F5B800',
+              color: '#000000',
+              fontWeight: '900',
               fontSize: '15px',
-              border: 'none',
-              cursor: 'pointer'
+              border: '1.5px solid #DF9E00',
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(245, 184, 0, 0.4)',
+              transition: 'all 0.18s ease'
             }}
           >
             Search
@@ -167,57 +199,62 @@ export default function FitPassGymExplore() {
       </div>
 
       {/* Category Pills */}
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '24px' }}>
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => handleCategoryChange(cat.id)}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '24px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-              border: 'none',
-              cursor: 'pointer',
-              background: activeCategory === cat.id ? '#F0A020' : '#2D251C',
-              color: activeCategory === cat.id ? '#231D14' : '#A39686',
-              boxShadow: activeCategory === cat.id ? '0 4px 14px rgba(240, 160, 32, 0.4)' : 'none'
-            }}
-          >
-            {cat.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '14px', marginBottom: '24px' }}>
+        {categories.map(cat => {
+          const isActive = activeCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => handleCategoryChange(cat.id)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '24px',
+                fontSize: '13px',
+                fontWeight: '800',
+                whiteSpace: 'nowrap',
+                border: isActive ? '1.5px solid #DF9E00' : '1.5px solid #DFD7C7',
+                cursor: 'pointer',
+                background: isActive ? '#F5B800' : '#FFFFFF',
+                color: '#000000',
+                boxShadow: isActive ? '0 4px 14px rgba(245, 184, 0, 0.35)' : '0 2px 6px rgba(0,0,0,0.04)',
+                transition: 'all 0.18s ease'
+              }}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Social Posts Carousel Highlights */}
       {posts.length > 0 && (
         <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '20px', color: '#F0A020', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-             Latest Partner Gym Posts & Highlights
+          <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#000000', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            Latest Partner Gym Posts & Highlights
           </h2>
           <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }}>
             {posts.map(post => (
               <div key={post.id} style={{
                 minWidth: '280px',
                 maxWidth: '280px',
-                background: '#2D251C',
-                borderRadius: '12px',
-                border: '1px solid #3A3025',
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                border: '1.5px solid #DFD7C7',
                 overflow: 'hidden',
-                flexShrink: 0
+                flexShrink: 0,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.04)'
               }}>
                 {post.images && post.images.length > 0 ? (
                   <img src={post.images[0]} alt={post.title} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ width: '100%', height: '160px', background: '#1A150F' }} />
+                  <div style={{ width: '100%', height: '160px', background: '#F6F3EC' }} />
                 )}
                 <div style={{ padding: '14px' }}>
-                  <div style={{ fontSize: '11px', color: '#F0A020', fontWeight: 'bold', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '11px', color: '#A37A00', fontWeight: '800', marginBottom: '4px', textTransform: 'uppercase' }}>
                     {post.gym?.name}
                   </div>
-                  <h4 style={{ fontSize: '14px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#FFF' }}>{post.title}</h4>
-                  <p style={{ fontSize: '12px', color: '#A39686', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '800', margin: '0 0 4px 0', color: '#000000' }}>{post.title}</h4>
+                  <p style={{ fontSize: '12px', color: '#555045', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {post.caption || post.description}
                   </p>
                 </div>
@@ -227,15 +264,15 @@ export default function FitPassGymExplore() {
         </div>
       )}
 
-      {/* Gym Cards Grid */}
-      <h2 style={{ fontSize: '20px', color: '#FFF', marginBottom: '16px' }}>
+      {/* Gym Cards Grid Header */}
+      <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#000000', marginBottom: '18px', letterSpacing: '-0.02em' }}>
         Found {gyms.length} FitPass Partner Gyms
       </h2>
 
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="card" style={{ height: '320px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div key={i} className="card" style={{ height: '320px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#FFFFFF' }}>
               <Skeleton width="100%" height={160} borderRadius={12} />
               <Skeleton width="70%" height={20} />
               <Skeleton width="40%" height={14} />
@@ -266,13 +303,23 @@ export default function FitPassGymExplore() {
                 key={gym.id}
                 onClick={() => openGymDetails(gym.id)}
                 style={{
-                  background: '#2D251C',
+                  background: '#FFFFFF',
                   borderRadius: '16px',
-                  border: '1px solid #3A3025',
+                  border: '1.5px solid #DFD7C7',
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  transition: 'transform 0.2s, boxShadow 0.2s',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                  transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+                  boxShadow: '0 4px 18px rgba(0,0,0,0.04)'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.borderColor = '#F5B800';
+                  e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(245, 184, 0, 0.4)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = '#DFD7C7';
+                  e.currentTarget.style.boxShadow = '0 4px 18px rgba(0,0,0,0.04)';
                 }}
               >
                 {/* Gym Cover & Badges */}
@@ -295,49 +342,49 @@ export default function FitPassGymExplore() {
                       height: '56px',
                       borderRadius: '50%',
                       objectFit: 'cover',
-                      border: '3px solid #2D251C',
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.5)'
+                      border: '3px solid #FFFFFF',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
                     }}
                   />
 
                   {/* Distance & Open Pill */}
                   <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
                     {p.isOpenNow ? (
-                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(46,125,50,0.9)', color: '#FFF', fontWeight: 'bold' }}>
-                         Open Now
+                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#E6F4EA', color: '#137333', border: '1px solid #CEEAD6', fontWeight: '800' }}>
+                        Open Now
                       </span>
                     ) : (
-                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(198,40,40,0.9)', color: '#FFF', fontWeight: 'bold' }}>
-                         Closed
+                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#FCE8E6', color: '#C5221F', border: '1px solid #FAD2CF', fontWeight: '800' }}>
+                        Closed
                       </span>
                     )}
                     {p.distanceKm !== null && (
-                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: 'rgba(0,0,0,0.7)', color: '#F0A020', fontWeight: 'bold' }}>
-                         {p.distanceKm} km
+                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#000000', color: '#F5B800', fontWeight: '800' }}>
+                        {p.distanceKm} km
                       </span>
                     )}
                   </div>
                 </div>
 
                 {/* Card Content */}
-                <div style={{ padding: '28px 16px 16px 16px' }}>
+                <div style={{ padding: '28px 18px 18px 18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#FFF' }}>{gym.name}</h3>
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#F0A020' }}>
-                       {p.rating || 4.8}
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#000000' }}>{gym.name}</h3>
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: '#000000', display: 'flex', alignItems: 'center', gap: '4px', background: '#FFF5D6', padding: '3px 8px', borderRadius: '6px', border: '1px solid #F5B800' }}>
+                      <Star size={12} fill="#F5B800" color="#F5B800" /> {p.rating || 4.8}
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '12px', color: '#A39686', marginBottom: '10px' }}>
-                     {p.city || 'Chennai'} • {p.address}
+                  <div style={{ fontSize: '12px', color: '#555045', marginBottom: '10px', fontWeight: '600' }}>
+                    {p.city || 'Chennai'} • {p.address}
                   </div>
 
                   <p style={{
                     fontSize: '13px',
-                    color: '#A39686',
+                    color: '#555045',
                     marginBottom: '14px',
-                    lineHeight: '1.4',
-                    minHeight: '36.4px',
+                    lineHeight: '1.5',
+                    minHeight: '38px',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
@@ -347,24 +394,28 @@ export default function FitPassGymExplore() {
                   </p>
 
                   {/* Badges row */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-                    {p.isAc && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> AC</span>}
-                    {p.hasParking && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> Parking</span>}
-                    {p.hasPersonalTraining && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> Trainer</span>}
-                    {p.isWomenFriendly && <span style={{ fontSize: '10px', padding: '3px 8px', borderRadius: '4px', background: '#231D14', color: '#A39686' }}> Women Friendly</span>}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+                    {p.isAc && <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '6px', background: '#F6F3EC', color: '#000000', border: '1px solid #DFD7C7', fontWeight: '700' }}>AC</span>}
+                    {p.hasParking && <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '6px', background: '#F6F3EC', color: '#000000', border: '1px solid #DFD7C7', fontWeight: '700' }}>Parking</span>}
+                    {p.hasPersonalTraining && <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '6px', background: '#F6F3EC', color: '#000000', border: '1px solid #DFD7C7', fontWeight: '700' }}>Trainer</span>}
+                    {p.isWomenFriendly && <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '6px', background: '#F6F3EC', color: '#000000', border: '1px solid #DFD7C7', fontWeight: '700' }}>Women Friendly</span>}
                   </div>
 
                   <button
                     style={{
                       width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      background: '#F0A020',
-                      color: '#231D14',
-                      fontWeight: 'bold',
-                      border: 'none',
-                      cursor: 'pointer'
+                      padding: '11px',
+                      borderRadius: '10px',
+                      background: '#F5B800',
+                      color: '#000000',
+                      fontWeight: '900',
+                      fontSize: '13px',
+                      border: '1.5px solid #DF9E00',
+                      cursor: 'pointer',
+                      transition: 'all 0.18s ease'
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#FFC51A'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#F5B800'}
                   >
                     View Complete Gym Profile →
                   </button>
@@ -379,24 +430,27 @@ export default function FitPassGymExplore() {
       {selectedGym && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.85)',
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 9999, padding: '16px'
         }}>
           <div style={{
-            background: '#231D14',
+            background: '#FFFFFF',
+            color: '#000000',
             width: '100%',
             maxWidth: '850px',
             borderRadius: '20px',
             overflow: 'hidden',
-            border: '1px solid #3A3025',
+            border: '2px solid #DFD7C7',
             maxHeight: '90vh',
-            overflowY: 'auto'
+            overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
           }}>
             {/* Modal Hero Banner */}
             <div style={{ position: 'relative', height: '240px' }}>
               <img
-                src={selectedGym.discoveryProfile?.coverImageUrl}
+                src={selectedGym.discoveryProfile?.coverImageUrl || "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop&q=80"}
                 alt={selectedGym.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
@@ -404,9 +458,10 @@ export default function FitPassGymExplore() {
                 onClick={() => setSelectedGym(null)}
                 style={{
                   position: 'absolute', top: '16px', right: '16px',
-                  width: '36px', height: '36px', borderRadius: '50%',
-                  background: 'rgba(0,0,0,0.6)', color: '#FFF', border: 'none',
-                  fontSize: '18px', cursor: 'pointer'
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.7)', color: '#FFF', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer'
                 }}
               >
                 <X size={20} />
@@ -417,16 +472,16 @@ export default function FitPassGymExplore() {
                 display: 'flex', alignItems: 'center', gap: '16px'
               }}>
                 <img
-                  src={selectedGym.discoveryProfile?.logoUrl}
+                  src={selectedGym.discoveryProfile?.logoUrl || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=80&auto=format&fit=crop&q=60"}
                   alt={selectedGym.name}
-                  style={{ width: '70px', height: '70px', borderRadius: '50%', border: '3px solid #F0A020' }}
+                  style={{ width: '70px', height: '70px', borderRadius: '50%', border: '3px solid #F5B800', background: '#FFFFFF' }}
                 />
                 <div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#FFF', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: '900', margin: 0, color: '#FFFFFF', textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
                     {selectedGym.name}
                   </h2>
-                  <div style={{ fontSize: '13px', color: '#FCE6B8', marginTop: '4px' }}>
-                    FitPass Verified Partner •  {selectedGym.discoveryProfile?.rating} ({selectedGym.discoveryProfile?.reviewCount} reviews)
+                  <div style={{ fontSize: '13px', color: '#F5B800', fontWeight: '800', marginTop: '4px', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                    FitPass Verified Partner • ★ {selectedGym.discoveryProfile?.rating || 4.8} ({selectedGym.discoveryProfile?.reviewCount || 0} reviews)
                   </div>
                 </div>
               </div>
@@ -439,82 +494,88 @@ export default function FitPassGymExplore() {
                 <a
                   href={`tel:${selectedGym.discoveryProfile?.contactNumber}`}
                   style={{
-                    flex: 1, padding: '12px', borderRadius: '8px', background: '#F0A020',
-                    color: '#231D14', fontWeight: 'bold', textAlign: 'center', textDecoration: 'none'
+                    flex: 1, padding: '12px', borderRadius: '10px', background: '#F5B800',
+                    color: '#000000', fontWeight: '800', textAlign: 'center', textDecoration: 'none',
+                    border: '1.5px solid #DF9E00', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                   }}
                 >
-                   Call Gym ({selectedGym.discoveryProfile?.contactNumber})
+                  <Phone size={16} /> Call Gym ({selectedGym.discoveryProfile?.contactNumber || 'Available'})
                 </a>
 
                 <a
-                  href={selectedGym.discoveryProfile?.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(selectedGym.name + ' ' + selectedGym.address)}`}
+                  href={selectedGym.discoveryProfile?.googleMapsUrl || `https://maps.google.com/?q=${encodeURIComponent(selectedGym.name + ' ' + (selectedGym.address || ''))}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    flex: 1, padding: '12px', borderRadius: '8px', background: '#3A3025',
-                    color: '#FFF', fontWeight: 'bold', textAlign: 'center', textDecoration: 'none'
+                    flex: 1, padding: '12px', borderRadius: '10px', background: '#000000',
+                    color: '#FFFFFF', fontWeight: '800', textAlign: 'center', textDecoration: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                   }}
                 >
-                   Get Directions on Maps
+                  <Navigation size={16} /> Get Directions on Maps
                 </a>
               </div>
 
               {/* Overview & Hours */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '24px' }}>
                 <div>
-                  <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '8px' }}>About {selectedGym.name}</h3>
-                  <p style={{ fontSize: '14px', color: '#A39686', lineHeight: '1.6' }}>
-                    {selectedGym.discoveryProfile?.description || selectedGym.discoveryProfile?.shortDescription}
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#000000', marginBottom: '8px' }}>About {selectedGym.name}</h3>
+                  <p style={{ fontSize: '14px', color: '#555045', lineHeight: '1.6' }}>
+                    {selectedGym.discoveryProfile?.description || selectedGym.discoveryProfile?.shortDescription || 'No description provided.'}
                   </p>
                 </div>
 
-                <div style={{ background: '#2D251C', padding: '16px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-                  <h4 style={{ fontSize: '14px', color: '#FFF', marginBottom: '8px' }}> Operating Hours</h4>
-                  <div style={{ fontSize: '13px', color: '#A39686' }}>
-                    {selectedGym.discoveryProfile?.openingTime} - {selectedGym.discoveryProfile?.closingTime}
+                <div style={{ background: '#F6F3EC', padding: '16px', borderRadius: '12px', border: '1.5px solid #DFD7C7' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#000000', marginBottom: '8px' }}>Operating Hours</h4>
+                  <div style={{ fontSize: '13px', color: '#555045', fontWeight: '600' }}>
+                    {selectedGym.discoveryProfile?.openingTime || '6:00 AM'} - {selectedGym.discoveryProfile?.closingTime || '10:00 PM'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#F0A020', marginTop: '6px' }}>
-                    Working Days: {selectedGym.discoveryProfile?.workingDays?.join(', ')}
+                  <div style={{ fontSize: '12px', color: '#000000', fontWeight: '700', marginTop: '6px' }}>
+                    Working Days: {selectedGym.discoveryProfile?.workingDays?.join(', ') || 'All Days'}
                   </div>
                 </div>
               </div>
 
               {/* Amenities & Equipment */}
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '12px' }}>Facilities & Amenities</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {selectedGym.discoveryProfile?.amenities?.map(item => (
-                    <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#2D251C', color: '#FFF', fontSize: '13px', border: '1px solid #3A3025' }}>
-                      <Check size={14} /> {item}
-                    </span>
-                  ))}
+              {selectedGym.discoveryProfile?.amenities?.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#000000', marginBottom: '12px' }}>Facilities & Amenities</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedGym.discoveryProfile?.amenities?.map(item => (
+                      <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#F6F3EC', color: '#000000', fontSize: '13px', border: '1px solid #DFD7C7', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Check size={14} color="#1B7C3D" /> {item}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '12px' }}>Equipment Available</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {selectedGym.discoveryProfile?.equipments?.map(item => (
-                    <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#2D251C', color: '#A39686', fontSize: '13px' }}>
-                       {item}
-                    </span>
-                  ))}
+              {selectedGym.discoveryProfile?.equipments?.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#000000', marginBottom: '12px' }}>Equipment Available</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedGym.discoveryProfile?.equipments?.map(item => (
+                      <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#FFF5D6', color: '#000000', fontSize: '13px', border: '1px solid #F5B800', fontWeight: '700' }}>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Gym Posts */}
               {selectedGym.posts && selectedGym.posts.length > 0 && (
                 <div>
-                  <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '12px' }}>Gym Highlights & Workouts</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#000000', marginBottom: '12px' }}>Gym Highlights & Workouts</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
                     {selectedGym.posts.map(post => (
-                      <div key={post.id} style={{ background: '#2D251C', borderRadius: '10px', overflow: 'hidden', border: '1px solid #3A3025' }}>
+                      <div key={post.id} style={{ background: '#FFFFFF', borderRadius: '12px', overflow: 'hidden', border: '1.5px solid #DFD7C7', boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}>
                         {post.images && post.images.length > 0 && (
                           <img src={post.images[0]} alt={post.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
                         )}
-                        <div style={{ padding: '10px' }}>
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#FFF' }}>{post.title}</div>
-                          <div style={{ fontSize: '11px', color: '#A39686' }}>{post.caption}</div>
+                        <div style={{ padding: '12px' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '800', color: '#000000' }}>{post.title}</div>
+                          <div style={{ fontSize: '11px', color: '#555045', marginTop: '2px' }}>{post.caption}</div>
                         </div>
                       </div>
                     ))}

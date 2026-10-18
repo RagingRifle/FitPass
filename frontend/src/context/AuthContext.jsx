@@ -7,31 +7,42 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedGymId, setSelectedGymId] = useState(() => {
-        return localStorage.getItem('selectedGymId') || '';
+        return sessionStorage.getItem('selectedGymId') || '';
     });
     const [selectedBranchId, setSelectedBranchId] = useState(() => {
-        return localStorage.getItem('selectedBranchId') || '';
+        return sessionStorage.getItem('selectedBranchId') || '';
     });
     const [activeDivision, setActiveDivision] = useState(() => {
-        return localStorage.getItem('activeDivision') || 'fitpass';
+        return sessionStorage.getItem('activeDivision') || 'fitpass';
     });
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
+        // Migrate the previous shared browser-wide auth state into this tab once.
+        // Removing the legacy keys prevents other tabs from reusing this session.
+        ['user', 'token', 'selectedGymId', 'selectedBranchId', 'activeDivision'].forEach((key) => {
+            const legacyValue = localStorage.getItem(key);
+            if (!sessionStorage.getItem(key) && legacyValue !== null) sessionStorage.setItem(key, legacyValue);
+            localStorage.removeItem(key);
+        });
+        setSelectedGymId(sessionStorage.getItem('selectedGymId') || '');
+        setSelectedBranchId(sessionStorage.getItem('selectedBranchId') || '');
+        setActiveDivision(sessionStorage.getItem('activeDivision') || 'fitpass');
+
+        const storedUser = sessionStorage.getItem('user');
+        const token = sessionStorage.getItem('token');
         if (storedUser && token) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
             
-            let division = localStorage.getItem('activeDivision') || 'fitpass';
+            let division = sessionStorage.getItem('activeDivision') || 'fitpass';
             if (parsedUser.role === 'superadmin') {
                 if (window.location.pathname === '/dashboard') {
                     division = 'h4';
-                    if (!localStorage.getItem('selectedGymId')) {
+                    if (!sessionStorage.getItem('selectedGymId')) {
                         API.get('/superadmin/h4-gym').then(({ data: h4Gym }) => {
                             const h4Id = h4Gym?._id || h4Gym?.id;
                             if (h4Id) {
-                                localStorage.setItem('selectedGymId', h4Id);
+                                sessionStorage.setItem('selectedGymId', h4Id);
                                 setSelectedGymId(h4Id);
                             }
                         }).catch(() => {});
@@ -39,8 +50,8 @@ export const AuthProvider = ({ children }) => {
                 }
                 else if (window.location.pathname.startsWith('/superadmin/')) {
                     division = 'fitpass';
-                    localStorage.removeItem('selectedGymId');
-                    localStorage.removeItem('selectedBranchId');
+                    sessionStorage.removeItem('selectedGymId');
+                    sessionStorage.removeItem('selectedBranchId');
                     setSelectedGymId('');
                     setSelectedBranchId('');
                 }
@@ -50,7 +61,7 @@ export const AuthProvider = ({ children }) => {
                 division = 'fitpass';
             }
             if (division) {
-                localStorage.setItem('activeDivision', division);
+                sessionStorage.setItem('activeDivision', division);
                 setActiveDivision(division);
             }
         }
@@ -105,8 +116,8 @@ export const AuthProvider = ({ children }) => {
             }
 
             setUser(data);
-            localStorage.setItem('user', JSON.stringify(data));
-            localStorage.setItem('token', data.token);
+            sessionStorage.setItem('user', JSON.stringify(data));
+            sessionStorage.setItem('token', data.token);
             
             let division = 'fitpass';
             if (data.role === 'h4_admin' || (data.gymName && data.gymName.toUpperCase() === 'H4') || data.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
@@ -114,26 +125,26 @@ export const AuthProvider = ({ children }) => {
             } else if (data.role === 'fitpass_admin') {
                 division = 'fitpass';
             }
-            localStorage.setItem('activeDivision', division);
+            sessionStorage.setItem('activeDivision', division);
             setActiveDivision(division);
 
             if (data.role === 'superadmin') {
-                localStorage.removeItem('selectedGymId');
-                localStorage.removeItem('selectedBranchId');
+                sessionStorage.removeItem('selectedGymId');
+                sessionStorage.removeItem('selectedBranchId');
                 setSelectedGymId('');
                 setSelectedBranchId('');
             } else if (data.gymId) {
-                localStorage.setItem('selectedGymId', data.gymId);
+                sessionStorage.setItem('selectedGymId', data.gymId);
                 setSelectedGymId(data.gymId);
             } else {
-                localStorage.removeItem('selectedGymId');
+                sessionStorage.removeItem('selectedGymId');
                 setSelectedGymId('');
             }
             if (data.branchId) {
-                localStorage.setItem('selectedBranchId', data.branchId);
+                sessionStorage.setItem('selectedBranchId', data.branchId);
                 setSelectedBranchId(data.branchId);
             } else {
-                localStorage.removeItem('selectedBranchId');
+                sessionStorage.removeItem('selectedBranchId');
                 setSelectedBranchId('');
             }
             return { success: true, user: data };
@@ -155,9 +166,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const { data } = await API.post('/auth/verify-otp', { email, otp });
             setUser(data);
-            localStorage.setItem('user', JSON.stringify(data));
-            localStorage.setItem('token', data.token);
-            if (data.gymId) { localStorage.setItem('selectedGymId', data.gymId); setSelectedGymId(data.gymId); }
+            sessionStorage.setItem('user', JSON.stringify(data));
+            sessionStorage.setItem('token', data.token);
+            if (data.gymId) { sessionStorage.setItem('selectedGymId', data.gymId); setSelectedGymId(data.gymId); }
             return { success: true, user: data };
         } catch (error) {
             return { success: false, message: error.response?.data?.message || 'Verification failed' };
@@ -168,38 +179,45 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setSelectedGymId('');
         setSelectedBranchId('');
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        localStorage.removeItem('selectedGymId');
-        localStorage.removeItem('selectedBranchId');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('selectedGymId');
+        sessionStorage.removeItem('selectedBranchId');
     };
+
+    const updateUserLocal = (updates) => setUser((current) => {
+        const next = { ...current, ...updates };
+        sessionStorage.setItem('user', JSON.stringify(next));
+        return next;
+    });
 
     const changeSelectedGym = (gymId) => {
         setSelectedGymId(gymId);
         if (gymId) {
-            localStorage.setItem('selectedGymId', gymId);
+            sessionStorage.setItem('selectedGymId', gymId);
         } else {
-            localStorage.removeItem('selectedGymId');
+            sessionStorage.removeItem('selectedGymId');
         }
     };
 
     const changeSelectedBranch = (branchId) => {
         setSelectedBranchId(branchId);
         if (branchId) {
-            localStorage.setItem('selectedBranchId', branchId);
+            sessionStorage.setItem('selectedBranchId', branchId);
         } else {
-            localStorage.removeItem('selectedBranchId');
+            sessionStorage.removeItem('selectedBranchId');
         }
     };
 
     const changeActiveDivision = (division) => {
         setActiveDivision(division);
-        localStorage.setItem('activeDivision', division);
+        sessionStorage.setItem('activeDivision', division);
     };
 
     return (
         <AuthContext.Provider value={{ 
             user, 
+            updateUserLocal,
             loading, 
             login, 
             register, 

@@ -2,6 +2,16 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Plan = require('../models/Plan');
 const { logAudit } = require('../utils/auditLogger');
+const { H4_GYM_IDS } = require('../config/constants');
+
+const getPlanScope = (req) => {
+    const currentGymId = String(req.user?.gymId || '');
+    const where = { gymId: req.user?.role === 'h4_admin'
+        ? { $in: [...new Set([...H4_GYM_IDS, currentGymId].filter(Boolean))] }
+        : currentGymId };
+    if (req.user?.branchId) where.$or = [{ branchId: req.user.branchId }, { branchId: null }];
+    return where;
+};
 
 // @desc    Create a new plan (traditional gym membership plan)
 // @route   POST /api/plans
@@ -10,16 +20,25 @@ const createPlan = catchAsync(async (req, res, next) => {
     try {
         const { name, duration, price } = req.body;
 
+        if (req.user.role === 'fitpass_admin') {
+            return res.status(403).json({ success: false, message: 'FitPass session plans are managed from FitPass Plans.' });
+        }
+
         if (!name || duration === undefined || price === undefined) {
             res.status(400);
             return res.json({ success: false, message: 'Name, duration, and price are required' });
+        }
+
+        const gymId = String(req.user.gymId || '');
+        if (!gymId || gymId === 'SYSTEM') {
+            return res.status(400).json({ success: false, message: 'Select an H4 or partner gym before creating a gym membership plan. FitPass session plans use the FitPass plans section.' });
         }
 
         const plan = await Plan.create({
             name,
             duration: Number(duration),
             price: Number(price),
-            gymId: req.user.gymId,
+            gymId,
             branchId: req.user.branchId || null
         });
 
@@ -32,17 +51,37 @@ const createPlan = catchAsync(async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
-// @desc    Get all plans (own gym + FitPrime SYSTEM plans)
+// @desc    Get gym membership plans for the current gym/division
 // @route   GET /api/plans
 // @access  Private/Admin
 const getPlans = catchAsync(async (req, res, next) => {
     try {
-        const query = req.tenantFilter?.gymId ? {
-            $or: [
-                { gymId: 'SYSTEM' },
-                { ...req.tenantFilter }
-            ]
-        } : {};
+        const currentGymId = String(req.user.gymId || '');
+        const isH4Scope = req.user.role === 'h4_admin' || H4_GYM_IDS.includes(currentGymId);
+        let query;
+        if (isH4Scope) {
+            query = { $or: [
+                { gymId: { $in: [...new Set([...H4_GYM_IDS, currentGymId].filter(Boolean))] } },
+                // Legacy H4 duration plans were sometimes saved under SYSTEM.
+                // FitPass catalogs filter for positive session counts, so only
+                // these old non-session plans appear in the H4 management UI.
+                { gymId: 'SYSTEM', sessions: { $in: [null, 0] } },
+            ] };
+            const branchId = req.tenantFilter?.branchId || req.user.branchId;
+            if (branchId) query = { $and: [query, { $or: [{ branchId }, { branchId: null }] }] };
+        } else if (req.user.role === 'superadmin') {
+            // Super admins must choose a gym; the unscoped plan catalog must
+            // never mix FitPass and H4 subscriptions together.
+            query = req.tenantFilter?.gymId ? { gymId: req.tenantFilter.gymId } : { gymId: '__NO_GYM_SELECTED__' };
+        } else if (currentGymId && currentGymId !== 'SYSTEM') {
+            query = { gymId: currentGymId };
+            const branchId = req.tenantFilter?.branchId || req.user.branchId;
+            if (branchId) query.$or = [{ branchId }, { branchId: null }];
+        } else {
+            // FitPass global session tiers are managed through /superadmin/plans
+            // and offered to members through /member-portal/fitprime-plans.
+            query = { gymId: '__NO_GYM_SELECTED__' };
+        }
         const plans = await Plan.find(query).lean();
         res.json(plans);
     } catch (error) { next(error); }
@@ -53,11 +92,8 @@ const getPlans = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const getPlanById = catchAsync(async (req, res, next) => {
     try {
-        const isGlobalAdmin = ['superadmin', 'fitpass_admin'].includes(req.user.role);
-        const query = { _id: req.params.id };
-        if (!isGlobalAdmin && req.user.gymId) {
-            query.gymId = req.user.gymId;
-        }
+        if (!req.user.gymId || req.user.gymId === 'SYSTEM') return res.status(404).json({ success: false, message: 'Gym membership plan not found. FitPass plans are managed in the FitPass plans section.' });
+        const query = { _id: req.params.id, ...getPlanScope(req) };
         const plan = await Plan.findOne(query);
 
         if (plan) {
@@ -73,13 +109,10 @@ const getPlanById = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const updatePlan = catchAsync(async (req, res, next) => {
     try {
+        if (!req.user.gymId || req.user.gymId === 'SYSTEM') return res.status(404).json({ success: false, message: 'Gym membership plan not found. FitPass plans are managed in the FitPass plans section.' });
         const { name, duration, price } = req.body;
 
-        const isGlobalAdmin = ['superadmin', 'fitpass_admin'].includes(req.user.role);
-        const query = { _id: req.params.id };
-        if (!isGlobalAdmin && req.user.gymId) {
-            query.gymId = req.user.gymId;
-        }
+        const query = { _id: req.params.id, ...getPlanScope(req) };
         const plan = await Plan.findOne(query);
 
         if (plan) {
@@ -105,11 +138,8 @@ const updatePlan = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const deletePlan = catchAsync(async (req, res, next) => {
     try {
-        const isGlobalAdmin = ['superadmin', 'fitpass_admin'].includes(req.user.role);
-        const query = { _id: req.params.id };
-        if (!isGlobalAdmin && req.user.gymId) {
-            query.gymId = req.user.gymId;
-        }
+        if (!req.user.gymId || req.user.gymId === 'SYSTEM') return res.status(404).json({ success: false, message: 'Gym membership plan not found. FitPass plans are managed in the FitPass plans section.' });
+        const query = { _id: req.params.id, ...getPlanScope(req) };
         const plan = await Plan.findOne(query);
 
         if (plan) {

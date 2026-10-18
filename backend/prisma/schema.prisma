@@ -340,6 +340,33 @@ model Notification {
   @@index([gymId])
 }
 
+model Ticket {
+  id        String         @id @default(uuid())
+  memberId  String
+  gymId     String
+  subject   String
+  category  String
+  status    String         @default("Open")
+  messages  TicketMessage[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([memberId, updatedAt(sort: Desc)])
+  @@index([gymId, updatedAt(sort: Desc)])
+}
+
+model TicketMessage {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId  String
+  senderName String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
 model OTP {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -400,6 +427,7 @@ model WorkoutPlan {
 model DietPlan {
   id           String   @id @default(uuid())
   memberId     String
+  memberIds    String?
   trainerId    String?
   name         String
   startDate    DateTime?
@@ -413,6 +441,20 @@ model DietPlan {
   @@index([gymId, createdAt(sort: Desc)])
   @@index([memberId])
   @@index([trainerId])
+}
+
+model DietTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  meals       String?
+  gymId       String
+  branchId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([gymId, branchId])
+  @@index([gymId, name])
 }
 
 model PtPackage {

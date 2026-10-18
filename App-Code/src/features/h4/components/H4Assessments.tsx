@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
 import { Activity, Scale, Flame, Award, Calendar, TrendingUp } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
@@ -52,12 +52,12 @@ export function H4Assessments() {
   const latest = assessments.length > 0 ? assessments[0] : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F5ED' }}>
       <H4TopHeader title="Body Progress" />
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerGroup}>
           <View style={styles.headerIconWrap}>
-            <TrendingUp size={18} color="#F0A020" strokeWidth={2.5} />
+            <TrendingUp size={18} color="#F5B800" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="h2" style={styles.headerTitle}>InBody Analysis</Typography>
@@ -70,7 +70,7 @@ export function H4Assessments() {
         {!latest ? (
           <Card style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <Activity size={28} color="#F0A020" />
+              <Activity size={28} color="#F5B800" />
             </View>
             <Typography variant="bodySm" style={styles.emptyTitle}>No Body Assessment Data</Typography>
             <Typography variant="caption" color="secondary" style={styles.emptyDesc}>
@@ -82,7 +82,7 @@ export function H4Assessments() {
             <View style={styles.metricsGrid}>
               <Card style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <Scale size={15} color="#F0A020" />
+                  <Scale size={15} color="#F5B800" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>WEIGHT</Typography>
                 </View>
                 <Text style={styles.metricVal}>
@@ -92,7 +92,7 @@ export function H4Assessments() {
 
               <Card style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <TrendingUp size={15} color="#F0A020" />
+                  <TrendingUp size={15} color="#F5B800" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>BMI</Typography>
                 </View>
                 <Text style={styles.metricVal}>{latest.bmi}</Text>
@@ -100,7 +100,7 @@ export function H4Assessments() {
 
               <Card style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <Flame size={15} color="#F0A020" />
+                  <Flame size={15} color="#F5B800" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>BODY FAT</Typography>
                 </View>
                 <Text style={styles.metricVal}>
@@ -110,7 +110,7 @@ export function H4Assessments() {
 
               <Card style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <Activity size={15} color="#F0A020" />
+                  <Activity size={15} color="#F5B800" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>MUSCLE (SMM)</Typography>
                 </View>
                 <Text style={styles.metricVal}>
@@ -120,7 +120,7 @@ export function H4Assessments() {
 
               <Card style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <Award size={15} color="#F0A020" />
+                  <Award size={15} color="#F5B800" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>BMR</Typography>
                 </View>
                 <Text style={styles.metricVal}>
@@ -154,7 +154,7 @@ export function H4Assessments() {
                   <Card key={itemId} style={styles.historyCard}>
                     <View style={styles.historyHeader}>
                       <View style={styles.dateGroup}>
-                        <Calendar size={14} color="#F0A020" />
+                        <Calendar size={14} color="#F5B800" />
                         <Text style={styles.dateText}>{dateStr}</Text>
                       </View>
                       {item.inBodyScore ? (
@@ -194,9 +194,9 @@ export function H4Assessments() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFC' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F5ED' },
   
   headerGroup: { 
     flexDirection: 'row', 
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   dateGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dateText: { color: '#0F172A', fontWeight: '800', fontSize: 13 },
   scoreBadge: { 
-    color: '#F0A020', 
+    color: '#F5B800', 
     fontWeight: '800', 
     fontSize: 10, 
     backgroundColor: 'rgba(240, 160, 32, 0.08)', 
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F5F1E7',
   },
   
   historyStatsRow: { flexDirection: 'row', justifyContent: 'space-between' },

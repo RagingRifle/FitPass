@@ -22,12 +22,12 @@ export function H4PaymentHistory() {
   const items = data?.data ?? [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F5ED' }}>
       <H4TopHeader title="Payments & Renewals" />
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerGroup}>
           <View style={styles.headerIconWrap}>
-            <Award size={18} color="#F0A020" strokeWidth={2.5} />
+            <Award size={18} color="#F5B800" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="h2" style={styles.headerTitle}>Renewals & Receipts</Typography>
@@ -47,17 +47,17 @@ export function H4PaymentHistory() {
             {items.map((p) => (
               <Card key={p.id} style={styles.row}>
                 <View style={styles.icon}>
-                  <CreditCard size={16} color="#F0A020" />
+                  <CreditCard size={16} color="#F5B800" />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Typography variant="bodySm" style={styles.planNameText}>
                     {p.planName || 'Membership Payment'}
                   </Typography>
                   <Typography variant="caption" color="secondary" style={styles.paymentMeta}>
-                    {new Date(p.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {p.method}
+                    {new Date(p.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}  {p.method}
                   </Typography>
                 </View>
-                <Typography variant="bodySm" style={styles.amountText}>₹{p.amount}</Typography>
+                <Typography variant="bodySm" style={styles.amountText}>INR {p.amount}</Typography>
               </Card>
             ))}
           </View>
@@ -68,9 +68,9 @@ export function H4PaymentHistory() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFC' },
+  container: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
-  loadingContainer: { flex: 1, padding: 18, gap: 12, backgroundColor: '#FAFAFC' },
+  loadingContainer: { flex: 1, padding: 18, gap: 12, backgroundColor: '#F8F5ED' },
   
   headerGroup: { 
     flexDirection: 'row', 

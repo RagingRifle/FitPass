@@ -1,2 +1,140 @@
-.member-featured-section{margin:8px 0 28px}.member-featured-section>.member-panel-heading{margin-bottom:14px}.member-featured-section>.member-panel-heading>a{display:flex;align-items:center;gap:8px;color:#7e6500;text-decoration:none;font-size:10px;font-weight:800}.member-featured-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.member-featured-gym{position:relative;display:block;height:190px;overflow:hidden;background:#4a4b40;color:#fff;text-decoration:none}.member-featured-gym img{width:100%;height:100%;object-fit:cover;filter:saturate(.72);transition:transform .35s}.member-featured-gym:hover img{transform:scale(1.04)}.member-featured-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.72))}.member-featured-content{position:absolute;left:15px;right:36px;bottom:14px;display:grid;gap:5px}.member-featured-content small{display:flex;align-items:center;gap:4px;color:#F1D24B;font:700 8px 'Outfit',sans-serif;letter-spacing:.11em}.member-featured-content b{font:700 16px 'Outfit',sans-serif}.member-featured-content>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#eee9dc;font-size:9px}.member-featured-arrow{position:absolute;right:13px;bottom:15px;color:#F1D24B}.fitpass-member-dashboard .member-featured-section>.member-panel-heading h2{font-size:20px}
-@media(max-width:700px){.member-featured-grid{grid-template-columns:1fr}.member-featured-gym{height:175px}.member-featured-section>.member-panel-heading{align-items:flex-end}}
+/* ==========================================================================
+   FITPRIME MEMBER FEATURED GYMS SECTION
+   ========================================================================== */
+
+.member-featured-section {
+    margin: 12px 0 30px;
+}
+
+.member-featured-section > .member-panel-heading {
+    margin-bottom: 16px;
+}
+
+.member-featured-section > .member-panel-heading > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #000000 !important;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 12px;
+    background: #FFF5D6;
+    border: 1px solid #F5B800;
+    border-radius: 8px;
+    transition: all 0.18s ease;
+}
+
+.member-featured-section > .member-panel-heading > a:hover {
+    background: #F5B800;
+    transform: translateX(3px);
+}
+
+.member-featured-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.member-featured-gym {
+    position: relative;
+    display: block;
+    height: 200px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000000;
+    border: 1.5px solid #DFD7C7;
+    color: #FFFFFF;
+    text-decoration: none;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+    transition: all 0.25s ease;
+}
+
+.member-featured-gym:hover {
+    transform: translateY(-3px);
+    border-color: #F5B800;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(245, 184, 0, 0.4);
+}
+
+.member-featured-gym img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(0.8);
+    transition: transform 0.4s ease;
+}
+
+.member-featured-gym:hover img {
+    transform: scale(1.05);
+}
+
+.member-featured-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.8) 100%);
+}
+
+.member-featured-content {
+    position: absolute;
+    left: 18px;
+    right: 44px;
+    bottom: 16px;
+    display: grid;
+    gap: 4px;
+    z-index: 2;
+}
+
+.member-featured-content small {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #F5B800 !important;
+    font: 800 9px 'Outfit', sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.member-featured-content b {
+    font: 800 17px 'Outfit', sans-serif;
+    color: #FFFFFF !important;
+    letter-spacing: -0.01em;
+}
+
+.member-featured-content > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #E2DDD2 !important;
+    font-size: 11px;
+}
+
+.member-featured-arrow {
+    position: absolute;
+    right: 16px;
+    bottom: 18px;
+    color: #F5B800 !important;
+    z-index: 2;
+    transition: transform 0.2s ease;
+}
+
+.member-featured-gym:hover .member-featured-arrow {
+    transform: translate(3px, -3px);
+}
+
+.fitpass-member-dashboard .member-featured-section > .member-panel-heading h2 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #000000 !important;
+}
+
+@media (max-width: 768px) {
+    .member-featured-grid {
+        grid-template-columns: 1fr;
+    }
+    .member-featured-gym {
+        height: 180px;
+    }
+    .member-featured-section > .member-panel-heading {
+        align-items: flex-end;
+    }
+}

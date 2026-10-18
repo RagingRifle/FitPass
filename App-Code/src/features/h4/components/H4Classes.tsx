@@ -127,7 +127,7 @@ export function H4Classes() {
   const confirmBook = (cls: GymClassItem) => {
     const details = [
       cls.description?.trim() || 'No class description has been added yet.',
-      `Time: ${cls.startTime || 'To be announced'}${cls.endTime ? ` – ${cls.endTime}` : ''}`,
+      `Time: ${cls.startTime || 'To be announced'}${cls.endTime ? `  ${cls.endTime}` : ''}`,
       `Coach: ${cls.trainerName || 'H4 Certified Trainer'}`,
       `Seats left: ${cls.seatsAvailable}`,
     ].join('\n\n');
@@ -140,7 +140,7 @@ export function H4Classes() {
   const showClassDetails = (cls: GymClassItem) => {
     Alert.alert(cls.name, [
       cls.description?.trim() || 'No class description has been added yet.',
-      `Time: ${cls.startTime || 'To be announced'}${cls.endTime ? ` – ${cls.endTime}` : ''}`,
+      `Time: ${cls.startTime || 'To be announced'}${cls.endTime ? `  ${cls.endTime}` : ''}`,
       `Coach: ${cls.trainerName || 'H4 Certified Trainer'}`,
       `Location: ${cls.branchName || 'Main Studio'}`,
     ].join('\n\n'), [{ text: 'Close' }]);
@@ -169,14 +169,14 @@ export function H4Classes() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={['#246B78']} />
+          <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={['#171713']} />
         }
       >
         {/* Banner Header Card */}
         <View style={styles.bannerCard}>
           <View style={styles.bannerBadgeRow}>
             <View style={styles.sparkleTag}>
-              <Sparkles size={12} color="#246B78" />
+              <Sparkles size={12} color="#171713" />
               <Text style={styles.sparkleTagText}>H4 STUDIO SCHEDULE</Text>
             </View>
             <View style={styles.livePill}>
@@ -203,7 +203,7 @@ export function H4Classes() {
             </View>
             <View style={styles.metricDivider} />
             <View style={styles.metricItem}>
-              <Text style={[styles.metricValue, { color: '#246B78' }]}>{openSeatsCount}</Text>
+              <Text style={[styles.metricValue, { color: '#171713' }]}>{openSeatsCount}</Text>
               <Text style={styles.metricLabel}>Open Seats</Text>
             </View>
           </View>
@@ -291,7 +291,7 @@ export function H4Classes() {
         ) : filteredClasses.length === 0 ? (
           <View style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <Users size={32} color="#246B78" />
+              <Users size={32} color="#171713" />
             </View>
             <Text style={styles.emptyTitle}>No Classes Found</Text>
             <Text style={styles.emptySubtitle}>
@@ -340,17 +340,17 @@ export function H4Classes() {
                   {/* Top Category Badge & Status */}
                   <View style={styles.cardHeaderRow}>
                     <View style={styles.categoryPill}>
-                      <Dumbbell size={12} color="#246B78" />
+                      <Dumbbell size={12} color="#171713" />
                       <Text style={styles.categoryPillText}>{(cls.type || 'STUDIO').toUpperCase()}</Text>
                     </View>
 
                     {isAttended ? (
                       <View style={[styles.statusBookedBadge, { backgroundColor: '#DCFCE7', borderColor: '#86EFAC' }]}>
                         <CheckCircle2 size={13} color="#16A34A" />
-                        <Text style={[styles.statusBookedText, { color: '#16A34A' }]}>✓ ATTENDED</Text>
+                        <Text style={[styles.statusBookedText, { color: '#16A34A' }]}> ATTENDED</Text>
                       </View>
                     ) : isPast ? (
-                      <View style={[styles.statusFullBadge, { backgroundColor: '#F3F4F6' }]}>
+                      <View style={[styles.statusFullBadge, { backgroundColor: '#F5F1E7' }]}>
                         <Text style={[styles.statusFullText, { color: '#6B7280' }]}>COMPLETED</Text>
                       </View>
                     ) : cls.isBooked ? (
@@ -386,26 +386,26 @@ export function H4Classes() {
                   <View style={styles.metaRow}>
                     {/* Branch Location Badge */}
                     <View style={[styles.metaBadge, styles.branchBadge]}>
-                      <MapPin size={13} color="#246B78" />
+                      <MapPin size={13} color="#171713" />
                       <Text style={[styles.metaText, styles.branchBadgeText]} numberOfLines={1}>
                         {cls.branchName || 'Main Studio'}
                       </Text>
                     </View>
 
                     <View style={styles.metaBadge}>
-                      <Calendar size={13} color="#246B78" />
+                      <Calendar size={13} color="#171713" />
                       <Text style={styles.metaText}>{formattedDate}</Text>
                     </View>
 
                     <View style={styles.metaBadge}>
-                      <Clock size={13} color="#246B78" />
+                      <Clock size={13} color="#171713" />
                       <Text style={styles.metaText}>
                         {cls.startTime} - {cls.endTime}
                       </Text>
                     </View>
 
                     <View style={styles.metaBadge}>
-                      <UserCheck size={13} color="#246B78" />
+                      <UserCheck size={13} color="#171713" />
                       <Text style={styles.metaText}>{cls.trainerName || 'H4 Certified Trainer'}</Text>
                     </View>
                   </View>
@@ -424,7 +424,7 @@ export function H4Classes() {
                           styles.capacityFill,
                           {
                             width: `${capacityPercent}%`,
-                            backgroundColor: capacityPercent > 80 ? '#DC2626' : '#246B78',
+                            backgroundColor: capacityPercent > 80 ? '#DC2626' : '#171713',
                           },
                         ]}
                       />
@@ -434,7 +434,7 @@ export function H4Classes() {
                   {/* Action Buttons */}
                   <View style={styles.actionRow}>
                     {isPast ? (
-                      <View style={[styles.reserveBtn, styles.reserveBtnDisabled, { backgroundColor: '#E5E7EB' }]}>
+                      <View style={[styles.reserveBtn, styles.reserveBtnDisabled, { backgroundColor: '#E3DCCB' }]}>
                         <Text style={[styles.reserveBtnText, { color: '#9CA3AF' }]}>Class Ended / Completed</Text>
                       </View>
                     ) : cls.isBooked ? (
@@ -484,7 +484,7 @@ export function H4Classes() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
 
   bannerCard: {
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(240, 160, 32, 0.25)',
   },
-  sparkleTagText: { fontSize: 10, fontWeight: '900', color: '#246B78', letterSpacing: 0.8 },
+  sparkleTagText: { fontSize: 10, fontWeight: '900', color: '#171713', letterSpacing: 0.8 },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F5ED',
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
@@ -566,8 +566,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
   },
   filterChipActive: {
-    backgroundColor: '#246B78',
-    borderColor: '#246B78',
+    backgroundColor: '#171713',
+    borderColor: '#171713',
   },
   filterChipText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
   filterChipTextActive: { color: '#FFFFFF' },
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(240, 160, 32, 0.3)',
     marginTop: 6,
   },
-  clearFilterText: { fontSize: 13, fontWeight: '800', color: '#246B78' },
+  clearFilterText: { fontSize: 13, fontWeight: '800', color: '#171713' },
 
   classList: { gap: 16 },
   classCard: {
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  categoryPillText: { fontSize: 10, fontWeight: '900', color: '#246B78', letterSpacing: 0.5 },
+  categoryPillText: { fontSize: 10, fontWeight: '900', color: '#171713', letterSpacing: 0.5 },
 
   statusBookedBadge: {
     flexDirection: 'row',
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  statusOpenText: { fontSize: 10, fontWeight: '900', color: '#246B78', letterSpacing: 0.5 },
+  statusOpenText: { fontSize: 10, fontWeight: '900', color: '#171713', letterSpacing: 0.5 },
 
   classTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
   classDescription: { fontSize: 13, color: '#64748B', lineHeight: 18 },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F5ED',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
   capacityLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   capacityLabel: { fontSize: 11, fontWeight: '700', color: '#64748B' },
   capacityCountText: { fontSize: 11, fontWeight: '700', color: '#0F172A' },
-  capacityTrack: { height: 6, borderRadius: 3, backgroundColor: '#F1F5F9', overflow: 'hidden' },
+  capacityTrack: { height: 6, borderRadius: 3, backgroundColor: '#F5F1E7', overflow: 'hidden' },
   capacityFill: { height: '100%', borderRadius: 3 },
 
   actionRow: { paddingTop: 6 },
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#246B78',
+    backgroundColor: '#171713',
     paddingVertical: 14,
     borderRadius: 14,
   },
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
 
   branchSwitchContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F5F1E7',
     borderRadius: 12,
     padding: 3,
     gap: 4,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   branchSwitchBtnActive: {
-    backgroundColor: '#246B78',
+    backgroundColor: '#171713',
   },
   branchSwitchText: {
     fontSize: 12,

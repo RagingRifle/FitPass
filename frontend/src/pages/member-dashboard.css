@@ -1,3 +1,674 @@
-.fitpass-member-dashboard{--member-black:#191A18;--member-cream:#F5F1E7;--member-yellow:#F1C933;--member-muted:#777365;color:#1B1C19;padding-bottom:20px}.member-overview-hero{min-height:270px;position:relative;overflow:hidden;display:grid;grid-template-columns:1.08fr .92fr;align-items:center;gap:32px;padding:34px clamp(22px,4vw,54px);margin-bottom:18px;background:linear-gradient(112deg,#191A18 0%,#24251F 62%,#393827 100%);color:#FFFDF5}.member-overview-hero:after{content:"";position:absolute;width:370px;height:370px;border:1px solid rgba(241,201,51,.19);border-radius:50%;right:-85px;top:-160px;box-shadow:0 0 0 34px rgba(241,201,51,.035),0 0 0 76px rgba(241,201,51,.025);pointer-events:none}.member-overview-copy,.member-pass-summary{position:relative;z-index:1}.member-overview-eyebrow{display:flex;align-items:center;gap:8px;color:#F1C933;font:700 9px 'Outfit',sans-serif;letter-spacing:.16em}.member-overview-copy h1{font:600 clamp(32px,4vw,48px)/1.02 'Outfit',sans-serif;letter-spacing:-.055em;margin:13px 0 9px;color:#FFFDF5}.member-overview-copy h1 em{color:#F1C933;font-family:Georgia,serif;font-weight:400}.member-overview-copy>p{font-size:12px;color:#C4C0B2;margin:0}.member-overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:21px}.member-overview-actions a{display:flex;align-items:center;gap:12px;text-decoration:none;color:#1B1C19;background:#F1C933;padding:11px 14px;font-size:10px;font-weight:800}.member-overview-actions a+a{background:rgba(255,255,255,.08);color:#FFFDF5;border:1px solid rgba(255,255,255,.14)}.member-profile-action{border:1px solid rgba(255,255,255,.25);background:transparent;color:#FFFDF5;padding:10px 13px;font:700 10px 'DM Sans',sans-serif;cursor:pointer}.member-profile-action:hover{border-color:#F1C933;color:#F1C933}.member-pass-summary{padding:20px 22px;background:#FFFEFB;color:#1B1C19;box-shadow:0 12px 35px rgba(0,0,0,.12)}.member-pass-summary-top,.member-pass-progress-label{display:flex;align-items:center;justify-content:space-between;gap:12px}.member-pass-summary-top>span:first-child,.member-pass-progress-label{font:700 8px 'Outfit',sans-serif;letter-spacing:.13em;color:#777365}.member-active-pill{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#F5F1E7;color:#5B563F;font-size:8px;font-weight:800;text-transform:uppercase}.member-active-pill i,.member-panel-tag i{width:6px;height:6px;border-radius:50%;background:#8CA542}.member-pass-summary>strong{display:block;margin:16px 0 5px;font:700 24px 'Outfit',sans-serif;letter-spacing:-.04em}.member-pass-meta{font-size:10px;color:#777365}.member-pass-progress{height:6px;background:#ECE7DB;margin-top:17px;overflow:hidden}.member-pass-progress span{height:100%;display:block;background:#E5B814}.member-pass-progress-label{margin-top:8px;font-size:8px}.member-pass-progress-label span+span{color:#282920;font-weight:800;letter-spacing:0}.member-overview-mark{position:absolute;right:18px;bottom:15px;color:rgba(241,201,51,.18)}.member-metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}.member-metric-card{min-height:128px;position:relative;padding:16px 17px;background:#FFFEFB;border:1px solid #E4DED0;box-shadow:0 4px 16px rgba(35,30,17,.035)}.member-metric-icon{position:absolute;right:14px;top:13px;width:31px;height:31px;display:grid;place-items:center;background:#FFF4C9;color:#9C7900}.member-metric-card small{display:block;color:#777365;font:700 8px 'Outfit',sans-serif;letter-spacing:.11em}.member-metric-card strong{display:block;margin-top:14px;font:700 27px 'Outfit',sans-serif;letter-spacing:-.05em}.member-metric-card strong i{font:600 12px 'DM Sans',sans-serif;letter-spacing:0}.member-metric-card>span:last-child{display:block;margin-top:3px;color:#777365;font-size:9px}.member-analytics-grid{display:grid;grid-template-columns:1.4fr .85fr;gap:14px;margin-bottom:28px}.member-activity-panel,.member-next-panel{min-height:275px;background:#FFFEFB;border:1px solid #E4DED0;padding:19px 21px;box-shadow:0 4px 16px rgba(35,30,17,.035)}.member-panel-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}.member-panel-heading small{font:700 8px 'Outfit',sans-serif;letter-spacing:.14em;color:#8A826A}.member-panel-heading h2{margin:5px 0 0;font:700 18px 'Outfit',sans-serif;letter-spacing:-.035em}.member-panel-tag{display:flex;align-items:center;gap:6px;padding:7px 9px;background:#F5F1E7;color:#756F5C;font:700 8px 'Outfit',sans-serif;letter-spacing:.08em;white-space:nowrap}.member-chart-wrap{height:165px;margin:8px -6px 0}.member-chart-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:11px;border-top:1px solid #EEE9DE;color:#777365;font-size:9px}.member-chart-footer b{color:#262720;font-size:9px}.member-next-content{display:flex;gap:12px;align-items:flex-start;padding:24px 0 18px}.member-next-icon{flex:0 0 40px;width:40px;height:40px;display:grid;place-items:center;background:#FFF4C9;color:#987500}.member-next-content b{font:700 13px 'Outfit',sans-serif}.member-next-content p{margin:6px 0 0;color:#777365;font-size:10px;line-height:1.6}.member-next-button{width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 13px;background:#F1C933;border:0;color:#1B1C19;text-decoration:none;font:800 10px 'DM Sans',sans-serif;cursor:pointer}.fitpass-member-dashboard>.card,.fitpass-member-dashboard>.glass{border-radius:8px!important}.fitpass-member-dashboard .card,.fitpass-member-dashboard .glass{border-radius:8px!important}
-@media(max-width:900px){.member-overview-hero{grid-template-columns:1fr .9fr;gap:18px;padding:28px}.member-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.member-analytics-grid{grid-template-columns:1fr}.member-next-panel{min-height:auto}}
-@media(max-width:620px){.member-overview-hero{grid-template-columns:1fr;padding:23px;gap:20px}.member-overview-copy h1{font-size:36px}.member-pass-summary{padding:17px}.member-metric-card{min-height:116px;padding:14px}.member-metric-card strong{font-size:24px}.member-activity-panel,.member-next-panel{padding:16px}.member-chart-wrap{height:150px}.member-chart-footer{align-items:flex-start;flex-direction:column}.member-overview-actions a{font-size:9px}.member-history-grid{grid-template-columns:minmax(0,1fr)!important}.member-history-grid .card{min-width:0;overflow:hidden}.fitpass-member-dashboard .table{min-width:470px}}
+/* ==========================================================================
+   FITPRIME MEMBER DASHBOARD - SIGNATURE WHITE, CREAM, YELLOW & BLACK
+   ========================================================================== */
+
+.fitpass-member-dashboard {
+    --member-black: #000000;
+    --member-dark: #191A18;
+    --member-cream: #F6F3EC;
+    --member-cream-soft: #F9F6F0;
+    --member-white: #FFFFFF;
+    --member-yellow: #F5B800;
+    --member-yellow-hover: #E0A700;
+    --member-yellow-light: #FFF5D6;
+    --member-yellow-border: #E8B000;
+    --member-border: #DFD7C7;
+    --member-border-light: #EBE5D8;
+    color: #000000;
+    padding-bottom: 2rem;
+}
+
+/* ── Hero Banner ── */
+.member-overview-hero {
+    min-height: 250px;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    align-items: center;
+    gap: 32px;
+    padding: 34px clamp(22px, 4vw, 44px);
+    margin-bottom: 22px;
+    background: #000000;
+    border: 2px solid #000000;
+    border-radius: 20px;
+    color: #FFFFFF;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.member-overview-hero::after {
+    content: "";
+    position: absolute;
+    width: 380px;
+    height: 380px;
+    border: 2px solid rgba(245, 184, 0, 0.25);
+    border-radius: 50%;
+    right: -80px;
+    top: -150px;
+    box-shadow: 0 0 0 36px rgba(245, 184, 0, 0.06), 0 0 0 80px rgba(245, 184, 0, 0.03);
+    pointer-events: none;
+}
+
+.member-overview-copy,
+.member-pass-summary {
+    position: relative;
+    z-index: 1;
+}
+
+.member-overview-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #F5B800 !important;
+    font: 800 10px 'Outfit', sans-serif;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.member-overview-copy h1 {
+    font: 800 clamp(30px, 3.8vw, 46px)/1.05 'Outfit', sans-serif !important;
+    letter-spacing: -0.04em;
+    margin: 12px 0 8px;
+    color: #FFFFFF !important;
+}
+
+.member-overview-copy h1 em {
+    color: #F5B800 !important;
+    font-family: inherit;
+    font-style: normal;
+    font-weight: 800;
+}
+
+.member-overview-copy > p {
+    font-size: 13px;
+    color: #DFD9CE !important;
+    margin: 0;
+    max-width: 440px;
+}
+
+.member-overview-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+}
+
+.member-overview-actions a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #000000 !important;
+    background: #F5B800;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font: 800 11px 'Outfit', sans-serif;
+    letter-spacing: 0.03em;
+    border: 1.5px solid #E0A700;
+    box-shadow: 0 4px 14px rgba(245, 184, 0, 0.35);
+    transition: all 0.18s ease;
+}
+
+.member-overview-actions a:hover {
+    background: #FFC51A;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 184, 0, 0.5);
+}
+
+.member-overview-actions a + a {
+    background: #FFFFFF;
+    color: #000000 !important;
+    border: 1.5px solid #FFFFFF;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.member-overview-actions a + a:hover {
+    background: #FFF5D6;
+    border-color: #F5B800;
+}
+
+.member-profile-action {
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF !important;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font: 800 11px 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.member-profile-action:hover {
+    border-color: #F5B800;
+    color: #F5B800 !important;
+    background: rgba(245, 184, 0, 0.12);
+}
+
+/* ── Pass Summary inside Hero ── */
+.member-pass-summary {
+    padding: 22px 24px;
+    background: #FFFFFF;
+    border-radius: 16px;
+    color: #000000;
+    border: 1.5px solid #DFD7C7;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+}
+
+.member-pass-summary-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.member-pass-summary-top > span:first-child {
+    font: 800 9px 'Outfit', sans-serif;
+    letter-spacing: 0.14em;
+    color: #555045 !important;
+}
+
+.member-active-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    background: #FFF5D6;
+    color: #000000 !important;
+    border: 1px solid #F5B800;
+    border-radius: 9999px;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.member-active-pill i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #1B7C3D;
+}
+
+.member-active-pill.is-renewal-due i {
+    background: #D9A900;
+}
+
+.member-pass-summary > strong {
+    display: block;
+    margin: 14px 0 4px;
+    font: 800 24px 'Outfit', sans-serif;
+    letter-spacing: -0.03em;
+    color: #000000 !important;
+}
+
+.member-pass-meta {
+    font-size: 11px;
+    color: #4A453B !important;
+    font-weight: 600;
+}
+
+.member-pass-progress {
+    height: 8px;
+    background: #EDE8DE;
+    border-radius: 9999px;
+    margin-top: 16px;
+    overflow: hidden;
+}
+
+.member-pass-progress span {
+    height: 100%;
+    display: block;
+    background: #F5B800;
+    border-radius: 9999px;
+}
+
+.member-pass-progress-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #555045 !important;
+}
+
+.member-pass-progress-label span + span {
+    color: #000000 !important;
+    font-weight: 900;
+}
+
+.member-overview-mark {
+    position: absolute;
+    right: 20px;
+    bottom: 16px;
+    color: rgba(245, 184, 0, 0.35);
+}
+
+/* ── Metric Cards Grid ── */
+.member-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0 0 22px;
+}
+
+.member-metric-card {
+    min-height: 130px;
+    position: relative;
+    padding: 18px 20px;
+    background: #FFFFFF;
+    border: 1.5px solid #DFD7C7;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.member-metric-card:hover {
+    transform: translateY(-2px);
+    border-color: #F5B800;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(245, 184, 0, 0.4);
+}
+
+.member-metric-icon {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: #FFF5D6;
+    color: #000000;
+    border: 1px solid #F5B800;
+}
+
+.member-metric-card small {
+    display: block;
+    color: #555045 !important;
+    font: 800 9px 'Outfit', sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.member-metric-card strong {
+    display: block;
+    margin-top: 12px;
+    font: 900 30px 'Outfit', sans-serif !important;
+    letter-spacing: -0.04em;
+    color: #000000 !important;
+}
+
+.member-metric-card strong i {
+    font: 600 13px 'Outfit', sans-serif;
+    letter-spacing: 0;
+    color: #555045 !important;
+    font-style: normal;
+}
+
+.member-metric-card > span:last-child {
+    display: block;
+    margin-top: 4px;
+    color: #555045 !important;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* ── Analytics & Next Step Grid ── */
+.member-analytics-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 0.85fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.member-activity-panel,
+.member-next-panel {
+    min-height: 280px;
+    background: #FFFFFF;
+    border: 1.5px solid #DFD7C7;
+    border-radius: 16px;
+    padding: 22px 24px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.member-panel-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.member-panel-heading small {
+    font: 800 9px 'Outfit', sans-serif !important;
+    letter-spacing: 0.14em;
+    color: #7A7263 !important;
+    text-transform: uppercase;
+}
+
+.member-panel-heading h2 {
+    margin: 4px 0 0;
+    font: 800 20px 'Outfit', sans-serif !important;
+    letter-spacing: -0.02em;
+    color: #000000 !important;
+}
+
+.member-panel-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: #F6F3EC;
+    color: #000000 !important;
+    border: 1px solid #DFD7C7;
+    border-radius: 9999px;
+    font: 800 9px 'Outfit', sans-serif;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+
+.member-panel-tag i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #F5B800;
+}
+
+.member-chart-wrap {
+    height: 175px;
+    margin: 8px -6px 0;
+}
+
+.member-chart-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1.5px solid #EDE8DE;
+    color: #555045 !important;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.member-chart-footer b {
+    color: #000000 !important;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.member-next-content {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 24px 0 20px;
+}
+
+.member-next-icon {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: #FFF5D6;
+    color: #000000;
+    border: 1.5px solid #F5B800;
+}
+
+.member-next-content b {
+    font: 800 15px 'Outfit', sans-serif !important;
+    color: #000000 !important;
+    display: block;
+}
+
+.member-next-content p {
+    margin: 6px 0 0;
+    color: #555045 !important;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.member-next-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 18px;
+    background: #F5B800;
+    border: 1.5px solid #DF9E00;
+    border-radius: 11px;
+    color: #000000 !important;
+    text-decoration: none;
+    font: 900 11px 'Outfit', sans-serif;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(245, 184, 0, 0.35);
+    transition: all 0.18s ease;
+}
+
+.member-next-button:hover {
+    background: #FFC51A;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(245, 184, 0, 0.5);
+}
+
+/* ── Clean Card & Glass Radii in Dashboard ── */
+.fitpass-member-dashboard .card,
+.fitpass-member-dashboard .glass {
+    border-radius: 16px !important;
+    background: #FFFFFF !important;
+    border: 1.5px solid #DFD7C7 !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+}
+
+.fitpass-member-dashboard .glass:hover,
+.fitpass-member-dashboard .card:hover {
+    border-color: #F5B800 !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(245, 184, 0, 0.35) !important;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 900px) {
+    .member-overview-hero {
+        grid-template-columns: 1fr;
+        gap: 22px;
+        padding: 28px;
+    }
+    .member-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .member-analytics-grid {
+        grid-template-columns: 1fr;
+    }
+    .member-next-panel {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 620px) {
+    .member-overview-hero {
+        padding: 22px;
+        gap: 18px;
+    }
+    .member-overview-copy h1 {
+        font-size: 32px !important;
+    }
+    .member-metric-grid {
+        grid-template-columns: 1fr;
+    }
+    .member-chart-wrap {
+        height: 150px;
+    }
+    .member-chart-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .member-history-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+.fitpass-renew-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 18px;
+    border: 1px solid #D9A900;
+    border-radius: 12px;
+    background: #F5B800;
+    color: #171713;
+    font-weight: 800;
+}
+
+.fitpass-renewal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(23, 23, 19, 0.62);
+    backdrop-filter: blur(8px);
+}
+
+.fitpass-renewal-modal {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: min(85vh, 720px);
+    overflow: auto;
+    padding: clamp(22px, 5vw, 34px);
+    border: 1px solid #E3DCCB;
+    border-radius: 22px;
+    background: #FFFEFB;
+    color: #171713;
+    box-shadow: 0 24px 80px rgba(12, 11, 8, 0.25);
+}
+
+.fitpass-renewal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border: 1px solid #E3DCCB;
+    border-radius: 50%;
+    background: #F5F1E7;
+    color: #171713;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.fitpass-renewal-kicker {
+    color: #8D6A00;
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.fitpass-renewal-modal h2 {
+    margin: 8px 48px 8px 0;
+    color: #171713;
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+    letter-spacing: -0.04em;
+}
+
+.fitpass-renewal-copy {
+    margin: 0 0 18px;
+    color: #625D50;
+    line-height: 1.55;
+}
+
+.fitpass-renewal-options {
+    display: grid;
+    gap: 10px;
+}
+
+.fitpass-renewal-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    padding: 15px 16px;
+    border: 1px solid #E3DCCB;
+    border-radius: 14px;
+    background: #FFFFFF;
+    color: #171713;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.fitpass-renewal-option:hover {
+    transform: translateY(-1px);
+    border-color: #D9A900;
+    background: #FFF9E4;
+}
+
+.fitpass-renewal-option > span,
+.fitpass-renewal-option > b {
+    display: grid;
+    gap: 4px;
+}
+
+.fitpass-renewal-option > b {
+    display: inline-flex;
+    align-items: center;
+    color: #171713;
+    white-space: nowrap;
+}
+
+.fitpass-renewal-option small {
+    color: #756F62;
+    font-size: 0.78rem;
+}
+
+.fitpass-renewal-summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin: 20px 0 12px;
+    padding: 16px;
+    border: 1px solid #E3DCCB;
+    border-radius: 14px;
+    background: #F8F5ED;
+}
+
+.fitpass-renewal-summary strong { font-size: 1rem; }
+.fitpass-renewal-summary span { font-weight: 900; }
+.fitpass-renewal-summary small { grid-column: 1 / -1; color: #756F62; }
+
+.fitpass-demo-note {
+    margin: 12px 0 18px;
+    padding: 12px 14px;
+    border: 1px solid #F0E1A8;
+    border-radius: 12px;
+    background: #FFF8DF;
+    color: #5F4A00;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.fitpass-renewal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.fitpass-renewal-actions .btn-primary {
+    border-color: #171713 !important;
+    background: #171713 !important;
+    color: #F5B800 !important;
+}
+
+@media (max-width: 520px) {
+    .fitpass-renewal-overlay { padding: 12px; }
+    .fitpass-renewal-actions { flex-direction: column-reverse; }
+    .fitpass-renewal-actions .btn { width: 100%; }
+}

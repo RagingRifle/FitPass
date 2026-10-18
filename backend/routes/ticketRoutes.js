@@ -1,0 +1,11 @@
+const express = require('express');
+const { z } = require('zod');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const validate = require('../middleware/validate');
+const { getTickets, createTicket, replyToTicket } = require('../controllers/ticketController');
+const router = express.Router();
+router.use(protect, authorize('member', 'admin', 'h4_admin', 'fitpass_admin', 'superadmin', 'receptionist', 'trainer'));
+router.get('/', getTickets);
+router.post('/', authorize('member'), validate({ body: z.object({ subject: z.string().trim().min(1).max(120), category: z.string().trim().min(1).max(80), message: z.string().trim().min(1).max(2000) }) }), createTicket);
+router.post('/:id/reply', validate({ body: z.object({ message: z.string().trim().min(1).max(2000) }) }), replyToTicket);
+module.exports = router;

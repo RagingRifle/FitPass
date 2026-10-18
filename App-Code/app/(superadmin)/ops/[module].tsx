@@ -474,7 +474,7 @@ export default function OpsDetailScreen() {
               <Typography variant="caption" color="muted">Expiry: {formatDate(item.expiryDate)}</Typography>
               {item.pendingBalance > 0 && (
                 <Typography variant="caption" color="error" style={{ fontWeight: '700' }}>
-                  Dues: ₹{item.pendingBalance}
+                  Dues: INR {item.pendingBalance}
                 </Typography>
               )}
             </View>
@@ -531,7 +531,7 @@ export default function OpsDetailScreen() {
         return (
           <View style={styles.infoRow}>
             <Typography variant="caption" color="secondary">Duration: {item.duration} {item.durationUnit}</Typography>
-            <Typography variant="body" style={styles.priceText}>₹{item.price}</Typography>
+            <Typography variant="body" style={styles.priceText}>INR {item.price}</Typography>
           </View>
         );
 
@@ -575,7 +575,7 @@ export default function OpsDetailScreen() {
           <>
             <View style={styles.infoRow}>
               <Typography variant="caption" color="secondary">Role: {item.role}</Typography>
-              <Typography variant="caption" color="secondary">Salary: ₹{item.baseSalary}</Typography>
+              <Typography variant="caption" color="secondary">Salary: INR {item.baseSalary}</Typography>
             </View>
             <Typography variant="caption" color="muted">Email: {item.email}</Typography>
           </>
@@ -585,7 +585,7 @@ export default function OpsDetailScreen() {
         return (
           <View style={styles.infoRow}>
             <Typography variant="caption" color="secondary">Method: {item.method || 'Online'}</Typography>
-            <Typography variant="body" style={styles.priceText}>+ ₹{item.amount}</Typography>
+            <Typography variant="body" style={styles.priceText}>+ INR {item.amount}</Typography>
           </View>
         );
 
@@ -593,7 +593,7 @@ export default function OpsDetailScreen() {
         return (
           <View style={styles.infoRow}>
             <Typography variant="caption" color="secondary">Merchant: {item.merchant || 'N/A'}</Typography>
-            <Typography variant="body" style={styles.expenseText}>- ₹{item.amount}</Typography>
+            <Typography variant="body" style={styles.expenseText}>- INR {item.amount}</Typography>
           </View>
         );
 
@@ -618,7 +618,7 @@ export default function OpsDetailScreen() {
   };
 
   const renderCreateFormContent = () => {
-    const plansOptions = (h4Plans || []).map((p: any) => ({ label: `${p.name} - ₹${p.price}`, value: p._id }));
+    const plansOptions = (h4Plans || []).map((p: any) => ({ label: `${p.name} - INR ${p.price}`, value: p._id }));
     const branchesOptions = (h4Branches || []).map((b: any) => ({ label: b.name, value: b._id }));
     const membersOptions = (h4Members || []).map((m: any) => ({ label: `${m.name} (${m.phone})`, value: m._id }));
 
@@ -670,7 +670,7 @@ export default function OpsDetailScreen() {
         return (
           <>
             <Input label="Plan Name *" value={name} onChangeText={setName} placeholder="e.g. 3 Months Unlimited" />
-            <Input label="Price (₹) *" value={price} onChangeText={setPrice} placeholder="e.g. 4500" keyboardType="numeric" />
+            <Input label="Price (INR) *" value={price} onChangeText={setPrice} placeholder="e.g. 4500" keyboardType="numeric" />
             <Input label="Duration *" value={duration} onChangeText={setDuration} placeholder="e.g. 90" keyboardType="numeric" />
             <Select
               label="Duration Unit"
@@ -736,14 +736,14 @@ export default function OpsDetailScreen() {
               value={role}
               onValueChange={(val) => setRole(String(val))}
             />
-            <Input label="Base Salary (₹) *" value={salary} onChangeText={setSalary} placeholder="e.g. 25000" keyboardType="numeric" />
+            <Input label="Base Salary (INR) *" value={salary} onChangeText={setSalary} placeholder="e.g. 25000" keyboardType="numeric" />
           </>
         );
       case 'payments':
         return (
           <>
             <Select label="Select Member Profile *" options={membersOptions} value={memberId} onValueChange={(val) => setMemberId(String(val))} placeholder="Choose member paying" />
-            <Input label="Payment Amount (₹) *" value={amount} onChangeText={setAmount} placeholder="e.g. 3500" keyboardType="numeric" />
+            <Input label="Payment Amount (INR) *" value={amount} onChangeText={setAmount} placeholder="e.g. 3500" keyboardType="numeric" />
             <Select
               label="Payment Method"
               options={[
@@ -761,7 +761,7 @@ export default function OpsDetailScreen() {
         return (
           <>
             <Input label="Expense Category *" value={category} onChangeText={setCategory} placeholder="e.g. Maintenance, Electricity, Rent" />
-            <Input label="Amount (₹) *" value={amount} onChangeText={setAmount} placeholder="e.g. 850" keyboardType="numeric" />
+            <Input label="Amount (INR) *" value={amount} onChangeText={setAmount} placeholder="e.g. 850" keyboardType="numeric" />
             <Input label="Merchant / Paid To" value={merchant} onChangeText={setMerchant} placeholder="e.g. TNEB Office" />
             <Input label="Description / Remarks" value={description} onChangeText={setDescription} placeholder="e.g. May month electricity bill" />
           </>
@@ -976,7 +976,7 @@ export default function OpsDetailScreen() {
                       <Badge label={log.type || 'Repair'} variant="warning" />
                     </View>
                     <View style={styles.infoRow}>
-                      <Typography variant="caption" color="secondary">Cost: ₹{log.cost}</Typography>
+                      <Typography variant="caption" color="secondary">Cost: INR {log.cost}</Typography>
                       <Typography variant="caption" color="secondary">Date: {formatDate(log.serviceDate)}</Typography>
                     </View>
                     {log.description && (

@@ -222,7 +222,7 @@ export const H4BranchControlHub: React.FC = () => {
                     <View style={styles.statMetric}>
                       <DollarSign size={14} color={theme.colors.success} />
                       <Typography variant="caption" color="success">
-                        ₹{b.totalRevenue || 0} Revenue
+                        INR {b.totalRevenue || 0} Revenue
                       </Typography>
                     </View>
                   </View>

@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
     Dumbbell, Calendar, User, Plus, Trash2, Edit3, Search, 
-    CheckCircle2, FolderHeart, ArrowRight, PlayCircle, Award, Sparkles, CheckSquare, Square
+    CheckCircle2, FolderHeart, ArrowRight, PlayCircle, Award, Sparkles, CheckSquare, Square, X
 } from 'lucide-react';
 
 const WorkoutPlans = () => {
@@ -61,44 +61,53 @@ const WorkoutPlans = () => {
 
     const fetchData = async () => {
         setLoading(true);
-        try {
-            const planRes = await API.get('/workout-plans');
-            const planData = planRes.data;
-            setPlans(Array.isArray(planData) ? planData : (planData?.data || []));
+        setError('');
+        const requests = [API.get('/workout-plans'), API.get('/workout-templates')];
+        if (isTrainerOrAdmin) requests.push(API.get('/workout-plans/assignable-members', { params: { page: 1, limit: 100 } }));
 
-            const tempRes = await API.get('/workout-templates');
-            const tempData = tempRes.data;
-            setTemplates(Array.isArray(tempData) ? tempData : (tempData?.data || []));
-
-            if (isTrainerOrAdmin) {
-                const firstPageRes = await API.get('/members', { params: { page: 1, limit: 100 } });
-                const firstPage = firstPageRes.data;
-                const firstMembers = Array.isArray(firstPage)
-                    ? firstPage
-                    : (firstPage?.members || firstPage?.data || []);
-                const totalPages = Math.max(Number(firstPage?.pages) || 1, 1);
-
-                const remainingPages = await Promise.all(
-                    Array.from({ length: totalPages - 1 }, (_, index) =>
-                        API.get('/members', { params: { page: index + 2, limit: 100 } })
-                    )
-                );
-                const allMembers = [
-                    ...firstMembers,
-                    ...remainingPages.flatMap(({ data }) =>
-                        Array.isArray(data) ? data : (data?.members || data?.data || [])
-                    )
-                ];
-                setMembers(allMembers);
-            }
-        } catch {
-            setError('Failed to sync workout system datasets');
+        const [plansResult, templatesResult, membersResult] = await Promise.allSettled(requests);
+        if (plansResult.status === 'fulfilled') {
+            const data = plansResult.value.data;
+            setPlans(Array.isArray(data) ? data : (data?.data || []));
+        } else {
             setPlans([]);
-            setTemplates([]);
-            setMembers([]);
-        } finally {
-            setLoading(false);
+            setError('Workout plans could not be loaded.');
         }
+
+        if (templatesResult.status === 'fulfilled') {
+            const data = templatesResult.value.data;
+            setTemplates(Array.isArray(data) ? data : (data?.data || []));
+        } else {
+            setTemplates([]);
+            setError((current) => current || 'Workout templates could not be loaded.');
+        }
+
+        if (isTrainerOrAdmin) {
+            if (membersResult?.status === 'fulfilled') {
+                const firstPage = membersResult.value.data;
+                const firstMembers = Array.isArray(firstPage) ? firstPage : (firstPage?.members || firstPage?.data || []);
+                const totalPages = Math.max(Number(firstPage?.pages) || 1, 1);
+                try {
+                    const remainingPages = await Promise.all(
+                        Array.from({ length: totalPages - 1 }, (_, index) =>
+                            API.get('/workout-plans/assignable-members', { params: { page: index + 2, limit: 100 } })
+                        )
+                    );
+                    setMembers([
+                        ...firstMembers,
+                        ...remainingPages.flatMap(({ data }) => Array.isArray(data) ? data : (data?.members || data?.data || []))
+                    ]);
+                } catch {
+                    setMembers(firstMembers);
+                    setError((current) => current || 'Some members could not be loaded.');
+                }
+            } else {
+                setMembers([]);
+                const detail = membersResult?.reason?.response?.data?.message;
+                setError((current) => current || detail || 'Members could not be loaded. Check your gym selection and access.');
+            }
+        }
+        setLoading(false);
     };
 
     const fetchMemberStreakAndLogs = () => {
@@ -144,11 +153,19 @@ const WorkoutPlans = () => {
     };
 
     const handleLoadTemplateToPlan = (templateId) => {
-        const selected = templates.find(t => (t.id || t._id) === templateId);
+        const selected = templates.find(t => String(t.id || t._id) === String(templateId));
         if (selected) {
             setPlanName(selected.name);
-            setExercises(selected.exercises || []);
+            setExercises((selected.exercises || []).map((exercise) => ({ ...exercise })));
         }
+    };
+
+    const handleAssignTemplate = (template) => {
+        resetPlanForm();
+        setPlanName(template.name || '');
+        setExercises((template.exercises || []).map((exercise) => ({ ...exercise })));
+        setActiveTab('plans');
+        setShowPlanModal(true);
     };
 
     const handlePlanSubmit = async (e) => {
@@ -183,7 +200,13 @@ const WorkoutPlans = () => {
 
     const handleEditPlan = (plan) => {
         setEditingPlanId(plan.id || plan._id);
-        setMemberId(plan.memberId || plan.member?.id || plan.member?._id || '');
+        const assignedMemberId = plan.memberId || plan.member?.id || plan.member?._id || '';
+        setMemberId(assignedMemberId);
+        if (plan.member && assignedMemberId) {
+            setMembers((current) => current.some((member) => String(member._id || member.id) === String(assignedMemberId))
+                ? current
+                : [{ ...plan.member, id: assignedMemberId }, ...current]);
+        }
         setPlanName(plan.name);
         setStartDate(plan.startDate ? plan.startDate.split('T')[0] : '');
         setEndDate(plan.endDate ? plan.endDate.split('T')[0] : '');
@@ -344,19 +367,23 @@ const WorkoutPlans = () => {
             </div>
 
             {/* TAB SELECTOR */}
-            <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border)', maxWidth: 'max-content' }}>
+            <div className="workout-tabs" role="tablist" aria-label="Workout plan views">
                 {isTrainerOrAdmin && (
                     <>
                         <button 
-                            className={`btn ${activeTab === 'plans' ? 'btn-primary' : ''}`} 
-                            style={{ background: activeTab === 'plans' ? '' : 'none', border: 'none', color: activeTab === 'plans' ? '' : 'var(--text-secondary)' }}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'plans'}
+                            className={`workout-tab ${activeTab === 'plans' ? 'active' : ''}`}
                             onClick={() => setActiveTab('plans')}
                         >
                             Assigned Members ({plans.length})
                         </button>
                         <button 
-                            className={`btn ${activeTab === 'templates' ? 'btn-primary' : ''}`} 
-                            style={{ background: activeTab === 'templates' ? '' : 'none', border: 'none', color: activeTab === 'templates' ? '' : 'var(--text-secondary)' }}
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'templates'}
+                            className={`workout-tab ${activeTab === 'templates' ? 'active' : ''}`}
                             onClick={() => setActiveTab('templates')}
                         >
                             Global Templates ({templates.length})
@@ -365,8 +392,10 @@ const WorkoutPlans = () => {
                 )}
                 {isMember && (
                     <button 
-                        className={`btn ${activeTab === 'my-workout' ? 'btn-primary' : ''}`} 
-                        style={{ background: activeTab === 'my-workout' ? '' : 'none', border: 'none', color: activeTab === 'my-workout' ? '' : 'var(--text-secondary)' }}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'my-workout'}
+                        className={`workout-tab ${activeTab === 'my-workout' ? 'active' : ''}`}
                         onClick={() => setActiveTab('my-workout')}
                     >
                         My Daily Routine
@@ -388,14 +417,13 @@ const WorkoutPlans = () => {
                     {/* TAB Content: ASSIGNED PLANS */}
                     {activeTab === 'plans' && (
                         <div>
-                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                                <div style={{ position: 'relative', flex: 1 }}>
-                                    <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                            <div className="workout-search-row">
+                                <div className="workout-search-field">
+                                    <Search size={18} aria-hidden="true" />
                                     <input 
                                         type="text" 
                                         placeholder="Search member plans..." 
-                                        className="form-control"
-                                        style={{ paddingLeft: '2.5rem', width: '100%' }}
+                                        className="form-control workout-search-input"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
@@ -493,6 +521,9 @@ const WorkoutPlans = () => {
                                                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>{temp.description || 'No description provided'}</p>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button className="btn btn-primary workout-template-assign" onClick={() => handleAssignTemplate(temp)}>
+                                                        <ArrowRight size={15} /> Assign
+                                                    </button>
                                                     <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEditTemplate(temp)}>
                                                         <Edit3 size={14} />
                                                     </button>
@@ -669,13 +700,16 @@ const WorkoutPlans = () => {
 
             {/* PLAN ASSIGNMENT MODAL */}
             {showPlanModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-                }}>
-                    <div className="card" style={{ width: '90%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>{editingPlanId ? 'Modify Assigned Plan' : 'Assign Workout Plan'}</h3>
+                <div className="workout-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowPlanModal(false); }}>
+                    <div className="card workout-modal-card">
+                        <div className="workout-modal-heading">
+                            <div>
+                                <span className="workout-eyebrow">TRAINING PROGRAM</span>
+                                <h3>{editingPlanId ? 'Edit assigned plan' : 'Assign a workout plan'}</h3>
+                                <p>Choose a member, then shape their weekly routine.</p>
+                            </div>
+                            <button type="button" className="workout-close-button" aria-label="Close workout plan editor" onClick={() => setShowPlanModal(false)}><X size={18} /></button>
+                        </div>
                         <form onSubmit={handlePlanSubmit}>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Select Member</label>
@@ -689,7 +723,7 @@ const WorkoutPlans = () => {
                                 >
                                     <option value="">Choose member...</option>
                                     {members.map(m => (
-                                        <option key={m._id || m.id} value={m._id || m.id}>{m.name} ({m.phone || 'No phone'})</option>
+                                        <option key={m._id || m.id} value={m._id || m.id}>{m.name} ({m.phone || m.email || 'No contact details'})</option>
                                     ))}
                                 </select>
                                 {members.length === 0 && (
@@ -759,10 +793,7 @@ const WorkoutPlans = () => {
                                 </div>
 
                                 {exercises.map((ex, index) => (
-                                    <div key={index} style={{
-                                        display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1fr 1.2fr 0.5fr', gap: '0.5rem',
-                                        marginBottom: '0.75rem', alignItems: 'center'
-                                    }}>
+                                    <div key={index} className="workout-exercise-row">
                                         <select 
                                             className="form-control" 
                                             style={{ fontSize: '0.8rem' }}
@@ -813,9 +844,9 @@ const WorkoutPlans = () => {
                                 ))}
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+                            <div className="workout-modal-actions">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowPlanModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">Save assigned Plan</button>
+                                <button type="submit" className="btn btn-primary">{editingPlanId ? 'Save changes' : 'Assign workout plan'}</button>
                             </div>
                         </form>
                     </div>
@@ -865,10 +896,7 @@ const WorkoutPlans = () => {
                                 </div>
 
                                 {templateExercises.map((ex, index) => (
-                                    <div key={index} style={{
-                                        display: 'grid', gridTemplateColumns: '1.5fr 2fr 1fr 1fr 1.2fr 0.5fr', gap: '0.5rem',
-                                        marginBottom: '0.75rem', alignItems: 'center'
-                                    }}>
+                                    <div key={index} className="workout-exercise-row">
                                         <select 
                                             className="form-control" 
                                             style={{ fontSize: '0.8rem' }}

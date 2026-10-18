@@ -104,7 +104,7 @@ export const H4MemberControlHub: React.FC = () => {
                   
                   <View style={styles.dueRow}>
                     <Typography variant="caption" style={{ fontSize: 11, fontWeight: '700', color: '#655B50' }}>
-                      Plan Paid: ₹{(m.paidAmount || 0).toLocaleString()} / ₹{(m.planPrice || 0).toLocaleString()}
+                      Plan Paid: INR {(m.paidAmount || 0).toLocaleString()} / INR {(m.planPrice || 0).toLocaleString()}
                     </Typography>
                   </View>
                 </View>
@@ -146,19 +146,19 @@ export const H4MemberControlHub: React.FC = () => {
                     <View style={styles.statBox}>
                       <Typography variant="caption" color="secondary">Plan Price</Typography>
                       <Typography variant="h2" style={{ color: '#1A1510', fontWeight: '900' }}>
-                        ₹{(selectedMember.planPrice || 0).toLocaleString()}
+                        INR {(selectedMember.planPrice || 0).toLocaleString()}
                       </Typography>
                     </View>
                     <View style={styles.statBox}>
                       <Typography variant="caption" color="secondary">Paid</Typography>
                       <Typography variant="h2" style={{ color: '#2E7D32', fontWeight: '900' }}>
-                        ₹{(selectedMember.paidAmount || 0).toLocaleString()}
+                        INR {(selectedMember.paidAmount || 0).toLocaleString()}
                       </Typography>
                     </View>
                     <View style={styles.statBox}>
                       <Typography variant="caption" color="secondary">Pending Dues</Typography>
                       <Typography variant="h2" style={{ color: '#C62828', fontWeight: '900' }}>
-                        ₹{Math.max(0, (selectedMember.planPrice || 0) - (selectedMember.paidAmount || 0)).toLocaleString()}
+                        INR {Math.max(0, (selectedMember.planPrice || 0) - (selectedMember.paidAmount || 0)).toLocaleString()}
                       </Typography>
                     </View>
                   </View>

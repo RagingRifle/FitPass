@@ -19,10 +19,10 @@ export default function SuperAdminLayout() {
       screenOptions={{
         headerStyle: styles.header,
         headerTitleStyle: styles.headerTitle,
-        headerTintColor: theme.colors.text,
+          headerTintColor: '#FFFFFF',
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#FF5F1F', // Vibrant Electric Orange
-        tabBarInactiveTintColor: theme.colors.textMuted,
+          tabBarActiveTintColor: '#F5B800',
+          tabBarInactiveTintColor: '#D4D0C6',
         tabBarLabelStyle: styles.tabBarLabel,
         headerRight: () => (
           <View style={styles.headerActions}>
@@ -34,7 +34,7 @@ export default function SuperAdminLayout() {
                 activeOpacity={0.7}
                 accessibilityLabel="Switch Portal"
               >
-                <Shuffle color="#FF5F1F" size={18} />
+                <Shuffle color="#F5B800" size={18} />
               </TouchableOpacity>
             )}
             <TouchableOpacity 
@@ -43,7 +43,7 @@ export default function SuperAdminLayout() {
               activeOpacity={0.7}
               accessibilityLabel="Logout"
             >
-              <LogOut color={theme.colors.error} size={18} />
+              <LogOut color="#FFFFFF" size={18} />
             </TouchableOpacity>
           </View>
         ),
@@ -149,22 +149,22 @@ export default function SuperAdminLayout() {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#171713',
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: '#34332E',
     shadowOpacity: 0,
     elevation: 0,
   },
   headerTitle: {
     ...theme.typography.h3,
-    color: theme.colors.text,
+    color: '#FFFFFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   tabBar: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: '#171713',
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: '#34332E',
     height: 64,
     paddingBottom: 6,
     paddingTop: 6,

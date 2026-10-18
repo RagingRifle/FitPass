@@ -4,21 +4,34 @@ import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
     Apple, Calendar, User, Plus, Trash2, Edit3, Search, 
-    Flame, Cookie, Zap, Droplet, Sparkles, CheckCircle2, Circle
+    Flame, Cookie, Zap, Droplet, Sparkles, CheckCircle2, Circle, X
 } from 'lucide-react';
 
 const DietPlans = () => {
     const { user } = useContext(AuthContext);
     const toast = useToast();
     const [plans, setPlans] = useState([]);
+    const [templates, setTemplates] = useState([]);
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [memberSearch, setMemberSearch] = useState('');
+    const [membersLoading, setMembersLoading] = useState(false);
+    const [memberDetailsLoading, setMemberDetailsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('plans');
+    const [templateMode, setTemplateMode] = useState(false);
+    const [editingTemplateId, setEditingTemplateId] = useState(null);
+    const [templateName, setTemplateName] = useState('');
+    const [templateDesc, setTemplateDesc] = useState('');
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
     // Form fields
     const [memberId, setMemberId] = useState('');
+    const [selectedMemberIds, setSelectedMemberIds] = useState([]);
+    const [pendingMemberIds, setPendingMemberIds] = useState([]);
+    const [memberPickerOpen, setMemberPickerOpen] = useState(false);
     const [planName, setPlanName] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -37,9 +50,6 @@ const DietPlans = () => {
 
     useEffect(() => {
         fetchPlans();
-        if (isTrainerOrAdmin) {
-            fetchMembers();
-        }
         if (isMember) {
             // Load saved self-tracking progress for the day
             const savedWater = localStorage.getItem(`water_${user.id}`);
@@ -49,12 +59,21 @@ const DietPlans = () => {
         }
     }, [isTrainerOrAdmin, user]);
 
+    useEffect(() => {
+        if (!isTrainerOrAdmin) return;
+        const timer = window.setTimeout(() => fetchMembers(memberSearch), memberSearch ? 250 : 0);
+        return () => window.clearTimeout(timer);
+    }, [isTrainerOrAdmin, memberSearch]);
+
     const fetchPlans = async () => {
         setLoading(true);
         try {
-            const { data } = await API.get('/diet-plans');
+            const [{ data }, templatesResult] = await Promise.all([
+                API.get('/diet-plans'), API.get('/diet-templates').catch(() => ({ data: [] }))
+            ]);
             const planList = Array.isArray(data) ? data : (data?.data || []);
             setPlans(planList);
+            setTemplates(Array.isArray(templatesResult.data) ? templatesResult.data : []);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load diet plans');
             setPlans([]);
@@ -63,14 +82,25 @@ const DietPlans = () => {
         }
     };
 
-    const fetchMembers = async () => {
+    const fetchMembers = async (search = '') => {
+        setMembersLoading(true);
         try {
-            const { data } = await API.get('/members');
-            const memberList = Array.isArray(data) ? data : (data?.data || []);
-            setMembers(memberList);
+            const { data } = await API.get('/members', { params: { page: 1, limit: 100, ...(search.trim() ? { search: search.trim() } : {}) } });
+            const memberList = Array.isArray(data) ? data : (data?.members || data?.data || []);
+            setMembers((current) => {
+                const validMembers = memberList.filter((member) => member && (member._id || member.id));
+                const byId = new Map(validMembers.map((member) => [String(member._id || member.id), member]));
+                current.forEach((member) => {
+                    const id = String(member._id || member.id);
+                    if (!byId.has(id)) byId.set(id, member);
+                });
+                return [...byId.values()];
+            });
         } catch (err) {
             console.error('Failed to load members for select list:', err);
             setMembers([]);
+        } finally {
+            setMembersLoading(false);
         }
     };
 
@@ -95,23 +125,35 @@ const DietPlans = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!memberId || !planName) {
-            setError('Member and Plan Name are required.');
+        if (templateMode) {
+            if (!templateName.trim()) return;
+            const templatePayload = { name: templateName.trim(), description: templateDesc, meals: payloadMeals() };
+            try {
+                if (editingTemplateId) await API.put(`/diet-templates/${editingTemplateId}`, templatePayload);
+                else await API.post('/diet-templates', templatePayload);
+                toast.success(editingTemplateId ? 'Diet template updated.' : 'Diet template created.');
+                setShowModal(false);
+                resetForm();
+                fetchPlans();
+            } catch (err) {
+                const errMsg = err.response?.data?.message || 'Failed to save diet template';
+                setError(errMsg);
+                toast.error(errMsg);
+            }
+            return;
+        }
+        if (!selectedMemberIds.length || !planName) {
+            setError('At least one member and a plan name are required.');
             return;
         }
 
         const payload = {
             memberId,
+            memberIds: selectedMemberIds,
             name: planName,
             startDate: startDate || null,
             endDate: endDate || null,
-            meals: meals.map(m => ({
-                ...m,
-                calories: Number(m.calories) || 0,
-                protein: Number(m.protein) || 0,
-                carbs: Number(m.carbs) || 0,
-                fats: Number(m.fats) || 0
-            }))
+            meals: payloadMeals()
         };
 
         try {
@@ -132,14 +174,49 @@ const DietPlans = () => {
         }
     };
 
+    const payloadMeals = () => meals.map(m => ({
+                ...m,
+                calories: Number(m.calories) || 0,
+                protein: Number(m.protein) || 0,
+                carbs: Number(m.carbs) || 0,
+                fats: Number(m.fats) || 0
+            }));
+
     const handleEdit = (plan) => {
+        setTemplateMode(false);
+        setEditingTemplateId(null);
         setEditingId(plan.id || plan._id);
-        setMemberId(plan.memberId);
+        const assignedMemberId = plan.memberId || plan.member?.id || plan.member?._id || '';
+        setMemberId(assignedMemberId);
+        const assignedMemberIds = Array.isArray(plan.memberIds) && plan.memberIds.length ? plan.memberIds.map(String) : [String(assignedMemberId)].filter(Boolean);
+        setSelectedMemberIds(assignedMemberIds);
+        setPendingMemberIds([]);
+        setMemberPickerOpen(false);
+        setMemberSearch('');
+        const linkedMembers = (plan.members || []).map((member) => ({ ...member, id: String(member.id || member._id) }));
+        if (plan.member && !linkedMembers.some((member) => String(member.id) === String(assignedMemberId))) linkedMembers.push({ ...plan.member, id: String(plan.member.id || assignedMemberId) });
+        setMembers((current) => [...new Map([...linkedMembers, ...current].map((member) => [String(member._id || member.id), member])).values()]);
+        const knownMemberIds = new Set([...linkedMembers, ...members].map((member) => String(member._id || member.id)));
+        const missingMemberIds = assignedMemberIds.filter((id) => !knownMemberIds.has(String(id)));
+        setMemberDetailsLoading(missingMemberIds.length > 0);
+        if (missingMemberIds.length) {
+            Promise.all(missingMemberIds.map((id) => API.get(`/members/${id}`).then(({ data }) => data).catch(() => null)))
+                .then((results) => {
+                    const resolved = results.filter(Boolean).map((member) => ({ ...member, id: String(member.id || member._id) }));
+                    setMembers((current) => [...new Map([...current, ...resolved].map((member) => [String(member._id || member.id), member])).values()]);
+                })
+                .finally(() => setMemberDetailsLoading(false));
+        }
         setPlanName(plan.name);
         setStartDate(plan.startDate ? plan.startDate.split('T')[0] : '');
         setEndDate(plan.endDate ? plan.endDate.split('T')[0] : '');
         setMeals(plan.meals || [{ time: '08:00 AM', name: 'Breakfast', items: '', calories: 0, protein: 0, carbs: 0, fats: 0 }]);
         setShowModal(true);
+    };
+
+    const handleAddMembersToPlan = (plan) => {
+        handleEdit(plan);
+        setMemberPickerOpen(true);
     };
 
     const handleDelete = async (id) => {
@@ -158,11 +235,44 @@ const DietPlans = () => {
     const resetForm = () => {
         setEditingId(null);
         setMemberId('');
+        setSelectedMemberIds([]);
+        setPendingMemberIds([]);
+        setMemberPickerOpen(false);
+        setMemberSearch('');
         setPlanName('');
         setStartDate('');
         setEndDate('');
         setMeals([{ time: '08:00 AM', name: 'Breakfast', items: '', calories: 0, protein: 0, carbs: 0, fats: 0 }]);
         setError('');
+        setTemplateMode(false);
+        setEditingTemplateId(null);
+        setTemplateName('');
+        setTemplateDesc('');
+        setSelectedTemplateId('');
+    };
+
+    const loadTemplate = (id) => {
+        const template = templates.find((item) => String(item.id || item._id) === String(id));
+        if (!template) return;
+        setSelectedTemplateId(id);
+        setPlanName(template.name);
+        setMeals(template.meals || []);
+    };
+
+    const editTemplate = (template) => {
+        resetForm();
+        setTemplateMode(true);
+        setEditingTemplateId(template.id || template._id);
+        setTemplateName(template.name || '');
+        setTemplateDesc(template.description || '');
+        setMeals(template.meals || []);
+        setShowModal(true);
+    };
+
+    const deleteTemplate = async (id) => {
+        if (!window.confirm('Delete this diet template?')) return;
+        try { await API.delete(`/diet-templates/${id}`); toast.success('Diet template deleted.'); fetchPlans(); }
+        catch (err) { toast.error(err.response?.data?.message || 'Failed to delete template'); }
     };
 
     // Calculate dynamic totals for the current form meals array
@@ -175,9 +285,49 @@ const DietPlans = () => {
     }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
 
     const safePlans = Array.isArray(plans) ? plans : [];
-
+    const normalizedMemberSearch = memberSearch.trim().toLowerCase();
+    const visibleMembers = members.filter((member) => {
+        const id = String(member._id || member.id);
+        const matchesSearch = !normalizedMemberSearch ||
+            [member.name, member.phone, member.email].some((value) => String(value || '').toLowerCase().includes(normalizedMemberSearch));
+        return matchesSearch && !selectedMemberIds.includes(id);
+    });
+    const selectedMembers = selectedMemberIds.map((id) => members.find(
+        (member) => String(member._id || member.id) === String(id)
+    ) || { id: String(id), name: `Member · ${String(id).slice(-6)}`, detailsUnavailable: true });
+    const assignableMembers = visibleMembers;
+    const toggleMember = (id) => {
+        const idString = String(id);
+        const next = selectedMemberIds.includes(idString)
+            ? selectedMemberIds.filter((selectedId) => selectedId !== idString)
+            : [...selectedMemberIds, idString];
+        setSelectedMemberIds(next);
+        setMemberId(next[0] || '');
+    };
+    const togglePendingMember = (id) => {
+        const idString = String(id);
+        setPendingMemberIds((current) => current.includes(idString)
+            ? current.filter((selectedId) => selectedId !== idString)
+            : [...current, idString]);
+    };
+    const commitPendingMembers = () => {
+        const next = [...new Set([...selectedMemberIds, ...pendingMemberIds])];
+        setSelectedMemberIds(next);
+        setMemberId(next[0] || '');
+        setPendingMemberIds([]);
+        setMemberSearch('');
+        setMemberPickerOpen(false);
+    };
+    const openMemberPicker = () => {
+        setPendingMemberIds([]);
+        setMemberSearch('');
+        setMemberPickerOpen(true);
+    };
     // Active member diet plan details
-    const activeMemberDiet = safePlans.find(p => p.memberId === user?.memberId || isMember);
+    const activeMemberDiet = safePlans.find((plan) =>
+        String(plan.memberId) === String(user?.memberId) ||
+        (Array.isArray(plan.memberIds) && plan.memberIds.map(String).includes(String(user?.memberId)))
+    );
 
     // Dynamic macro targets and consumed values
     const targetMacros = activeMemberDiet?.meals?.reduce((acc, curr) => {
@@ -231,12 +381,17 @@ const DietPlans = () => {
                     </h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Meal templates, daily macros, and hydration logs</p>
                 </div>
-                {isTrainerOrAdmin && (
+                {isTrainerOrAdmin && activeTab === 'plans' && (
                     <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => { resetForm(); setShowModal(true); }}>
                         <Plus size={18} /> Assign Plan
                     </button>
                 )}
+                {isTrainerOrAdmin && activeTab === 'templates' && <button className="btn btn-primary" onClick={() => { resetForm(); setTemplateMode(true); setShowModal(true); }}><Plus size={18} /> Create Template</button>}
             </div>
+            {isTrainerOrAdmin && <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1.5rem' }}>
+                <button className={`btn ${activeTab === 'plans' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('plans')}>Assigned Plans ({plans.length})</button>
+                <button className={`btn ${activeTab === 'templates' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('templates')}>Diet Templates ({templates.length})</button>
+            </div>}
 
             {isMember ? (
                 /* MEMBER MACROS TRACKING HUB */
@@ -367,14 +522,20 @@ const DietPlans = () => {
             ) : (
                 /* TRAINER DASHBOARD LIST */
                 <div>
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                        <div style={{ position: 'relative', flex: 1 }}>
-                            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                    {activeTab === 'templates' ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                        {templates.length === 0 && <div className="card"><h3>No Diet Templates Yet</h3><p>Create a reusable meal plan template for quick assignment.</p></div>}
+                        {templates.map((template) => <div className="card" key={template.id || template._id}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><div><h3>{template.name}</h3><p>{template.description}</p><small>{template.meals?.length || 0} meals</small></div><div style={{ display: 'flex', gap: '.4rem' }}><button className="btn btn-secondary" onClick={() => editTemplate(template)} aria-label="Edit template"><Edit3 size={15}/></button><button className="btn btn-secondary" onClick={() => deleteTemplate(template.id || template._id)} aria-label="Delete template"><Trash2 size={15}/></button></div></div>
+                            <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => { resetForm(); setPlanName(template.name); setMeals(template.meals || []); setSelectedTemplateId(String(template.id || template._id)); setActiveTab('plans'); setShowModal(true); }}>Assign to member</button>
+                        </div>)}
+                    </div> : <>
+                    <div className="diet-plan-search-row">
+                        <div className="diet-search-field">
+                            <Search size={18} aria-hidden="true" />
                             <input 
-                                type="text" 
+                                type="search"
                                 placeholder="Search plans by name or member..." 
-                                className="form-control"
-                                style={{ paddingLeft: '2.5rem', width: '100%' }}
+                                aria-label="Search diet plans by name or member"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -393,21 +554,23 @@ const DietPlans = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
                             {filteredPlans.map((plan) => {
                                 const totalCals = plan.meals?.reduce((sum, m) => sum + (Number(m.calories) || 0), 0) || 0;
+                                const assignedCount = Array.isArray(plan.memberIds)
+                                    ? plan.memberIds.length
+                                    : (plan.members?.length || (plan.member ? 1 : 0));
                                 return (
                                     <div className="card" key={plan.id || plan._id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                         <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1rem' }}>
                                                 <div>
-                                                    <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '0.05em' }}>
-                                                        {plan.member?.name ? `Member: ${plan.member.name}` : 'Shared Template'}
-                                                    </span>
+                                                    <span className="diet-assigned-heading">Assigned members <i>{assignedCount}</i></span>
                                                     <h3 style={{ marginTop: '0.25rem', marginBottom: '0.5rem', fontSize: '1.15rem' }}>{plan.name}</h3>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEdit(plan)}>
+                                                <div className="diet-plan-card-actions">
+                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEdit(plan)} aria-label={`Edit ${plan.name}`} title="Edit plan">
                                                         <Edit3 size={14} />
                                                     </button>
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%', color: '#C62828' }} onClick={() => handleDelete(plan.id || plan._id)}>
+                                                    <button type="button" className="diet-card-add-members" onClick={() => handleAddMembersToPlan(plan)}><Plus size={14} /> Add members</button>
+                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%', color: '#C62828' }} onClick={() => handleDelete(plan.id || plan._id)} aria-label={`Delete ${plan.name}`} title="Delete plan">
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
@@ -459,6 +622,7 @@ const DietPlans = () => {
                             })}
                         </div>
                     )}
+                    </>}
                 </div>
             )}
 
@@ -466,7 +630,7 @@ const DietPlans = () => {
             {showModal && (
                 <div className="diet-modal-overlay">
                     <div className="card diet-plan-modal">
-                        <h3 style={{ marginBottom: '1.5rem' }}>{editingId ? 'Modify Assigned Plan' : 'Assign Diet Plan'}</h3>
+                        <h3 style={{ marginBottom: '1.5rem' }}>{templateMode ? (editingTemplateId ? 'Edit Diet Template' : 'Create Diet Template') : editingId ? 'Modify Assigned Plan' : 'Assign Diet Plan'}</h3>
                         
                         {/* Macro aggregation ticker */}
                         <div className="diet-macro-summary">
@@ -489,21 +653,61 @@ const DietPlans = () => {
                         </div>
 
                         <form className="diet-plan-form" onSubmit={handleSubmit}>
-                            <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Member</label>
-                                <select 
-                                    className="form-control" 
-                                    style={{ width: '100%' }}
-                                    value={memberId} 
-                                    onChange={(e) => setMemberId(e.target.value)}
-                                    required
-                                    disabled={!!editingId}
-                                >
-                                    <option value="">Select Member</option>
-                                    {members.map(m => (
-                                        <option key={m._id} value={m._id}>{m.name} ({m.phone})</option>
-                                    ))}
-                                </select>
+                            {templateMode ? <>
+                            <div className="form-group" style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Template Name</label><input className="form-control" value={templateName} onChange={(e) => setTemplateName(e.target.value)} required /></div>
+                            <div className="form-group" style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Description</label><input className="form-control" value={templateDesc} onChange={(e) => setTemplateDesc(e.target.value)} /></div>
+                            </> : <>
+                            <div className="form-group diet-member-picker">
+                                <div className="diet-member-picker-heading">
+                                    <label htmlFor="diet-member-search">Members</label>
+                                    <span>{selectedMemberIds.length} selected</span>
+                                </div>
+                                {selectedMembers.length ? <div className="diet-selected-members" aria-label="Members assigned to this plan">
+                                    {selectedMembers.map((member) => {
+                                        const id = String(member._id || member.id);
+                                        return <div className="diet-member-chip" key={id}>
+                                            <span className="diet-member-avatar">{(member.name || '?').trim().charAt(0).toUpperCase()}</span>
+                                            <span className="diet-member-chip-name">{member.name || 'Unnamed member'}</span>
+                                            <button type="button" onClick={() => toggleMember(id)} aria-label={`Remove ${member.name} from this plan`}><X size={14} /></button>
+                                        </div>;
+                                    })}
+                                </div> : <div className="diet-members-empty-selected">No members assigned yet.</div>}
+
+                                {!memberPickerOpen ? (
+                                    <button type="button" className="diet-open-member-picker" onClick={openMemberPicker}><Plus size={16} /> Add members</button>
+                                ) : <div className="diet-member-picker-popover">
+                                <div className="diet-search-field diet-member-search-field">
+                                    <Search size={17} aria-hidden="true" />
+                                    <input
+                                        id="diet-member-search"
+                                        type="search"
+                                        placeholder="Find a member by name, phone, or email"
+                                        value={memberSearch}
+                                        onChange={(e) => setMemberSearch(e.target.value)}
+                                        aria-label="Search members"
+                                    />
+                                </div>
+                                <div className="diet-member-results" aria-label="Member search results">
+                                    {assignableMembers.map((member) => {
+                                        const id = String(member._id || member.id);
+                                        const isSelected = pendingMemberIds.includes(id);
+                                        return <label className={`diet-member-option${isSelected ? ' is-selected' : ''}`} key={id}>
+                                            <input type="checkbox" checked={isSelected} onChange={() => togglePendingMember(id)} />
+                                            <span className="diet-member-avatar">{(member.name || '?').trim().charAt(0).toUpperCase()}</span>
+                                            <span className="diet-member-option-copy"><strong>{member.name || 'Unnamed member'}</strong><small>{member.phone || member.email || 'No contact details'}</small></span>
+                                            <span className="diet-member-option-action">{isSelected ? 'Selected' : 'Select'}</span>
+                                        </label>;
+                                    })}
+                                    {!visibleMembers.length && <div className="diet-member-results-empty">{membersLoading ? 'Searching members…' : 'No members match this search.'}</div>}
+                                </div>
+                                <small className="diet-member-result-count">
+                                    {membersLoading ? 'Searching members…' : `${visibleMembers.length} member${visibleMembers.length === 1 ? '' : 's'} shown${memberSearch ? '' : ' · Search to find someone specific'}`}
+                                </small>
+                                <div className="diet-member-picker-actions">
+                                    <button type="button" className="btn btn-secondary" onClick={() => { setMemberPickerOpen(false); setPendingMemberIds([]); setMemberSearch(''); }}>Cancel</button>
+                                    <button type="button" className="btn btn-primary" onClick={commitPendingMembers} disabled={!pendingMemberIds.length}><Plus size={15} /> Add {pendingMemberIds.length || ''} {pendingMemberIds.length === 1 ? 'member' : 'members'}</button>
+                                </div>
+                                </div>}
                             </div>
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -538,6 +742,8 @@ const DietPlans = () => {
                                     />
                                 </div>
                             </div>
+                            {templates.length > 0 && <div className="form-group" style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Load from template</label><select className="form-control" value={selectedTemplateId} onChange={(e) => loadTemplate(e.target.value)}><option value="">Choose a template...</option>{templates.map((template) => <option key={template.id || template._id} value={template.id || template._id}>{template.name}</option>)}</select></div>}
+                            </>}
 
                             <div className="diet-meals-section">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -615,8 +821,8 @@ const DietPlans = () => {
                             </div>
 
                             <div className="diet-form-actions">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">Save Diet Plan</button>
+                                <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</button>
+                                <button type="submit" className="btn btn-primary">{templateMode ? 'Save Template' : editingId ? 'Save plan & members' : 'Assign diet plan'}</button>
                             </div>
                         </form>
                     </div>

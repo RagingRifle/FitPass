@@ -7,6 +7,21 @@ const { jsonToCsv } = require('../utils/csvUtils');
 const { logAudit } = require('../utils/auditLogger');
 const { H4_GYM_IDS } = require('../config/constants');
 
+const migrateLegacyH4Plan = async (plan, targetGymId) => {
+    if (!plan || plan.gymId !== 'SYSTEM' || Number(plan.sessions) > 0 || !(Number(plan.duration) > 0)) return false;
+    const gymId = String(targetGymId || '');
+    let isH4 = H4_GYM_IDS.includes(gymId);
+    if (!isH4 && gymId) {
+        const Gym = require('../models/Gym');
+        const gym = await Gym.findById(gymId).lean();
+        isH4 = String(gym?.name || '').toLowerCase().includes('h4');
+    }
+    if (!isH4) return false;
+    plan.gymId = gymId;
+    await plan.save();
+    return true;
+};
+
 // Helper to dynamically build member query based on role restrictions
 const buildMemberQuery = async (req, memberId) => {
     const query = { ...req.tenantFilter };
@@ -15,6 +30,14 @@ const buildMemberQuery = async (req, memberId) => {
     }
 
     if (req.user.role === 'superadmin') {
+        return query;
+    }
+
+    const currentGymId = String(req.user.gymId || '');
+    const isH4Scope = req.user.role === 'h4_admin' || H4_GYM_IDS.includes(currentGymId);
+    if (isH4Scope) {
+        query.gymId = { $in: [...new Set([...H4_GYM_IDS, currentGymId].filter(Boolean))] };
+        if (req.user.branchId) query.branchId = req.user.branchId;
         return query;
     }
 
@@ -84,7 +107,24 @@ const createMember = catchAsync(async (req, res, next) => {
             targetGymId = h4Gym ? h4Gym._id.toString() : H4_GYM_IDS[0];
         }
 
+        if (plan.gymId === 'SYSTEM' && Number(plan.sessions) <= 0) {
+            await migrateLegacyH4Plan(plan, targetGymId);
+        }
+        if (plan.gymId === 'SYSTEM') {
+            const fitPassAdminCreate = req.user.role === 'fitpass_admin'
+                || (req.user.role === 'superadmin' && String(gymId || '') === 'SYSTEM');
+            if (!fitPassAdminCreate || String(targetGymId) !== 'SYSTEM' || !(Number(plan.sessions) > 0)) {
+                return res.status(400).json({ success: false, message: 'FitPass session plans are reserved for FitPass members. Use a gym membership plan for H4 registration.' });
+            }
+        }
+        if (String(plan.gymId) !== String(targetGymId)) {
+            return res.status(403).json({ success: false, message: 'This plan belongs to a different gym. Choose a plan from the member’s gym.' });
+        }
+
         const targetBranchId = req.user.branchId || branchId || null;
+        if (plan.branchId && String(plan.branchId) !== String(targetBranchId || '')) {
+            return res.status(403).json({ success: false, message: 'This plan is assigned to a different branch.' });
+        }
 
         const numericDiscount = Math.max(0, Number(req.body.discount) || 0);
         const catalogPrice = Number(plan.price) || 0;
@@ -104,6 +144,7 @@ const createMember = catchAsync(async (req, res, next) => {
             status,
             planPrice: netAgreedPrice,
             paidAmount: numericPaid,
+            ...(plan.gymId === 'SYSTEM' ? { sessionsRemaining: Number(plan.sessions) || 0, sessionsTotal: Number(plan.sessions) || 0 } : {}),
             gymId: targetGymId,
             branchId: targetBranchId
         });
@@ -189,7 +230,8 @@ const getMembers = catchAsync(async (req, res, next) => {
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
-                { phone: { $regex: search, $options: 'i' } }
+                { phone: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -281,11 +323,16 @@ const updateMember = catchAsync(async (req, res, next) => {
             const originalGymId = member.gymId ? member.gymId.toString() : '';
 
             if (planId) {
-                const planQuery = { _id: planId };
-                if (req.user.role !== 'superadmin' && req.user.role !== 'fitpass_admin') {
-                    planQuery.gymId = req.user.gymId;
+                const plan = await Plan.findById(planId);
+                const targetGymId = req.user.role === 'superadmin' && gymId ? String(gymId) : String(member.gymId || '');
+                if (plan?.gymId === 'SYSTEM' && Number(plan.sessions) <= 0) await migrateLegacyH4Plan(plan, targetGymId);
+                const isUnchangedFitPassPlan = String(planId) === String(member.planId?.toString()) && member.gymId === 'SYSTEM';
+                if (plan && !isUnchangedFitPassPlan && (plan.gymId === 'SYSTEM' || String(plan.gymId) !== targetGymId)) {
+                    return res.status(403).json({ success: false, message: 'Choose a membership plan from the member’s own division and gym.' });
                 }
-                const plan = await Plan.findOne(planQuery);
+                if (plan?.branchId && member.branchId && String(plan.branchId) !== String(member.branchId)) {
+                    return res.status(403).json({ success: false, message: 'This plan is assigned to a different branch.' });
+                }
                 if (!plan && planId !== member.planId?.toString()) {
                     return res.status(404).json({ success: false, message: 'Plan not found' });
                 }
@@ -533,7 +580,7 @@ const getMemberAuditTrail = catchAsync(async (req, res, next) => {
 const renewMember = catchAsync(async (req, res, next) => {
     try {
         const { planId, paidAmount = 0, discount = 0, finalPrice, method = 'Cash' } = req.body;
-        const member = await Member.findById(req.params.id);
+        const member = await Member.findOne(await buildMemberQuery(req, req.params.id));
         if (!member) {
             return res.status(404).json({ success: false, message: 'Member not found' });
         }
@@ -541,6 +588,13 @@ const renewMember = catchAsync(async (req, res, next) => {
         const plan = await Plan.findById(planId || member.planId);
         if (!plan) {
             return res.status(404).json({ success: false, message: 'Plan not found' });
+        }
+        if (plan.gymId === 'SYSTEM' && Number(plan.sessions) <= 0) await migrateLegacyH4Plan(plan, member.gymId);
+        if (member.gymId === 'SYSTEM' || plan.gymId === 'SYSTEM' || String(plan.gymId) !== String(member.gymId)) {
+            return res.status(403).json({ success: false, message: 'FitPass subscriptions are renewed by members in the FitPass portal. Staff renewals must use a plan from the member’s gym.' });
+        }
+        if (plan.branchId && member.branchId && String(plan.branchId) !== String(member.branchId)) {
+            return res.status(403).json({ success: false, message: 'This plan is assigned to a different branch.' });
         }
 
         const now = new Date();

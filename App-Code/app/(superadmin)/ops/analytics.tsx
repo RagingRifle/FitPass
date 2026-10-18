@@ -58,7 +58,7 @@ export default function AnalyticsScreen() {
 
   // --- Financial Trend Charts ---
   const revLabels = (analyticsData.revenueTrend || []).map((t: any) => t.month);
-  const revValues = (analyticsData.revenueTrend || []).map((t: any) => Math.round((t.revenue || 0) / 1000)); // in thousands ₹
+  const revValues = (analyticsData.revenueTrend || []).map((t: any) => Math.round((t.revenue || 0) / 1000)); // in thousands INR 
 
   const revenueChartData = {
     labels: revLabels.length > 0 ? revLabels : ['N/A'],
@@ -184,7 +184,7 @@ export default function AnalyticsScreen() {
                   <Wallet size={18} color={theme.colors.primary} />
                 </View>
                 <Typography variant="h2" style={styles.statValue}>
-                  ₹{(analyticsData.monthlyRevenue || 0).toLocaleString('en-IN')}
+                  INR {(analyticsData.monthlyRevenue || 0).toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" color="muted">Current Month Collections</Typography>
               </Card>
@@ -195,10 +195,10 @@ export default function AnalyticsScreen() {
                   <ArrowUpRight size={18} color={theme.colors.success} />
                 </View>
                 <Typography variant="h2" style={StyleSheet.flatten([styles.statValue, { color: theme.colors.success }])}>
-                  ₹{(analyticsData.monthlyProfit || 0).toLocaleString('en-IN')}
+                  INR {(analyticsData.monthlyProfit || 0).toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" color="muted">
-                  Exp: ₹{(analyticsData.monthlyExpenses || 0).toLocaleString('en-IN')}
+                  Exp: INR {(analyticsData.monthlyExpenses || 0).toLocaleString('en-IN')}
                 </Typography>
               </Card>
             </View>
@@ -210,7 +210,7 @@ export default function AnalyticsScreen() {
                   <ShieldCheck size={18} color="#8b5cf6" />
                 </View>
                 <Typography variant="h2" style={styles.statValue}>
-                  ₹{(analyticsData.totalLifetimeRevenue || 0).toLocaleString('en-IN')}
+                  INR {(analyticsData.totalLifetimeRevenue || 0).toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" color="muted">Total Payments Recorded</Typography>
               </Card>
@@ -221,7 +221,7 @@ export default function AnalyticsScreen() {
                   <Award size={18} color={theme.colors.info} />
                 </View>
                 <Typography variant="h2" style={styles.statValue}>
-                  ₹{(analyticsData.avgLTV || 0).toLocaleString('en-IN')}
+                  INR {(analyticsData.avgLTV || 0).toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" color="muted">Avg Value / Gym Member</Typography>
               </Card>
@@ -230,7 +230,7 @@ export default function AnalyticsScreen() {
             {/* Revenue Trend Line Chart */}
             <Card style={styles.chartCard}>
               <View style={styles.cardHeaderRow}>
-                <Typography variant="body" style={styles.cardHeaderTitle}>📈 Monthly Revenue Trend (₹ in Thousands)</Typography>
+                <Typography variant="body" style={styles.cardHeaderTitle}>📈 Monthly Revenue Trend (INR  in Thousands)</Typography>
                 <Badge label="6 Months" variant="info" />
               </View>
               {revValues.length > 0 ? (
@@ -240,7 +240,7 @@ export default function AnalyticsScreen() {
                   height={220}
                   chartConfig={chartConfig}
                   bezier
-                  yAxisLabel="₹"
+                  yAxisLabel="INR "
                   yAxisSuffix="k"
                   style={styles.chartStyle}
                 />
@@ -264,7 +264,7 @@ export default function AnalyticsScreen() {
                       <Typography variant="caption" color="secondary">{p.memberCount} total payments</Typography>
                     </View>
                     <Typography variant="bodySm" style={styles.payoutText}>
-                      ₹{(p.totalRevenue || 0).toLocaleString('en-IN')}
+                      INR {(p.totalRevenue || 0).toLocaleString('en-IN')}
                     </Typography>
                   </View>
                 ))
@@ -287,7 +287,7 @@ export default function AnalyticsScreen() {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Typography variant="bodySm" style={{ fontWeight: '700' }}>
-                        ₹{(m.totalAmount || 0).toLocaleString('en-IN')}
+                        INR {(m.totalAmount || 0).toLocaleString('en-IN')}
                       </Typography>
                       <Typography variant="caption" color="muted">{m.count} transactions</Typography>
                     </View>
@@ -340,7 +340,7 @@ export default function AnalyticsScreen() {
                   {(analyticsData.topMembers || [])[0]?.name?.split(' ')[0] || 'N/A'}
                 </Typography>
                 <Typography variant="caption" color="muted">
-                  ₹{(analyticsData.topMembers || [])[0]?.totalPaid || 0} Total Spent
+                  INR {(analyticsData.topMembers || [])[0]?.totalPaid || 0} Total Spent
                 </Typography>
               </Card>
             </View>
@@ -384,7 +384,7 @@ export default function AnalyticsScreen() {
                       </View>
                     </View>
                     <Typography variant="bodySm" style={styles.payoutText}>
-                      ₹{(m.totalPaid || 0).toLocaleString('en-IN')}
+                      INR {(m.totalPaid || 0).toLocaleString('en-IN')}
                     </Typography>
                   </View>
                 ))

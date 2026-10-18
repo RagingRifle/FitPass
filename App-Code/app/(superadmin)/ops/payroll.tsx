@@ -335,13 +335,13 @@ export default function PayrollScreen() {
                       </View>
                     </View>
                     <View style={styles.splitRow}>
-                      <Typography variant="caption" color="muted">Base Pay: ₹{slip.fixedSalary}</Typography>
-                      <Typography variant="caption" color="muted">Commissions: ₹{slip.commissions}</Typography>
-                      <Typography variant="caption" color="muted">Bonus: ₹{slip.incentives}</Typography>
+                      <Typography variant="caption" color="muted">Base Pay: INR {slip.fixedSalary}</Typography>
+                      <Typography variant="caption" color="muted">Commissions: INR {slip.commissions}</Typography>
+                      <Typography variant="caption" color="muted">Bonus: INR {slip.incentives}</Typography>
                     </View>
                     <View style={styles.totalBlock}>
                       <Typography variant="bodySm" style={{ fontWeight: '700' }}>Net Payout Amount:</Typography>
-                      <Typography variant="body" style={styles.totalValue}>₹{slip.totalAmount}</Typography>
+                      <Typography variant="body" style={styles.totalValue}>INR {slip.totalAmount}</Typography>
                     </View>
                   </Card>
                 ))}
@@ -375,14 +375,14 @@ export default function PayrollScreen() {
             Setup base fixed monthly pay and PT commission session rates.
           </Typography>
           <Input 
-            label="Fixed Salary (₹ / month) *"
+            label="Fixed Salary (INR  / month) *"
             value={fixedSalary}
             onChangeText={setFixedSalary}
             placeholder="e.g. 25000"
             keyboardType="numeric"
           />
           <Input 
-            label="PT Commission Session Rate (₹) *"
+            label="PT Commission Session Rate (INR) *"
             value={commissionPt}
             onChangeText={setCommissionPt}
             placeholder="e.g. 200"
@@ -426,7 +426,7 @@ export default function PayrollScreen() {
             </View>
           </View>
           <Input 
-            label="Incentives & Bonuses (₹)"
+            label="Incentives & Bonuses (INR)"
             value={genIncentives}
             onChangeText={setGenIncentives}
             placeholder="e.g. 1500"
@@ -451,7 +451,7 @@ export default function PayrollScreen() {
           placeholder="Choose trainer"
         />
         <Input 
-          label="Commission Payout Amount (₹) *"
+          label="Commission Payout Amount (INR) *"
           value={commAmount}
           onChangeText={setCommAmount}
           placeholder="e.g. 500"

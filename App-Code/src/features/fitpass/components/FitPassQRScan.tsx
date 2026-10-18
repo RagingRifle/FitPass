@@ -74,7 +74,7 @@ export function FitPassQRScan() {
           payload = { gymId: data };
         }
 
-        if (!payload?.gymId) throw new Error('Invalid QR code — missing gymId');
+        if (!payload?.gymId) throw new Error('Invalid QR code  missing gymId');
         const gym = (gyms || []).find(g => (g.id || g._id) === payload.gymId);
         const branch = gym?.branches?.find(b => (b.id || b._id) === payload.branchId);
         confirmCheckIn({ ...payload, gymName: branch?.name || gym?.name || payload.gymName, qrCode: data });
@@ -108,7 +108,7 @@ export function FitPassQRScan() {
   if (!permission) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text style={styles.permSubtitle}>Requesting camera permission…</Text>
+        <Text style={styles.permSubtitle}>Requesting camera permission</Text>
       </SafeAreaView>
     );
   }
@@ -268,11 +268,11 @@ export function FitPassQRScan() {
           />
           <Text style={styles.scanStatusText}>
             {scanState === 'idle' && 'Align gym counter QR code inside frame'}
-            {scanState === 'scanning' && 'Reading FitPass QR code…'}
-            {scanState === 'confirming' && 'Confirm attendance in the popup…'}
-            {scanState === 'processing' && 'Validating pass & deducting 1 session…'}
-            {scanState === 'done' && '✅ Entry Authorized!'}
-            {scanState === 'error' && `❌ ${errorMessage ?? 'Check-in failed'}`}
+            {scanState === 'scanning' && 'Reading FitPass QR code'}
+            {scanState === 'confirming' && 'Confirm attendance in the popup'}
+            {scanState === 'processing' && 'Validating pass & deducting 1 session'}
+            {scanState === 'done' && ' Entry Authorized!'}
+            {scanState === 'error' && ` ${errorMessage ?? 'Check-in failed'}`}
           </Text>
         </View>
 
@@ -358,12 +358,12 @@ export function FitPassQRScan() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFC',
+    backgroundColor: '#F8F5ED',
     justifyContent: 'space-between',
   },
   center: {
     flex: 1,
-    backgroundColor: '#FAFAFC',
+    backgroundColor: '#F8F5ED',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   grantBtn: {
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#171713',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 14,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
   },
   goBackBtn: { paddingVertical: 8 },
   goBackText: {
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F5F1E7',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     justifyContent: 'center',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
   },
 
   // Creative Framed Camera Reticle Viewport
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     borderWidth: 3,
-    borderColor: '#FF5F1F',
+    borderColor: '#171713',
     backgroundColor: '#000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -524,15 +524,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cornerTL: { position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#FF5F1F', borderTopLeftRadius: 14 },
-  cornerTR: { position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#FF5F1F', borderTopRightRadius: 14 },
-  cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#FF5F1F', borderBottomLeftRadius: 14 },
-  cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#FF5F1F', borderBottomRightRadius: 14 },
+  cornerTL: { position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#171713', borderTopLeftRadius: 14 },
+  cornerTR: { position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#171713', borderTopRightRadius: 14 },
+  cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#171713', borderBottomLeftRadius: 14 },
+  cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#171713', borderBottomRightRadius: 14 },
   laserLine: {
     width: '90%',
     height: 2,
-    backgroundColor: '#FF5F1F',
-    shadowColor: '#FF5F1F',
+    backgroundColor: '#171713',
+    shadowColor: '#171713',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 8,
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F5ED',
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
@@ -587,14 +587,14 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
     letterSpacing: 0.2,
   },
 
   // Light Manual Gym Sheet Modal
   modalContent: {
     flex: 1,
-    backgroundColor: '#FAFAFC',
+    backgroundColor: '#F8F5ED',
     padding: 20,
     paddingTop: 50,
     gap: 16,
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
     letterSpacing: 0.8,
   },
   modalTitle: {
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FF5F1F',
+    backgroundColor: '#171713',
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,

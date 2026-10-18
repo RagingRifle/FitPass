@@ -4,27 +4,27 @@ import { radii, spacing, typography } from './tokens';
 // Spacing, Colors, Typography, and Radii design tokens for GYM-CRM Mobile App
 // Compliance: AGENTS.md §5
 
-// Fixed mobile palette: mineral neutrals with a deep teal FitPrime accent.
+// Bold FitPass palette: yellow canvas, black navigation, and cream/white content surfaces.
 export const lightColors = {
-  primary: '#246B78',
-  background: '#F2F5F6',
+  primary: '#F5B800',
+  background: '#F5B800',
   card: '#FFFFFF',
-  surface: '#E8EFF1',
-  text: '#182630',
-  border: '#D8E1E4',
-  notification: '#C56A35',
-  textSecondary: '#52636C',
-  textMuted: '#819098',
+  surface: '#F8F5ED',
+  text: '#171713',
+  border: '#E3DCCB',
+  notification: '#171713',
+  textSecondary: '#585448',
+  textMuted: '#817B6E',
   textInverse: '#FFFFFF',
-  accent: '#C56A35',
-  success: '#28785D',
-  warning: '#C56A35',
-  error: '#B84747',
-  info: '#3979A8',
-  bgTertiary: '#E4EBED',
-  borderFocus: '#246B78',
-  brandLight: '#E4F0F1',
-  brandMuted: 'rgba(36, 107, 120, 0.14)',
+  accent: '#171713',
+  success: '#397354',
+  warning: '#A97900',
+  error: '#A4473F',
+  info: '#5C6F70',
+  bgTertiary: '#FFF4C6',
+  borderFocus: '#D9A900',
+  brandLight: '#FFF4C6',
+  brandMuted: 'rgba(245, 184, 0, 0.15)',
 };
 
 // Keep the root layout's existing initialization hook while using one app theme.

@@ -6,6 +6,33 @@ const prisma = require('../config/prisma');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { expireIfDue } = require('../utils/sessionHelpers');
+const { H4_GYM_IDS } = require('../config/constants');
+
+const getMockPaymentSecret = () => process.env.JWT_SECRET || 'gym-crm-local-mock-payment';
+
+const createMockOrderToken = ({ orderId, userId, planId, amount, expiresAt }) => {
+    const payload = Buffer.from(JSON.stringify({ orderId, userId, planId, amount, expiresAt })).toString('base64url');
+    const signature = crypto.createHmac('sha256', getMockPaymentSecret()).update(payload).digest('base64url');
+    return `${payload}.${signature}`;
+};
+
+const verifyMockOrderToken = (token, expected) => {
+    if (!token || typeof token !== 'string') return false;
+    const [payload, signature] = token.split('.');
+    if (!payload || !signature) return false;
+    const expectedSignature = crypto.createHmac('sha256', getMockPaymentSecret()).update(payload).digest();
+    let suppliedSignature;
+    try { suppliedSignature = Buffer.from(signature, 'base64url'); } catch { return false; }
+    if (expectedSignature.length !== suppliedSignature.length || !crypto.timingSafeEqual(expectedSignature, suppliedSignature)) return false;
+    try {
+        const order = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+        return order.orderId === expected.orderId
+            && order.userId === expected.userId
+            && order.planId === expected.planId
+            && order.amount === expected.amount
+            && order.expiresAt > Date.now();
+    } catch { return false; }
+};
 
 // Helper: resolve member by memberId or email
 const resolveMember = async (req) => {
@@ -20,6 +47,12 @@ const resolveMember = async (req) => {
     }
   }
   return member;
+};
+
+const isH4Account = (req) => {
+  const gymId = req.user?.gymId?._id?.toString?.() || req.user?.gymId?.toString?.() || '';
+  const gymName = req.user?.gymName || req.user?.gymId?.name || '';
+  return H4_GYM_IDS.includes(gymId) || String(gymName).toLowerCase().includes('h4');
 };
 
 // @desc    Get logged in member profile/plan
@@ -38,9 +71,36 @@ const getMyPlan = catchAsync(async (req, res, next) => {
     plan = await prisma.plan.findUnique({ where: { id: member.planId } }).catch(() => null);
   }
 
+  // The member's assigned gym is the source of truth for their membership
+  // division. A plan can be migrated or incorrectly linked to SYSTEM, so do
+  // not infer H4 access from the plan alone.
+  const authenticatedGymId = req.user?.gymId?._id?.toString?.()
+    || req.user?.gymId?.toString?.()
+    || '';
+  const authenticatedGymName = req.user?.gymName || req.user?.gymId?.name || '';
+  const authenticatedUserIsH4 = H4_GYM_IDS.includes(authenticatedGymId)
+    || authenticatedGymName.toLowerCase().includes('h4');
+  const assignedGymId = authenticatedUserIsH4 ? authenticatedGymId : member.gymId;
+  const homeGym = assignedGymId
+    ? await prisma.gym.findUnique({ where: { id: assignedGymId } }).catch(() => null)
+    : null;
+  const homeBranch = member.branchId
+    ? await prisma.branch.findUnique({ where: { id: member.branchId } }).catch(() => null)
+    : null;
+  const isH4Member = authenticatedUserIsH4
+    || H4_GYM_IDS.includes(member.gymId)
+    || Boolean(homeGym?.name && homeGym.name.toLowerCase().includes('h4'));
+
   res.json({
     ...member,
     planId: plan || member.planId,
+    isH4Member,
+    homeGym: homeGym ? {
+      ...homeGym,
+      _id: homeGym.id,
+      branchName: homeBranch?.name || null,
+      branchAddress: homeBranch?.address || null,
+    } : null,
   });
 });
 
@@ -48,8 +108,12 @@ const getMyPlan = catchAsync(async (req, res, next) => {
 // @route   GET /api/member-portal/fitprime-plans
 // @access  Private/Member
 const getFitPrimePlans = catchAsync(async (req, res, next) => {
+  const member = await resolveMember(req);
+  if (req.user?.role !== 'member' || isH4Account(req) || (member && member.gymId !== 'SYSTEM')) {
+    return res.status(403).json({ message: 'FitPass subscription plans are available only to FitPass members.' });
+  }
   const plans = await prisma.plan.findMany({
-    where: { gymId: 'SYSTEM' },
+    where: { gymId: 'SYSTEM', sessions: { gt: 0 } },
     orderBy: { price: 'asc' },
   });
   res.json(plans);
@@ -517,40 +581,51 @@ const verifyRazorpayPayment = catchAsync(async (req, res, next) => {
 // @route   POST /api/member-portal/purchase-plan/create-order
 // @access  Private/Member
 const purchasePlanOrder = catchAsync(async (req, res, next) => {
-    const { planId } = req.body;
+    const { planId, gateway } = req.body;
 
-    let plan = await prisma.plan.findUnique({ where: { id: planId } });
-    if (!plan) {
-        plan = await prisma.plan.findFirst({ where: { id: planId } });
+    const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
+
+    if (!plan || plan.gymId !== 'SYSTEM') {
+        return res.status(404).json({ message: 'Plan not found' });
     }
 
-    if (!plan) {
-        return res.status(404).json({ message: 'Plan not found' });
+    const member = await resolveMember(req);
+    if (isH4Account(req) || (member && member.gymId !== 'SYSTEM')) {
+        return res.status(403).json({ message: 'FitPass plans are only available to FitPass members.' });
     }
 
     const amountInPaise = Math.round(plan.price * 100);
     const userIdString = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id).toString() : 'mockuser';
     const receiptId = `rcpt_plan_${userIdString.slice(-6)}_${Date.now()}`;
 
-    const isMockEnv = !process.env.RAZORPAY_KEY_ID ||
-                      !process.env.RAZORPAY_KEY_SECRET ||
-                      process.env.RAZORPAY_KEY_ID === 'your_razorpay_key_id';
-    if (isMockEnv && env.isProduction) {
-        logger.error('Razorpay keys missing in production; refusing to create a mock order.');
-        return res.status(503).json({ message: 'Payments are not configured.' });
+    const hasRazorpayKeys = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET &&
+                      process.env.RAZORPAY_KEY_ID !== 'your_razorpay_key_id' &&
+                      process.env.RAZORPAY_KEY_ID !== 'null' && process.env.RAZORPAY_KEY_ID !== 'undefined' &&
+                      process.env.RAZORPAY_KEY_ID.trim() !== '';
+    if (gateway === 'razorpay' && !hasRazorpayKeys) {
+        return res.status(503).json({ message: 'Razorpay payments are not configured.' });
+    }
+    const useMockGateway = gateway === 'mock' || (!gateway && !hasRazorpayKeys);
+    if (useMockGateway && env.isProduction) {
+        logger.error('Mock FitPass payment requested in production; refusing to create a mock order.');
+        return res.status(503).json({ message: 'Demo payments are disabled in production.' });
     }
 
-    if (isMockEnv) {
-        const mockOrder = {
-            id: `order_mock_${crypto.randomBytes(8).toString('hex')}`,
+    if (useMockGateway) {
+        const orderId = `order_mock_${crypto.randomBytes(12).toString('hex')}`;
+        const expiresAt = Date.now() + 10 * 60 * 1000;
+        const mockToken = createMockOrderToken({ orderId, userId: userIdString, planId: plan.id, amount: amountInPaise, expiresAt });
+        return res.status(201).json({
+            id: orderId,
             amount: amountInPaise,
-            currency: "INR",
+            currency: 'INR',
             receipt: receiptId,
-            status: "created",
+            status: 'created',
             is_mock: true,
-            notes: { newPlanId: plan.id }
-        };
-        return res.status(201).json(mockOrder);
+            gateway: 'mock',
+            mock_token: mockToken,
+            notes: { newPlanId: plan.id },
+        });
     }
 
     const instance = new Razorpay({
@@ -562,67 +637,142 @@ const purchasePlanOrder = catchAsync(async (req, res, next) => {
         amount: amountInPaise,
         currency: "INR",
         receipt: receiptId,
-        notes: { newPlanId: plan.id },
+        notes: { newPlanId: plan.id, memberId: member?.id || '', userId: userIdString },
     };
 
     const order = await instance.orders.create(options);
-    return res.status(201).json(order);
+    return res.status(201).json({ ...order, gateway: 'razorpay', key_id: process.env.RAZORPAY_KEY_ID });
 });
 
 // @desc    Verify Plan Purchase
 // @route   POST /api/member-portal/purchase-plan/verify
 // @access  Private/Member
 const purchasePlanVerify = catchAsync(async (req, res, next) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId } = req.body;
-
-    let plan = await prisma.plan.findUnique({ where: { id: planId } });
-    if (!plan) {
-        plan = await prisma.plan.findFirst({ where: { name: { contains: 'FitPass', mode: 'insensitive' } } });
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId, mock_token } = req.body;
+    const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
+    if (!plan || plan.gymId !== 'SYSTEM') {
+        return res.status(404).json({ success: false, message: 'FitPass plan not found' });
     }
 
-    if (!plan) {
-        return res.status(404).json({ success: false, message: 'Plan not found' });
+    const userId = String(req.user?._id || req.user?.id || '');
+    let member = await resolveMember(req);
+    if (isH4Account(req) || (member && member.gymId !== 'SYSTEM')) {
+        return res.status(403).json({ success: false, message: 'FitPass plans are only available to FitPass members.' });
     }
+
+    let isAuthentic = false;
+    let paymentMethod = 'Online (Mock Gateway)';
+    let transactionId = razorpay_payment_id;
+    if (razorpay_order_id?.startsWith('order_mock_')) {
+        const expectedAmount = Math.round(plan.price * 100);
+        isAuthentic = !env.isProduction && verifyMockOrderToken(mock_token, {
+            orderId: razorpay_order_id,
+            userId,
+            planId: plan.id,
+            amount: expectedAmount,
+        });
+        if (isAuthentic) transactionId = `mock_${razorpay_order_id}`;
+    } else if (razorpay_order_id && razorpay_payment_id && razorpay_signature && process.env.RAZORPAY_KEY_SECRET) {
+        const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`).digest();
+        let suppliedSignature;
+        try { suppliedSignature = Buffer.from(razorpay_signature, 'hex'); } catch { suppliedSignature = Buffer.alloc(0); }
+        isAuthentic = expectedSignature.length === suppliedSignature.length
+            && crypto.timingSafeEqual(expectedSignature, suppliedSignature);
+        if (isAuthentic) {
+            const gateway = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+            const [order, payment] = await Promise.all([
+                gateway.orders.fetch(razorpay_order_id),
+                gateway.payments.fetch(razorpay_payment_id),
+            ]);
+            isAuthentic = order.amount === Math.round(plan.price * 100)
+                && order.currency === 'INR'
+                && order.notes?.newPlanId === plan.id
+                && (!order.notes?.userId || order.notes.userId === userId)
+                && payment.order_id === razorpay_order_id
+                && payment.amount === Math.round(plan.price * 100)
+                && payment.status === 'captured';
+        }
+        paymentMethod = 'Online (Razorpay)';
+    }
+
+    if (!isAuthentic || !transactionId) {
+        return res.status(400).json({ success: false, message: 'Payment verification failed' });
+    }
+
+    const previousPayment = await prisma.payment.findFirst({ where: { transactionId } });
+    if (previousPayment) {
+        const currentMember = member || await resolveMember(req);
+        return res.status(200).json({
+            success: true,
+            message: 'Payment was already applied',
+            plan,
+            sessionsRemaining: currentMember?.sessionsRemaining || 0,
+            sessionsTotal: currentMember?.sessionsTotal || 0,
+            expiryDate: currentMember?.expiryDate || null,
+        });
+    }
+
+    const now = new Date();
+    const activeExpiry = member?.expiryDate && new Date(member.expiryDate) > now ? new Date(member.expiryDate) : now;
+    const duration = Math.max(1, Number(plan.duration) || 30);
+    const durationUnit = String(plan.durationUnit || 'days').toLowerCase();
+    const nextExpiry = new Date(activeExpiry);
+    if (durationUnit.startsWith('month')) nextExpiry.setMonth(nextExpiry.getMonth() + duration);
+    else if (durationUnit.startsWith('hour')) nextExpiry.setHours(nextExpiry.getHours() + duration);
+    else nextExpiry.setDate(nextExpiry.getDate() + duration);
 
     const sessionsToCredit = plan.sessions || 10;
+    const hasUnexpiredPass = Boolean(member?.expiryDate && new Date(member.expiryDate) > now);
+    const previousTotal = hasUnexpiredPass ? (member.sessionsTotal || 0) : 0;
+    const previousRemaining = hasUnexpiredPass ? (member.sessionsRemaining || 0) : 0;
+    const updatedTotal = previousTotal + sessionsToCredit;
+    const updatedRemaining = previousRemaining + sessionsToCredit;
 
-    let member = await resolveMember(req);
-
-    if (!member) {
-        member = await prisma.member.create({
+    const updatedMember = await prisma.$transaction(async (tx) => {
+        const savedMember = member
+            ? await tx.member.update({
+                where: { id: member.id },
+                data: {
+                    planId: plan.id,
+                    planPrice: plan.price,
+                    paidAmount: plan.price,
+                    status: 'Active',
+                    expiryDate: nextExpiry,
+                    sessionsTotal: updatedTotal,
+                    sessionsRemaining: updatedRemaining,
+                },
+            })
+            : await tx.member.create({
+                data: {
+                    name: req.user.name || 'FitPass Member',
+                    phone: req.user.phone || 'N/A',
+                    email: req.user.email,
+                    planId: plan.id,
+                    joinDate: now,
+                    expiryDate: nextExpiry,
+                    status: 'Active',
+                    planPrice: plan.price,
+                    paidAmount: plan.price,
+                    gymId: 'SYSTEM',
+                    branchId: req.user.branchId || null,
+                    sessionsTotal: sessionsToCredit,
+                    sessionsRemaining: sessionsToCredit,
+                },
+            });
+        await tx.payment.create({
             data: {
-                name: req.user.name || 'FitPass Member',
-                phone: req.user.phone || 'N/A',
-                email: req.user.email,
-                planId: plan.id,
-                joinDate: new Date(),
-                expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                status: 'Active',
-                planPrice: plan.price,
-                paidAmount: plan.price,
-                gymId: req.user.gymId || 'SYSTEM',
-                branchId: req.user.branchId || null,
-                sessionsTotal: sessionsToCredit,
-                sessionsRemaining: sessionsToCredit,
+                memberId: savedMember.id,
+                gymId: 'SYSTEM',
+                amount: plan.price,
+                method: paymentMethod,
+                date: now,
+                transactionId,
             },
         });
-    } else {
-        const updatedTotal = (member.sessionsTotal || 0) + sessionsToCredit;
-        const updatedRemaining = (member.sessionsRemaining || 0) + sessionsToCredit;
-
-        member = await prisma.member.update({
-            where: { id: member.id },
-            data: {
-                planId: plan.id,
-                planPrice: plan.price,
-                paidAmount: plan.price,
-                status: 'Active',
-                expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                sessionsTotal: updatedTotal,
-                sessionsRemaining: updatedRemaining,
-            },
-        });
-    }
+        return savedMember;
+    });
+    member = updatedMember;
 
     // Always ensure user account is linked to memberId & role is member
     if (req.user?._id || req.user?.id) {
@@ -638,6 +788,7 @@ const purchasePlanVerify = catchAsync(async (req, res, next) => {
         plan,
         sessionsRemaining: member.sessionsRemaining || 0,
         sessionsTotal: member.sessionsTotal || 0,
+        expiryDate: member.expiryDate,
     });
 });
 
@@ -831,7 +982,7 @@ const getDashboardData = catchAsync(async (req, res, next) => {
 // @access  Private/Member
 const updateMyProfile = catchAsync(async (req, res, next) => {
     try {
-        const { name, email, phone, password } = req.body;
+        const { name, email, phone, password, avatarUrl } = req.body;
 
         if ((name && name.trim()) || (email && email.trim()) || (phone && phone.trim())) {
             res.status(403);
@@ -851,6 +1002,17 @@ const updateMyProfile = catchAsync(async (req, res, next) => {
 
         // Prepare user updates — password only
         const userUpdateData = {};
+        if (avatarUrl !== undefined) {
+            const allowedAvatars = [
+                'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
+                'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka',
+                'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn',
+            ];
+            if (avatarUrl !== null && !allowedAvatars.includes(avatarUrl)) {
+                return res.status(400).json({ message: 'Choose one of the available avatars.' });
+            }
+            userUpdateData.profileImageUrl = avatarUrl;
+        }
 
         if (password && password.trim()) {
             if (password.trim().length < 6) {
@@ -870,7 +1032,7 @@ const updateMyProfile = catchAsync(async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            message: 'Password updated successfully!',
+            message: avatarUrl !== undefined ? 'Profile updated successfully!' : 'Password updated successfully!',
             member: member ? {
                 name: member.name,
                 email: member.email,
@@ -879,7 +1041,8 @@ const updateMyProfile = catchAsync(async (req, res, next) => {
             user: {
                 name: updatedUser.name,
                 email: updatedUser.email,
-                phone: updatedUser.phone
+                phone: updatedUser.phone,
+                profileImageUrl: updatedUser.profileImageUrl || null
             }
         });
     } catch (error) { next(error); }

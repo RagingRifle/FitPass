@@ -13,7 +13,7 @@ import { H4TopHeader } from './H4TopHeader';
 
 const { width } = Dimensions.get('window');
 
-// ─── Heatmap Generator ────────────────────────────────────────────────────────
+//  Heatmap Generator 
 // Builds a 12-week (84-day) GitHub-style contribution matrix
 const generateHeatmapGrid = (records: any[]) => {
   const visitDateSet = new Set(
@@ -101,19 +101,19 @@ export function H4Attendance() {
       <H4TopHeader title="Attendance & Pass" />
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── 1. Digital Membership Pass (Permanent QR & Session Counter) ── */}
+        {/*  1. Digital Membership Pass (Permanent QR & Session Counter)  */}
         <Card style={styles.passCard}>
           <View style={styles.passCardHeader}>
             <View style={{ flex: 1 }}>
               <View style={styles.memberTag}>
-                <Zap size={12} color="#246B78" />
+                <Zap size={12} color="#171713" />
                 <Typography variant="caption" style={styles.memberTagText}>H4 MEMBERSHIP PASS</Typography>
               </View>
               <Typography variant="h2" style={styles.memberName}>
                 {passData?.member?.name || 'Active Member'}
               </Typography>
               <Typography variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                {passData?.member?.planName || 'Gym Membership'} • Phone: {passData?.member?.phone || 'Verified'}
+                {passData?.member?.planName || 'Gym Membership'}  Phone: {passData?.member?.phone || 'Verified'}
               </Typography>
             </View>
 
@@ -139,7 +139,7 @@ export function H4Attendance() {
           <View style={styles.qrWrapper}>
             <View style={styles.qrWhiteBox}>
               {isPassLoading || !passData?.qrData ? (
-                <ActivityIndicator size="large" color="#246B78" style={{ width: 170, height: 170 }} />
+                <ActivityIndicator size="large" color="#171713" style={{ width: 170, height: 170 }} />
               ) : (
                 <QRCode
                   value={passData.qrData}
@@ -158,12 +158,12 @@ export function H4Attendance() {
           {/* Member ID / Phone Identifier Box */}
           <View style={styles.pinContainer}>
             <View style={styles.pinLabel}>
-              <Key size={14} color="#246B78" />
+              <Key size={14} color="#171713" />
               <Typography variant="caption" style={{ color: theme.colors.textSecondary }}>Desk Check-In Phone</Typography>
             </View>
             <View style={styles.pinBox}>
               <Typography variant="body" style={styles.pinText}>
-                {passData?.member?.phone || '••••'}
+                {passData?.member?.phone || 'Not provided'}
               </Typography>
             </View>
           </View>
@@ -191,7 +191,7 @@ export function H4Attendance() {
               onPress={() => router.push('/(h4)/scan' as any)}
               activeOpacity={0.85}
             >
-              <QrCode size={16} color="#246B78" />
+              <QrCode size={16} color="#171713" />
               <Typography variant="bodySm" style={styles.scanBtnText}>Scan Desk QR</Typography>
             </TouchableOpacity>
           </View>
@@ -207,11 +207,11 @@ export function H4Attendance() {
           </View>
         )}
 
-        {/* ── 2. GitHub-Style Workout Activity Heatmap ── */}
+        {/*  2. GitHub-Style Workout Activity Heatmap  */}
         <Card style={styles.heatmapCard}>
           <View style={styles.heatmapHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Flame size={18} color="#246B78" />
+              <Flame size={18} color="#171713" />
               <Typography variant="h3" style={{ color: theme.colors.text }}>
                 Workout Activity Grid
               </Typography>
@@ -249,12 +249,12 @@ export function H4Attendance() {
             <View style={[styles.legendCell, { backgroundColor: theme.colors.primary }]} />
             <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>More</Typography>
             <Typography variant="caption" color="secondary" style={{ fontSize: 10, marginLeft: 'auto' }}>
-              Mon – Sun (84 Days)
+              Mon  Sun (84 Days)
             </Typography>
           </View>
         </Card>
 
-        {/* ── 3. Unified Check-in History Section ── */}
+        {/*  3. Unified Check-in History Section  */}
         <View style={styles.sectionHeader}>
           <Typography variant="h3" style={{ color: theme.colors.text }}>Visit History</Typography>
           <Typography variant="caption" color="secondary">{records.length} Total Visits</Typography>

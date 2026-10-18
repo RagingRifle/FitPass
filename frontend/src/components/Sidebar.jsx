@@ -8,7 +8,7 @@ import {
     UserCheck, Clock, Building2, History, ChevronRight,
     ChevronLeft, LogOut, Target, Package, Banknote,
     AlertTriangle, Receipt, CalendarCheck, Snowflake, LineChart, FileText, Home, Dumbbell, Image, Zap,
-    Settings, Apple, Compass
+    Settings, Apple, Compass, LifeBuoy
 } from 'lucide-react';
 
 const NAV_GROUPS = {
@@ -111,9 +111,10 @@ const NAV_GROUPS = {
                 { name: 'Dashboard', path: '/member-dashboard', icon: Home },
                 { name: 'Explore Gyms', path: '/explore-gyms', icon: Compass },
                 { name: 'My InBody', path: '/body-assessments', icon: LineChart },
-                { name: 'Classes', path: '/member-classes', icon: Dumbbell },
+                { name: 'Classes', path: '/member-classes', icon: Calendar },
                 { name: 'Workout Routine', path: '/workout-plans', icon: Dumbbell },
                 { name: 'Diet Chart', path: '/diet-plans', icon: Apple },
+                { name: 'Help & support', path: '/member-support', icon: LifeBuoy },
             ]
         }
     ],
@@ -364,15 +365,15 @@ const Sidebar = () => {
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
             <div className="sidebar-logo">
-                <div className="sidebar-logo-icon" style={{ background: 'linear-gradient(135deg, #F0A020, #D9860F)', color: '#231D14', boxShadow: '0 4px 16px rgba(240, 160, 32, 0.3)' }}>
-                    <Dumbbell size={22} color="#231D14" />
+                                <div className="sidebar-logo-icon" style={{ background: '#000000', color: '#F5B800', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)' }}>
+                    <Dumbbell size={22} color="#F5B800" />
                 </div>
                 {!collapsed && (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span className="sidebar-logo-text" style={{ fontSize: '1.1rem', fontWeight: '900', letterSpacing: '-0.01em', background: 'linear-gradient(135deg, #F0A020, #FFFFFF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        <span className="sidebar-logo-text" style={{ fontSize: '1.25rem', fontWeight: '900', letterSpacing: '-0.02em', color: '#000000' }}>
                             FITPRIME
                         </span>
-                        <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '800' }}>
+                        <span style={{ fontSize: '0.65rem', color: '#3D351A', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: '900' }}>
                             GYM OS PRO
                         </span>
                     </div>
@@ -397,8 +398,8 @@ const Sidebar = () => {
                                 fontWeight: '700',
                                 borderRadius: 'var(--radius-sm)',
                                 textTransform: 'uppercase',
-                                color: activeDivision === 'fitpass' ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                                background: activeDivision === 'fitpass' ? 'var(--primary)' : 'transparent',
+                                color: activeDivision === 'fitpass' ? '#F5B800' : '#000000',
+                                background: activeDivision === 'fitpass' ? '#000000' : 'transparent',
                                 transition: 'var(--transition)',
                             }}
                             title="Management for Fit Pass"
@@ -420,8 +421,8 @@ const Sidebar = () => {
                                 fontWeight: '700',
                                 borderRadius: 'var(--radius-sm)',
                                 textTransform: 'uppercase',
-                                color: activeDivision === 'h4' ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                                background: activeDivision === 'h4' ? 'var(--primary)' : 'transparent',
+                                color: activeDivision === 'h4' ? '#F5B800' : '#000000',
+                                background: activeDivision === 'h4' ? '#000000' : 'transparent',
                                 transition: 'var(--transition)',
                             }}
                             title="H4 Gym Management"
@@ -477,9 +478,9 @@ const Sidebar = () => {
                                 <div className="user-name" style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                                     {user?.name || 'User'}
                                 </div>
-                                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Logout</div>
+                                <div className="user-logout">Logout</div>
                             </div>
-                            <LogOut size={16} style={{ marginLeft: 'auto', color: 'var(--text-muted)' }} />
+                            <LogOut className="user-signout" size={16} />
                         </>
                     )}
                 </div>

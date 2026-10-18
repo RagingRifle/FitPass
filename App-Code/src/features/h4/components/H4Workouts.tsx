@@ -84,7 +84,7 @@ export function H4Workouts() {
       const day = todayKey();
       await storage.setItem(`h4_workout_completed_map_${userId}_${day}`, JSON.stringify(nextMap));
     }
-    toast.show(nextVal ? 'Exercise completed! 💪' : 'Exercise unmarked 🏋️', 'info');
+    toast.show(nextVal ? 'Exercise completed! ' : 'Exercise unmarked ', 'info');
   };
 
   const handleLogWorkout = async (exercises: any[]) => {
@@ -149,9 +149,9 @@ export function H4Workouts() {
       await storage.setItem(`h4_workout_history_${userId}`, JSON.stringify(updatedLogs));
 
       if (fullyCompleted) {
-        toast.show(`🎉 Workout Goals Completed! Streak: ${streak + 1} days.`, 'success');
+        toast.show(`Workout goals completed. Streak: ${streak + 1} days.`, 'success');
       } else {
-        toast.show(`💪 Workout progress updated! (${activeDoneCount}/${exercises.length} Done)`, 'success');
+        toast.show(`Workout progress updated. (${activeDoneCount}/${exercises.length} done)`, 'success');
       }
     } catch (e: any) {
       console.warn('[H4Workouts] API log failed:', e?.response?.data || e?.message);
@@ -201,7 +201,7 @@ export function H4Workouts() {
   const tomorrowDayName = FULL_DAYS[(selectedDayIdx + 1) % 7];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F5ED' }}>
       <H4TopHeader title="Training & Workouts" />
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Consistency Streak Banner */}
@@ -247,7 +247,7 @@ export function H4Workouts() {
         <View style={styles.infoBanner}>
           <Clock size={20} color={theme.colors.primary} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.infoTitle}>Upcoming Workout — {FULL_DAYS[selectedDayIdx]}</Text>
+            <Text style={styles.infoTitle}>Upcoming Workout  {FULL_DAYS[selectedDayIdx]}</Text>
             <Text style={styles.infoText}>
               Your H4 Fitness coach will assign your workout routine for {FULL_DAYS[selectedDayIdx]} tomorrow. Check back then!
             </Text>
@@ -277,7 +277,7 @@ export function H4Workouts() {
           <Text style={styles.restText}>
             {isSelectedFuture
               ? `No workout assigned for ${FULL_DAYS[selectedDayIdx]} yet`
-              : 'Rest Day — Active Recovery'}
+              : 'Rest Day  Active Recovery'}
           </Text>
         </View>
       ) : (
@@ -301,9 +301,9 @@ export function H4Workouts() {
                   <View style={styles.exInfo}>
                     <Text style={[styles.exName, isDone && styles.exNameDone]}>{ex.name}</Text>
                     <Text style={styles.exMeta}>
-                      {ex.sets} sets × {ex.reps} reps
-                      {ex.weight ? ` · ${ex.weight}kg` : ''}
-                      {ex.note ? ` · ${ex.note}` : ''}
+                      {ex.sets} sets x {ex.reps} reps
+                      {ex.weight ? `  ${ex.weight}kg` : ''}
+                      {ex.note ? `  ${ex.note}` : ''}
                     </Text>
                   </View>
                 </View>
@@ -323,7 +323,7 @@ export function H4Workouts() {
         isLoggedToday ? (
           <View style={[styles.logBtn, { backgroundColor: '#16A34A' }]}>
             <CheckCircle size={20} color="#FFFFFF" />
-            <Text style={styles.logBtnText} numberOfLines={1} adjustsFontSizeToFit>Today's Goal Completed! 🎉</Text>
+            <Text style={styles.logBtnText} numberOfLines={1} adjustsFontSizeToFit>Today's Goal Completed! </Text>
           </View>
         ) : (
           <TouchableOpacity
@@ -366,7 +366,7 @@ export function H4Workouts() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.historyLogTitle}>{item.planName}</Text>
                   <Text style={styles.historyLogSub}>
-                    {item.date} at {item.timestamp} • {item.exerciseCount} Exercises Completed
+                    {item.date} at {item.timestamp}  {item.exerciseCount} Exercises Completed
                   </Text>
                 </View>
               </View>
@@ -383,9 +383,9 @@ export function H4Workouts() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFC' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F5ED' },
 
   streakRow: {
     flexDirection: 'row',
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(240,160,32,0.3)',
     gap: 4,
   },
-  nextTaskTitle: { fontSize: 13, fontWeight: '700', color: '#F0A020' },
+  nextTaskTitle: { fontSize: 13, fontWeight: '700', color: '#F5B800' },
   nextTaskDesc: { fontSize: 14, fontWeight: '800', color: '#0F172A', marginTop: 2 },
 
   tomorrowInfoBox: {
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F8F5ED',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
-  dayBtnActive: { backgroundColor: '#F0A020', borderColor: '#F0A020' },
+  dayBtnActive: { backgroundColor: '#F5B800', borderColor: '#F5B800' },
   dayText: { fontSize: 13, fontWeight: '600', color: '#64748B' },
   dayTextActive: { color: '#FFFFFF' },
 
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#F0A020',
+    backgroundColor: '#F5B800',
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 14,

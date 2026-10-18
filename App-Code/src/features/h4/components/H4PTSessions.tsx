@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { UserCheck, Calendar, Clock, PackageCheck, Award } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
@@ -68,12 +68,12 @@ export function H4PTSessions() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F5ED' }}>
       <H4TopHeader title="PT Coaching" />
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerGroup}>
           <View style={styles.headerIconWrap}>
-            <Award size={18} color="#F0A020" strokeWidth={2.5} />
+            <Award size={18} color="#F5B800" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="h2" style={styles.headerTitle}>1-on-1 Sessions</Typography>
@@ -86,7 +86,7 @@ export function H4PTSessions() {
         {sessions.length === 0 ? (
           <Card style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <UserCheck size={28} color="#F0A020" />
+              <UserCheck size={28} color="#F5B800" />
             </View>
             <Typography variant="bodySm" style={styles.emptyTitle}>No PT Sessions Scheduled</Typography>
             <Typography variant="caption" color="secondary" style={styles.emptyDesc}>
@@ -137,11 +137,11 @@ export function H4PTSessions() {
                   {/* Session Date and Time */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaItem}>
-                      <Calendar size={14} color="#F0A020" />
+                      <Calendar size={14} color="#F5B800" />
                       <Typography variant="caption" style={styles.metaText}>{dateStr}</Typography>
                     </View>
                     <View style={styles.metaItem}>
-                      <Clock size={14} color="#F0A020" />
+                      <Clock size={14} color="#F5B800" />
                       <Typography variant="caption" style={styles.metaText}>{timeStr}</Typography>
                     </View>
                   </View>
@@ -149,7 +149,7 @@ export function H4PTSessions() {
                   {/* PT package block */}
                   {s.package ? (
                     <View style={styles.packageBanner}>
-                      <PackageCheck size={14} color="#F0A020" />
+                      <PackageCheck size={14} color="#F5B800" />
                       <Typography variant="caption" style={styles.packageText}>
                         Package: <Typography variant="caption" style={{ color: '#0F172A', fontWeight: '800' }}>{s.package.name}</Typography> ({s.package.sessionCount} Sessions)
                       </Typography>
@@ -174,9 +174,9 @@ export function H4PTSessions() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFC' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F5ED' },
   
   headerGroup: { 
     flexDirection: 'row', 
@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
   trainerAvatarText: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#F0A020',
+    color: '#F5B800',
   },
   trainerName: { color: '#0F172A', fontWeight: '800', fontSize: 14 },
   trainerRole: { fontSize: 11, color: '#64748B', marginTop: 1 },
   
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F5F1E7',
   },
   
   metaRow: { flexDirection: 'row', gap: 16, paddingVertical: 2 },
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   packageText: { color: '#475569', fontSize: 11 },
   
   notesBox: { 
-    backgroundColor: '#F8FAFC', 
+    backgroundColor: '#F8F5ED', 
     padding: 12, 
     borderRadius: 10, 
     gap: 2,

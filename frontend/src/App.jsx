@@ -23,6 +23,7 @@ const Reports = lazy(() => import('./pages/Reports'));
 const FreezeManagement = lazy(() => import('./pages/FreezeManagement'));
 const Classes = lazy(() => import('./pages/Classes'));
 const MemberClasses = lazy(() => import('./pages/MemberClasses'));
+const MemberSupport = lazy(() => import('./pages/MemberSupport'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
@@ -64,22 +65,13 @@ function App() {
       <Router>
         <Suspense fallback={<PageLoader />}>
         <Routes>
-        <Route path="/" element={!user ? <FitPassLanding /> : (() => {
-          const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
-          const userGymId = user?.gymId?._id || user?.gymId || '';
-          const isH4Gym = normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd';
-          const isPartnerAdmin = user?.role === 'partner' || (user?.role === 'admin' && !isH4Gym);
-          const target = ['superadmin', 'fitpass_admin'].includes(user?.role) ? '/superadmin/dashboard' :
-            isPartnerAdmin ? '/partner/visit-log' :
-            ['admin', 'h4_admin'].includes(user?.role) ? '/dashboard' :
-            user?.role === 'trainer' ? '/attendance' : user?.role === 'member' ? '/member-dashboard' : '/members';
-          return <Navigate to={target} replace />;
-        })()} />
-        <Route path="/login" element={!user ? <Navigate to="/member-login" replace /> : <Navigate to="/" replace />} />
-        <Route path="/member-login" element={!user ? <Login portal="fitpass_member" /> : <Navigate to="/" replace />} />
-        <Route path="/h4/login" element={!user ? <Login portal="h4_member" /> : <Navigate to="/" replace />} />
-        <Route path="/staff-login" element={!user ? <StaffLogin /> : <Navigate to="/" replace />} />
-        <Route path="/control-room" element={!user ? <Login restrictedAdmin /> : <Navigate to="/" replace />} />
+        <Route path="/" element={<FitPassLanding />} />
+        <Route path="/login" element={<Navigate to="/member-login" replace />} />
+        <Route path="/member-login" element={<Login key="fitpass_member" portal="fitpass_member" />} />
+        <Route path="/h4/login" element={<Login key="h4_member" portal="h4_member" />} />
+        <Route path="/staff-login" element={<StaffLogin />} />
+        <Route path="/control-room" element={<Login key="control-room" restrictedAdmin />} />
+        <Route path="/control-panel" element={<Login key="control-panel" restrictedAdmin />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
 
         <Route path="/superadmin/dashboard" element={
@@ -141,7 +133,7 @@ function App() {
 
 
         <Route path="/plans" element={
-          <ProtectedRoute roles={['admin', 'h4_admin']}>
+          <ProtectedRoute roles={['admin', 'h4_admin', 'superadmin']}>
             <Layout>
               <Plans />
             </Layout>
@@ -224,6 +216,14 @@ function App() {
           <ProtectedRoute roles={['member']}>
             <Layout>
               <MemberClasses />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/member-support" element={
+          <ProtectedRoute roles={['member']}>
+            <Layout>
+              <MemberSupport />
             </Layout>
           </ProtectedRoute>
         } />

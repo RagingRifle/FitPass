@@ -14,28 +14,28 @@ import {
 import { useDiscoveryGyms, usePublicPostsFeed } from '../api/fitpass.api';
 import type { DiscoveryGymItem } from '../types';
 
-// Zippy Digital Solutions Design Tokens — AGENTS.md §5
+// FitPass discovery palette.
 const COLORS = {
-  primary: '#F0A020',
-  primaryDark: '#D9860F',
-  bgDark: '#231D14',
-  cardBg: '#2D251C',
-  border: '#3A3025',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#A39686',
-  textMuted: '#6D6154',
+  primary: '#F5B800',
+  primaryDark: '#D9A900',
+  bgDark: '#F5B800',
+  cardBg: '#FFFFFF',
+  border: '#E3DCCB',
+  textPrimary: '#171713',
+  textSecondary: '#585448',
+  textMuted: '#817B6E',
   success: '#2E7D32',
   error: '#C62828',
 };
 
 const CATEGORIES = [
-  { id: 'all', label: '🔥 All Gyms' },
-  { id: 'nearby', label: '📍 Nearby' },
-  { id: 'recommended', label: '✨ Recommended' },
-  { id: 'trending', label: '⚡ Trending' },
-  { id: 'newly_added', label: '🆕 Newly Added' },
-  { id: 'highest_rated', label: '⭐ Top Rated' },
-  { id: 'open_now', label: '🟢 Open Now' },
+  { id: 'all', label: 'All Gyms' },
+  { id: 'nearby', label: 'Nearby' },
+  { id: 'recommended', label: 'Recommended' },
+  { id: 'trending', label: 'Trending' },
+  { id: 'newly_added', label: 'Newly Added' },
+  { id: 'highest_rated', label: 'Top Rated' },
+  { id: 'open_now', label: 'Open Now' },
 ];
 
 export const GymDiscoveryExplore: React.FC = () => {
@@ -96,7 +96,7 @@ export const GymDiscoveryExplore: React.FC = () => {
         {/* Gym Highlights Posts Horizontal Carousel */}
         {posts.length > 0 && (
           <View style={styles.postsSection}>
-            <Text style={styles.sectionTitle}>📸 Gym Highlights</Text>
+            <Text style={styles.sectionTitle}>Gym Highlights</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
               {posts.map((post) => (
                 <View key={post.id} style={styles.postCard}>
@@ -149,16 +149,16 @@ export const GymDiscoveryExplore: React.FC = () => {
                     <View style={styles.statusPillsRow}>
                       {p.isOpenNow ? (
                         <View style={[styles.statusPill, { backgroundColor: 'rgba(46,125,50,0.9)' }]}>
-                          <Text style={styles.statusPillText}>🟢 Open Now</Text>
+                          <Text style={styles.statusPillText}>Open Now</Text>
                         </View>
                       ) : (
                         <View style={[styles.statusPill, { backgroundColor: 'rgba(198,40,40,0.9)' }]}>
-                          <Text style={styles.statusPillText}>🔴 Closed</Text>
+                          <Text style={styles.statusPillText}>Closed</Text>
                         </View>
                       )}
                       {p.distanceKm !== null && p.distanceKm !== undefined && (
                         <View style={[styles.statusPill, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-                          <Text style={[styles.statusPillText, { color: COLORS.primary }]}>📍 {p.distanceKm} km</Text>
+                          <Text style={[styles.statusPillText, { color: COLORS.primary }]}>{p.distanceKm} km</Text>
                         </View>
                       )}
                     </View>
@@ -167,13 +167,13 @@ export const GymDiscoveryExplore: React.FC = () => {
                   <View style={styles.gymCardContent}>
                     <View style={styles.titleRow}>
                       <Text style={styles.gymTitle}>{gym.name}</Text>
-                      <Text style={styles.ratingText}>⭐ {p.rating || 4.8}</Text>
+                      <Text style={styles.ratingText}>Rating {p.rating || 4.8}</Text>
                     </View>
-                    <Text style={styles.gymAddress}>📍 {p.city || 'Chennai'} • {p.address}</Text>
+                    <Text style={styles.gymAddress}>{p.city || 'Chennai'}{p.address ? `, ${p.address}` : ''}</Text>
                     <Text style={styles.gymDesc} numberOfLines={2}>{p.shortDescription}</Text>
 
                     <View style={styles.detailsBtn}>
-                      <Text style={styles.detailsBtnText}>View Full Profile & Facilities →</Text>
+                      <Text style={styles.detailsBtnText}>View full profile and facilities</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -195,7 +195,7 @@ export const GymDiscoveryExplore: React.FC = () => {
                     style={styles.modalCoverImage}
                   />
                   <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedGym(null)}>
-                    <Text style={styles.closeBtnText}>✕</Text>
+                    <Text style={styles.closeBtnText}>Close</Text>
                   </TouchableOpacity>
 
                   <View style={styles.modalHeaderInfo}>
@@ -206,7 +206,7 @@ export const GymDiscoveryExplore: React.FC = () => {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.modalGymTitle}>{selectedGym.name}</Text>
                       <Text style={styles.modalGymSub}>
-                        FitPass Partner • ⭐ {selectedGym.discoveryProfile?.rating || 4.8}
+                        FitPass Partner | Rating {selectedGym.discoveryProfile?.rating || 4.8}
                       </Text>
                     </View>
                   </View>
@@ -220,7 +220,7 @@ export const GymDiscoveryExplore: React.FC = () => {
                       onPress={() => handleCall(selectedGym.discoveryProfile?.contactNumber || selectedGym.phone)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.actionBtnCallText}>📞 Call Gym</Text>
+                      <Text style={styles.actionBtnCallText}>Call Gym</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -228,7 +228,7 @@ export const GymDiscoveryExplore: React.FC = () => {
                       onPress={() => handleDirections(selectedGym)}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.actionBtnNavText}>🗺️ Directions</Text>
+                      <Text style={styles.actionBtnNavText}>Directions</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -246,7 +246,7 @@ export const GymDiscoveryExplore: React.FC = () => {
                   <View style={styles.chipsWrap}>
                     {selectedGym.discoveryProfile?.amenities?.map((item) => (
                       <View key={item} style={styles.amenityChip}>
-                        <Text style={styles.amenityChipText}>✓ {item}</Text>
+                        <Text style={styles.amenityChipText}>Amenity: {item}</Text>
                       </View>
                     ))}
                   </View>
@@ -255,7 +255,7 @@ export const GymDiscoveryExplore: React.FC = () => {
                   <View style={styles.chipsWrap}>
                     {selectedGym.discoveryProfile?.equipments?.map((item) => (
                       <View key={item} style={styles.equipmentChip}>
-                        <Text style={styles.equipmentChipText}>🏋️ {item}</Text>
+                        <Text style={styles.equipmentChipText}>Equipment: {item}</Text>
                       </View>
                     ))}
                   </View>
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#171713',
     marginLeft: 16,
     marginBottom: 10,
   },
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.bgDark,
+    backgroundColor: '#F8F5ED',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
@@ -487,7 +487,8 @@ const styles = StyleSheet.create({
   },
   closeBtnText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 12,
+    fontWeight: '800',
   },
   modalHeaderInfo: {
     position: 'absolute',
@@ -508,11 +509,11 @@ const styles = StyleSheet.create({
   modalGymTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.textPrimary,
+    color: '#171713',
   },
   modalGymSub: {
     fontSize: 12,
-    color: '#FCE6B8',
+    color: '#FFF4C6',
     marginTop: 2,
   },
   modalBody: {

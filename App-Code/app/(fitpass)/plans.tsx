@@ -38,6 +38,7 @@ export default function FitPassPlansScreen() {
   const { data: plans, isLoading } = useFitPassPlans();
   const { data: sessionStatus } = useSessionStatus();
   const purchaseMutation = usePurchasePlan();
+  const hasActivePass = sessionStatus?.planStatus === 'Active';
 
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -53,8 +54,8 @@ export default function FitPassPlansScreen() {
       await purchaseMutation.mutateAsync(selectedPlan.id || selectedPlan._id);
       setIsPayModalOpen(false);
       Alert.alert(
-        '🎉 Subscription Activated!',
-        `Your ${selectedPlan.name} membership has been processed with ${selectedPlan.sessions} sessions credited to your account!`,
+        'Pass renewed',
+        `Your ${selectedPlan.name} pass is active and ${selectedPlan.sessions} sessions were added to your account.`,
         [
           {
             text: 'Go to Dashboard',
@@ -65,7 +66,7 @@ export default function FitPassPlansScreen() {
     } catch (err: any) {
       Alert.alert(
         'Payment Error',
-        err?.response?.data?.message || 'Could not process plan subscription.'
+        err?.response?.data?.message || err?.message || 'Could not process plan subscription.'
       );
     }
   };
@@ -80,7 +81,8 @@ export default function FitPassPlansScreen() {
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           
-          <Text style={styles.headerTitle}>Access Pass Tiers</Text>
+          <Text style={styles.headerEyebrow}>FITPASS MEMBERSHIP</Text>
+          <Text style={styles.headerTitle}>Choose your next pass</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.7}>
           <LogOut size={16} color={theme.colors.error} />
@@ -88,7 +90,7 @@ export default function FitPassPlansScreen() {
       </View>
 
       <Text style={styles.headerSub}>
-        Pay per session across the entire partner gym network. Zero admission fees or long-term contracts.
+        Renew your sessions anytime. One pass gives you access across the FitPass partner network.
       </Text>
 
       {sessionStatus?.planName ? (
@@ -96,18 +98,21 @@ export default function FitPassPlansScreen() {
           <Activity size={16} color={theme.colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={styles.currentPassText}>
-              Active Pass:{' '}
+              Current pass:{' '}
               <Text style={styles.currentPassName}>
                 {sessionStatus.planName}
               </Text>
             </Text>
             <Text style={styles.currentPassSub}>
-              {sessionStatus.sessionsRemaining} session credits available
+              {sessionStatus.sessionsRemaining} sessions available
+              {sessionStatus.expiryDate ? ` | Expires ${new Date(sessionStatus.expiryDate).toLocaleDateString()}` : ''}
             </Text>
           </View>
-          <View style={styles.activePillDot}>
-            <View style={styles.greenDot} />
-            <Text style={styles.activePillDotText}>Active</Text>
+          <View style={[styles.activePillDot, !hasActivePass && styles.renewPill]}>
+            <View style={[styles.greenDot, !hasActivePass && styles.renewDot]} />
+            <Text style={[styles.activePillDotText, !hasActivePass && styles.renewPillText]}>
+              {hasActivePass ? 'Active' : 'Renew'}
+            </Text>
           </View>
         </View>
       ) : null}
@@ -156,11 +161,11 @@ export default function FitPassPlansScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.planName}>{plan.name}</Text>
                   <Text style={styles.planSub}>
-                    {plan.sessions} Sessions Credit • Valid 30 Days
+                    {plan.sessions} sessions | {plan.duration || 30} {plan.durationUnit || 'days'}
                   </Text>
                 </View>
                 <View style={styles.priceWrap}>
-                  <Text style={styles.priceSymbol}>₹</Text>
+                  <Text style={styles.priceSymbol}>INR</Text>
                   <Text style={styles.priceNum}>{plan.price}</Text>
                 </View>
               </View>
@@ -168,7 +173,7 @@ export default function FitPassPlansScreen() {
               <View style={styles.valueBar}>
                 <Activity size={14} color={theme.colors.primary} />
                 <Text style={styles.valueText}>
-                  Only ₹{costPerSession}/session • Save up to 50% vs single drop-ins
+                  INR {costPerSession} per session | Save up to 50% vs single drop-ins
                 </Text>
               </View>
 
@@ -197,7 +202,7 @@ export default function FitPassPlansScreen() {
               >
                 <CreditCard size={16} color="#fff" />
                 <Text style={styles.buyBtnText}>
-                  {isCurrent ? 'Top Up Sessions' : `Subscribe — ₹${plan.price}`}
+                  {isCurrent ? 'Renew this pass' : `Choose pass | INR ${plan.price}`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -205,15 +210,15 @@ export default function FitPassPlansScreen() {
         })
       )}
 
-      {/* Security Reassurance Footer */}
+      {/* Checkout mode stays explicit until the native Razorpay adapter is enabled. */}
       <View style={styles.reassuranceBox}>
         <ShieldCheck size={18} color={theme.colors.primary} />
         <Text style={styles.reassuranceText}>
-          Instant Pass Activation • 256-bit Secure Gateway • Cancel Anytime
+          Demo checkout | No real payment is collected
         </Text>
       </View>
 
-      {/* Razorpay Test Payment Modal */}
+      {/* Demo checkout uses the same order and verification API as Razorpay later. */}
       <Modal
         visible={isPayModalOpen}
         animationType="slide"
@@ -225,7 +230,7 @@ export default function FitPassPlansScreen() {
             <View style={styles.payModalHeader}>
               <View style={styles.razorpayBrandRow}>
                 <ShieldCheck size={20} color={theme.colors.primary} />
-                <Text style={styles.razorpayTitle}>Razorpay Checkout (Test Mode)</Text>
+                <Text style={styles.razorpayTitle}>FitPass demo checkout</Text>
               </View>
               <TouchableOpacity onPress={() => setIsPayModalOpen(false)}>
                 <X size={22} color={theme.colors.text} />
@@ -237,10 +242,10 @@ export default function FitPassPlansScreen() {
                 <Text style={styles.summaryLabel}>ORDER SUMMARY</Text>
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryItemName}>{selectedPlan.name}</Text>
-                  <Text style={styles.summaryItemPrice}>₹{selectedPlan.price}</Text>
+                  <Text style={styles.summaryItemPrice}>INR {selectedPlan.price}</Text>
                 </View>
                 <Text style={styles.summaryDetail}>
-                  Includes {selectedPlan.sessions} FitPass gym check-in sessions valid for 30 days.
+                  Adds {selectedPlan.sessions} sessions to your pass. Renewing early extends your current expiry date.
                 </Text>
               </View>
             )}
@@ -248,7 +253,7 @@ export default function FitPassPlansScreen() {
             <View style={styles.testModeNotice}>
               <Lock size={14} color={theme.colors.primary} />
               <Text style={styles.testModeText}>
-                256-bit SSL Test Mode Gateway. No real bank charges will be incurred.
+                This is a simulated payment. No card or bank details are needed and no money is charged.
               </Text>
             </View>
 
@@ -262,12 +267,12 @@ export default function FitPassPlansScreen() {
               activeOpacity={0.85}
             >
               {purchaseMutation.isPending ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color="#171713" />
               ) : (
                 <>
-                  <CreditCard size={18} color="#fff" />
+                  <CreditCard size={18} color="#171713" />
                   <Text style={styles.confirmPayText}>
-                    Pay ₹{selectedPlan?.price} & Activate
+                    Confirm demo payment | INR {selectedPlan?.price}
                   </Text>
                 </>
               )}
@@ -289,9 +294,9 @@ export default function FitPassPlansScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 90, gap: 16 },
+  content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 110, gap: 16 },
 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#171713', marginHorizontal: -20, marginTop: -16, paddingHorizontal: 20, paddingVertical: 18, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
   badgeWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -311,11 +316,18 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     letterSpacing: 0.8,
   },
+  headerEyebrow: {
+    color: '#F5B800',
+    fontFamily: fontFamilies.header,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
   headerTitle: {
     fontFamily: fontFamilies.header,
     fontSize: 24,
     fontWeight: '800',
-    color: theme.colors.text,
+    color: '#FFFFFF',
     marginTop: 4,
     letterSpacing: -0.2,
   },
@@ -323,7 +335,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: 'rgba(198,40,40,0.10)',
+    backgroundColor: '#34332E',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -365,12 +377,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(76, 175, 80, 0.14)',
+    backgroundColor: '#EDF4EF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(76, 175, 80, 0.3)',
+    borderColor: '#D5E5D9',
   },
   greenDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4CAF50' },
   activePillDotText: {
@@ -379,6 +391,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#4CAF50',
   },
+  renewPill: { backgroundColor: '#FFF4C6', borderColor: '#F0E1A8' },
+  renewDot: { backgroundColor: '#D9A900' },
+  renewPillText: { color: '#5F4A00' },
 
   // Plan Cards
   planCard: {
@@ -392,18 +407,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   planCardPopular: {
-    borderColor: theme.colors.primary,
+    borderColor: '#D9A900',
     borderWidth: 1.5,
   },
   planCardCurrent: {
-    borderColor: '#4CAF50',
+    borderColor: '#C9D9CB',
     borderWidth: 1.5,
   },
   popularRibbon: {
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#171713',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -415,7 +430,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '800',
-    color: '#fff',
+    color: '#F5B800',
     letterSpacing: 0.5,
   },
 
@@ -423,7 +438,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#397354',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -462,32 +477,32 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 16,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: '#8D6A00',
     marginTop: 3,
   },
   priceNum: {
     fontFamily: fontFamilies.header,
     fontSize: 30,
     fontWeight: '900',
-    color: theme.colors.primary,
+    color: '#8D6A00',
   },
 
   valueBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(240, 160, 32, 0.10)',
+    backgroundColor: '#FFF8DF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.2)',
+    borderColor: '#F0E1A8',
   },
   valueText: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: '#5F4A00',
   },
 
   featureList: { gap: 10 },
@@ -504,18 +519,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#171713',
     height: 48,
     borderRadius: 14,
   },
   buyBtnCurrent: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: '#171713',
   },
   buyBtnText: {
     fontFamily: fontFamilies.header,
     fontSize: 15,
     fontWeight: '800',
-    color: '#ffffff',
+    color: '#F5B800',
     letterSpacing: 0.3,
   },
 
@@ -544,7 +559,7 @@ const styles = StyleSheet.create({
   // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(20, 19, 15, 0.58)',
     justifyContent: 'flex-end',
   },
   payModalCard: {
@@ -608,11 +623,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(240, 160, 32, 0.10)',
+    backgroundColor: '#FFF8DF',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.2)',
+    borderColor: '#F0E1A8',
   },
   testModeText: {
     fontFamily: fontFamilies.body,
@@ -627,7 +642,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#F5B800',
     height: 48,
     borderRadius: 14,
   },
@@ -635,7 +650,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 15,
     fontWeight: '800',
-    color: '#fff',
+    color: '#171713',
     letterSpacing: 0.3,
   },
   cancelPayBtn: { alignItems: 'center', paddingVertical: 8 },

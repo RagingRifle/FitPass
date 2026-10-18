@@ -415,6 +415,7 @@ const getSessionStatus = catchAsync(async (req, res, next) => {
     const now = new Date();
     const active = !!(member.currentSessionEndsAt && new Date(member.currentSessionEndsAt) > now);
     const inCooldown = !!(member.cooldownEndsAt && new Date(member.cooldownEndsAt) > now);
+    const membershipExpired = Boolean(member.expiryDate && new Date(member.expiryDate) <= now);
 
     let planName = null;
     if (member.planId) {
@@ -427,14 +428,14 @@ const getSessionStatus = catchAsync(async (req, res, next) => {
 
     return res.json({
       success: true,
-      sessionsRemaining: member.sessionsRemaining || 0,
+      sessionsRemaining: membershipExpired ? 0 : (member.sessionsRemaining || 0),
       sessionsTotal: member.sessionsTotal || (member.sessionsRemaining || 10),
       currentSessionEndsAt: active ? member.currentSessionEndsAt : null,
       currentSessionGymId: active ? member.currentSessionGymId : null,
       cooldownEndsAt: inCooldown ? member.cooldownEndsAt : null,
       planName,
       expiryDate: member.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      planStatus: (member.sessionsRemaining || 0) > 0 ? 'Active' : (member.status || 'Inactive'),
+      planStatus: membershipExpired ? 'Expired' : member.status === 'Active' && (member.sessionsRemaining || 0) > 0 ? 'Active' : 'Inactive',
       lastCheckInAt: member.lastCheckInAt || null,
     });
   } catch (error) {

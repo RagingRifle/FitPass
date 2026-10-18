@@ -23,7 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   icon,
 }) => {
-  const isDarkText = variant === 'primary'; // Primary Neon Lime button has black text
+  const isDarkText = variant === 'primary'; // Yellow primary actions use dark, high-contrast text.
 
   const buttonStyles = [
     styles.baseButton,
@@ -42,7 +42,7 @@ export const Button: React.FC<ButtonProps> = ({
   ];
 
   const spinnerColor = isDarkText
-    ? theme.colors.textInverse
+    ? theme.colors.text
     : variant === 'danger'
     ? theme.colors.error
     : theme.colors.primary;
@@ -81,9 +81,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.14,
+    shadowRadius: 7,
+    elevation: 2,
   },
   secondaryButton: {
     backgroundColor: theme.colors.card,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   darkText: {
-    color: theme.colors.textInverse,
+    color: theme.colors.text,
   },
   lightText: {
     color: theme.colors.text,

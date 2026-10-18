@@ -6,7 +6,21 @@ function translateQuery(query) {
   for (const key of Object.keys(query)) {
     const val = query[key];
     if (key === '_id') {
-      prismaWhere['id'] = typeof val === 'object' && val !== null ? val.toString() : val;
+      // `_id` is an alias for Prisma's `id`, so translate its operators just
+      // like any other field. Calling toString() on `{ $in: [...] }` turns it
+      // into `[object Object]`, which silently makes member lookups fail.
+      if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+        const idOperators = {};
+        for (const op of Object.keys(val)) {
+          if (op === '$in') idOperators.in = Array.isArray(val[op]) ? val[op].map(v => String(v)) : val[op];
+          else if (op === '$nin') idOperators.notIn = Array.isArray(val[op]) ? val[op].map(v => String(v)) : val[op];
+          else if (op === '$ne') idOperators.not = val[op];
+          else if (op === '$exists') idOperators[val[op] === false ? 'equals' : 'not'] = null;
+        }
+        prismaWhere.id = idOperators;
+      } else {
+        prismaWhere.id = typeof val === 'object' && val !== null ? val.toString() : val;
+      }
     } else if (key === '$or') {
       prismaWhere['OR'] = val.map(translateQuery);
     } else if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
@@ -631,6 +645,7 @@ class ModelWrapper {
       sessioncheckins: 'sessionCheckIn',
       membertrainerassignments: 'memberTrainerAssignment',
       workouttemplates: 'workoutTemplate',
+      diettemplates: 'dietTemplate',
       workoutplans: 'workoutPlan',
       dietplans: 'dietPlan',
       ptpackages: 'ptPackage',

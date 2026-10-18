@@ -1,12 +1,14 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, StatusBar } from 'react-native';
 import { LayoutDashboard, Building2, ScanLine, BadgeCheck } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { CustomTabBar } from '@/components/layout/CustomTabBar';
 
 export default function FitPassLayout() {
   return (
+    <>
+    <StatusBar barStyle="light-content" backgroundColor="#171713" />
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} portalType="fitpass" />}
       screenOptions={{
@@ -59,6 +61,7 @@ export default function FitPassLayout() {
       <Tabs.Screen name="diets"    options={{ href: null }} />
       <Tabs.Screen name="gym/[id]" options={{ href: null }} />
     </Tabs>
+    </>
   );
 }
 

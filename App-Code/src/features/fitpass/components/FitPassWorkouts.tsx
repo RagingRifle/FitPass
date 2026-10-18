@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Text } from 'react-native';
-import { Dumbbell, CheckCircle, Flame, Award, Circle, ShieldCheck } from '@/components/ui/app-icons';
+import { Dumbbell, CheckCircle, Award, Circle, ShieldCheck } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { Card } from '@/components/ui';
@@ -62,8 +62,7 @@ export function FitPassWorkouts() {
     const dayEx = getExercises();
     const count = dayEx.filter((_: any, i: number) => completed[i]).length;
     if (count === 0) return;
-
-    alert(`💪 FitPass Active Routine logged! Completed ${count} exercises.`);
+    alert(`FitPass routine logged. Completed ${count} exercises.`);
     await saveStreak(streak + 1);
     setCompleted({});
   };
@@ -71,7 +70,7 @@ export function FitPassWorkouts() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF5F1F" />
+        <ActivityIndicator size="large" color="#171713" />
       </View>
     );
   }
@@ -83,12 +82,12 @@ export function FitPassWorkouts() {
       <Card style={styles.streakCard}>
         <View style={{ flex: 1 }}>
           <View style={styles.badgeRow}>
-            <ShieldCheck size={14} color="#FF5F1F" />
+            <ShieldCheck size={14} color="#171713" />
             <Text style={styles.badgeText}>FITPASS NETWORK FITNESS</Text>
           </View>
-          <Text style={styles.streakTitle}>{streak} Days Multi-Gym Streak</Text>
+          <Text style={styles.streakTitle}>{streak}-day workout streak</Text>
         </View>
-        <Flame size={32} color="#FF5F1F" />
+        <Text style={styles.streakCount}>{streak}</Text>
       </Card>
 
       {!activePlan ? (
@@ -144,7 +143,7 @@ export function FitPassWorkouts() {
                           {ex.name}
                         </Text>
                         <Text style={styles.exSub}>
-                          {ex.sets} sets × {ex.reps} reps {ex.weight ? `• ${ex.weight}kg` : ''}
+                          {ex.sets} sets x {ex.reps} reps {ex.weight ? ` | ${ex.weight} kg` : ''}
                         </Text>
                       </View>
                     </View>
@@ -169,13 +168,13 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: theme.spacing.md, paddingBottom: 40 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
-  streakCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: theme.spacing.md, marginBottom: theme.spacing.md, borderLeftWidth: 4, borderLeftColor: '#FF5F1F' },
+  streakCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: theme.spacing.md, marginBottom: theme.spacing.md, borderLeftWidth: 4, borderLeftColor: '#171713' },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   badgeText: {
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: '#FF5F1F',
+    color: '#171713',
     letterSpacing: 0.5,
   },
   streakTitle: {
@@ -183,6 +182,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: theme.colors.text,
+  },
+  streakCount: {
+    fontFamily: fontFamilies.header,
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#171713',
+    marginLeft: 12,
   },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
   emptyTitle: {
@@ -209,7 +215,7 @@ const styles = StyleSheet.create({
   },
   daySelector: { flexDirection: 'row', marginBottom: theme.spacing.md },
   dayButton: { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radii.lg, borderWidth: 1, borderColor: theme.colors.border, marginRight: theme.spacing.xs, minWidth: 50, alignItems: 'center' },
-  dayActive: { backgroundColor: '#FF5F1F', borderColor: '#FF5F1F' },
+  dayActive: { backgroundColor: '#171713', borderColor: '#171713' },
   dayButtonText: {
     fontFamily: fontFamilies.body,
     fontSize: 13,
@@ -243,7 +249,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   textStrikethrough: { textDecorationLine: 'line-through', color: theme.colors.textMuted },
-  logButton: { backgroundColor: '#FF5F1F', paddingVertical: theme.spacing.md, borderRadius: theme.radii.md, alignItems: 'center', marginTop: theme.spacing.lg },
+  logButton: { backgroundColor: '#171713', paddingVertical: theme.spacing.md, borderRadius: theme.radii.md, alignItems: 'center', marginTop: theme.spacing.lg },
   logText: {
     fontFamily: fontFamilies.header,
     fontSize: 14,

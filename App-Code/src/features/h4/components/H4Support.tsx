@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Text } from 'react-native';
 import { LifeBuoy, Send, PlusCircle, ChevronRight, MessageSquare, Award } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
@@ -119,12 +119,12 @@ export function H4Support() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#FAFAFC' }}>
+    <View style={{ flex: 1, backgroundColor: '#F8F5ED' }}>
       <H4TopHeader title="Support Desk" />
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerGroup}>
           <View style={styles.headerIconWrap}>
-            <LifeBuoy size={18} color="#F0A020" strokeWidth={2.5} />
+            <LifeBuoy size={18} color="#F5B800" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="h2" style={styles.headerTitle}>H4 Help Center</Typography>
@@ -141,7 +141,7 @@ export function H4Support() {
         {tickets.length === 0 ? (
           <Card style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <LifeBuoy size={28} color="#F0A020" />
+              <LifeBuoy size={28} color="#F5B800" />
             </View>
             <Typography variant="bodySm" style={styles.emptyTitle}>No Support Tickets</Typography>
             <Typography variant="caption" color="secondary" style={styles.emptyDesc}>
@@ -170,7 +170,7 @@ export function H4Support() {
                         {t.messages?.length || 0} Message{(t.messages?.length || 0) === 1 ? '' : 's'}
                       </Text>
                     </View>
-                    <ChevronRight size={16} color="#F0A020" />
+                    <ChevronRight size={16} color="#F5B800" />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -274,9 +274,9 @@ export function H4Support() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFAFC' },
+  root: { flex: 1, backgroundColor: '#F8F5ED' },
   content: { padding: 18, paddingBottom: 100, gap: 16 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAFAFC' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8F5ED' },
   
   headerGroup: { 
     flexDirection: 'row', 
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   
   cardDivider: {
     height: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F5F1E7',
   },
   
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   modalForm: { gap: 10 },
   inputLabel: { fontSize: 10, fontWeight: '800', color: '#64748B', letterSpacing: 0.5 },
   input: { 
-    backgroundColor: '#F8FAFC', 
+    backgroundColor: '#F8F5ED', 
     color: '#0F172A', 
     paddingHorizontal: 12, 
     height: 46,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
-  catChipActive: { backgroundColor: '#F0A020', borderColor: '#F0A020' },
+  catChipActive: { backgroundColor: '#F5B800', borderColor: '#F5B800' },
   catChipText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
   catChipTextActive: { color: '#FFFFFF' },
   
@@ -399,13 +399,13 @@ const styles = StyleSheet.create({
   messagesScroll: { maxHeight: 260 },
   msgBubble: { padding: 12, borderRadius: 12, gap: 4, marginVertical: 3 },
   msgUser: { backgroundColor: 'rgba(240, 160, 32, 0.08)', alignSelf: 'flex-end', width: '85%', borderWidth: 1, borderColor: 'rgba(240, 160, 32, 0.15)' },
-  msgSupport: { backgroundColor: '#F8FAFC', alignSelf: 'flex-start', width: '85%', borderWidth: 1, borderColor: '#E2E8F0' },
+  msgSupport: { backgroundColor: '#F8F5ED', alignSelf: 'flex-start', width: '85%', borderWidth: 1, borderColor: '#E2E8F0' },
   msgSender: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   msgText: { color: '#1E293B', fontSize: 13, lineHeight: 18 },
   replyBox: { flexDirection: 'row', gap: 8, alignItems: 'center', paddingTop: 6 },
   replyInput: { 
     flex: 1, 
-    backgroundColor: '#F8FAFC', 
+    backgroundColor: '#F8F5ED', 
     color: '#0F172A', 
     paddingHorizontal: 12, 
     height: 42,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { Modal, Skeleton } from '@/components/ui';
@@ -27,12 +27,15 @@ export function FitPassProfile() {
   const [profilePassword, setProfilePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(user?.profileImageUrl ?? '');
+  const avatarChoices = ['https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn'];
 
   const handleOpenEdit = () => {
     setProfileName(user?.name ?? '');
     setProfileEmail(user?.email ?? '');
     setProfilePhone(user?.phone ?? '');
     setProfilePassword('');
+    setSelectedAvatar(user?.profileImageUrl ?? '');
     setShowPassword(false);
     setIsModalOpen(true);
   };
@@ -49,15 +52,11 @@ export function FitPassProfile() {
     setUpdating(true);
     try {
       const res = await API_CLIENT.put('/member-portal/profile', {
-        name: profileName,
-        email: profileEmail,
-        phone: profilePhone,
         password: profilePassword || undefined,
+        avatarUrl: selectedAvatar || null,
       });
       await updateUserLocal({
-        name: profileName,
-        email: profileEmail,
-        phone: profilePhone,
+        profileImageUrl: selectedAvatar || null,
       });
       setProfilePassword('');
       queryClient.invalidateQueries();
@@ -80,7 +79,7 @@ export function FitPassProfile() {
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
           <View style={styles.headerIconWrap}>
-            <User size={18} color="#2563EB" strokeWidth={2.5} />
+            <User size={18} color="#171713" strokeWidth={2.5} />
           </View>
           <Text style={styles.headerTitle}>Account Profile</Text>
         </View>
@@ -117,7 +116,7 @@ export function FitPassProfile() {
           <View style={styles.infoList}>
             <View style={styles.infoRow}>
               <Mail size={13} color="#6B7280" />
-              <Text style={styles.infoText}>{user?.email ?? '—'}</Text>
+              <Text style={styles.infoText}>{user?.email ?? 'Not provided'}</Text>
             </View>
             {user?.phone ? (
               <View style={styles.infoRow}>
@@ -153,8 +152,8 @@ export function FitPassProfile() {
         
         <View style={styles.settingsGroup}>
           <TouchableOpacity style={styles.settingsItem} onPress={handleOpenEdit} activeOpacity={0.7}>
-            <View style={[styles.settingsIconWrap, { backgroundColor: '#EFF6FF' }]}>
-              <User size={18} color="#2563EB" />
+            <View style={[styles.settingsIconWrap, { backgroundColor: '#FFF4C6' }]}>
+              <User size={18} color="#5F4A00" />
             </View>
             <View style={styles.settingsTextWrap}>
               <Text style={styles.settingsLabel}>Edit Personal Details</Text>
@@ -166,8 +165,8 @@ export function FitPassProfile() {
           <View style={styles.settingsDivider} />
 
           <TouchableOpacity style={styles.settingsItem} onPress={handleOpenEdit} activeOpacity={0.7}>
-            <View style={[styles.settingsIconWrap, { backgroundColor: '#F5F3FF' }]}>
-              <Lock size={18} color="#7C3AED" />
+            <View style={[styles.settingsIconWrap, { backgroundColor: '#F5F1E7' }]}>
+              <Lock size={18} color="#171713" />
             </View>
             <View style={styles.settingsTextWrap}>
               <Text style={styles.settingsLabel}>Password & Security</Text>
@@ -193,6 +192,7 @@ export function FitPassProfile() {
       <Modal visible={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Profile">
         <View style={styles.premiumModalForm}>
           <Text style={styles.premiumSubTitle}>Update your client or contact details below</Text>
+          <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>{avatarChoices.map((avatar) => <TouchableOpacity key={avatar} onPress={() => setSelectedAvatar(avatar)} style={{ borderWidth: selectedAvatar === avatar ? 3 : 1, borderColor: selectedAvatar === avatar ? theme.colors.primary : theme.colors.border, borderRadius: 40, padding: 2 }}><Image source={{ uri: avatar }} style={{ width: 52, height: 52, borderRadius: 26 }} /></TouchableOpacity>)}</View>
           
           <View style={styles.premiumInputGroup}>
             <Text style={styles.premiumInputLabel}>FULL NAME *</Text>
@@ -279,7 +279,7 @@ export function FitPassProfile() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: theme.colors.background },
   content: { paddingHorizontal: 20, paddingTop: 40, paddingBottom: 100, gap: 20 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFF4C6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 20,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#171713',
   },
 
   // Member Pass Card Redesign
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
     padding: 20,
     gap: 16,
     shadowColor: '#000',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
     padding: 20,
   },
   memberCardTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
@@ -325,9 +325,9 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFF4C6',
     borderWidth: 1.5,
-    borderColor: '#DBEAFE',
+    borderColor: '#F0E1A8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -335,13 +335,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 22,
     fontWeight: '900',
-    color: '#2563EB',
+    color: '#5F4A00',
   },
   memberName: {
     fontFamily: fontFamilies.header,
     fontSize: 18,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#171713',
   },
   verifiedChip: {
     flexDirection: 'row',
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   infoText: {
     fontFamily: fontFamilies.body,
     fontSize: 13,
-    color: '#4B5563',
+    color: '#585448',
     fontWeight: '500',
   },
 
@@ -375,11 +375,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F5ED',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: theme.colors.border,
     marginTop: 4,
   },
   passStat: { alignItems: 'center', gap: 3 },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 24,
     fontWeight: '900',
-    color: '#2563EB',
+    color: '#171713',
   },
   passStatLabel: {
     fontFamily: fontFamilies.body,
@@ -396,12 +396,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  passStatDivider: { width: 1, height: 36, backgroundColor: '#E5E7EB' },
+  passStatDivider: { width: 1, height: 36, backgroundColor: '#E3DCCB' },
   passStatPlan: {
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#171713',
   },
   passStatStatus: {
     fontFamily: fontFamilies.body,
@@ -419,13 +419,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 16,
     fontWeight: '800',
-    color: '#374151',
+    color: '#171713',
   },
   settingsGroup: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E3DCCB',
     overflow: 'hidden',
   },
   settingsItem: {
@@ -446,14 +446,14 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#171713',
   },
   settingsSubLabel: {
     fontFamily: fontFamilies.body,
     fontSize: 11,
     color: '#9CA3AF',
   },
-  settingsDivider: { height: 1, backgroundColor: '#F3F4F6' },
+  settingsDivider: { height: 1, backgroundColor: '#F5F1E7' },
 
   historySection: { marginTop: 8 },
 
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E3DCCB',
     padding: 16,
     gap: 12,
   },
@@ -510,16 +510,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: '#111827',
+    color: '#171713',
     letterSpacing: 0.3,
   },
   premiumInputBox: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.2,
-    borderColor: '#E5E7EB',
+    borderColor: '#E3DCCB',
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F5ED',
     paddingHorizontal: 12,
     height: 48,
   },
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fontFamilies.body,
     fontSize: 14,
-    color: '#111827',
+    color: '#171713',
     height: '100%',
     padding: 0,
   },
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 9,
     fontWeight: '800',
-    color: '#2563EB',
+    color: '#5F4A00',
     letterSpacing: 0.5,
   },
   premiumSaveButton: {

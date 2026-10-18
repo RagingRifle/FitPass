@@ -118,6 +118,7 @@ app.use('/api/v1/attendance', require('./routes/attendanceRoutes'));
 app.use('/api/v1/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/v1/expenses', require('./routes/expenseRoutes'));
 app.use('/api/v1/member-portal', require('./routes/memberPortalRoutes'));
+app.use('/api/v1/tickets', require('./routes/ticketRoutes'));
 app.use('/api/v1/reports', require('./routes/reportRoutes'));
 app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
 app.use('/api/v1/classes', require('./routes/classRoutes'));
@@ -139,6 +140,7 @@ app.use('/api/v1/trainer-assignments', require('./routes/memberTrainerAssignment
 app.use('/api/v1/workout-templates', require('./routes/workoutTemplateRoutes'));
 app.use('/api/v1/workout-plans', require('./routes/workoutPlanRoutes'));
 app.use('/api/v1/diet-plans', require('./routes/dietPlanRoutes'));
+app.use('/api/v1/diet-templates', require('./routes/dietTemplateRoutes'));
 app.use('/api/v1/pt-packages', require('./routes/ptPackageRoutes'));
 app.use('/api/v1/pt-sessions', require('./routes/ptSessionRoutes'));
 app.use('/api/v1/body-assessments', require('./routes/bodyAssessmentRoutes'));

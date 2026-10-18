@@ -47,7 +47,7 @@ const transferMemberSchema = z.object({
 });
 
 router.route('/')
-    .get(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, getMembers)
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, getMembers)
     .post(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: createMemberSchema }), createMember);
 
 router.get('/export/csv', protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, exportMembersCSV);

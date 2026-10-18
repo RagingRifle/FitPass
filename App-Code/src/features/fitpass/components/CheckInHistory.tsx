@@ -123,7 +123,7 @@ export function CheckInHistory() {
                   </View>
 
                   {item.branchName ? (
-                    <Text style={styles.itemBranchName}>🏢 {item.branchName}</Text>
+                    <Text style={styles.itemBranchName}>{item.branchName}</Text>
                   ) : null}
 
                   <View style={styles.timeRow}>
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   totalBadge: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFF4C6',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -196,26 +196,26 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '800',
-    color: '#2563EB',
+    color: '#5F4A00',
   },
   chipRow: { flexDirection: 'row', gap: 6, marginBottom: 16 },
   chip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 9999,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F5F1E7',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E3DCCB',
   },
   chipActive: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: '#171713',
+    borderColor: '#171713',
   },
   chipText: {
     fontFamily: fontFamilies.body,
     fontSize: 11,
     fontWeight: '700',
-    color: '#4B5563',
+    color: '#585448',
   },
   chipTextActive: {
     color: '#FFFFFF',
@@ -247,23 +247,23 @@ const styles = StyleSheet.create({
     top: 20,
     bottom: 0,
     width: 2,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#E3DCCB',
   },
   nodePoint: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F5F1E7',
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: '#D6CEBC',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 2,
     marginTop: 10,
   },
   nodePointActive: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
+    borderColor: '#D9A900',
+    backgroundColor: '#FFF4C6',
   },
   nodePointCompleted: {
     borderColor: '#10B981',
@@ -276,14 +276,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#9CA3AF',
   },
   innerDotActive: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#171713',
   },
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E3DCCB',
     padding: 12,
     gap: 4,
   },
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#171713',
     flex: 1,
   },
   itemBranchName: {
@@ -321,10 +321,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F5F1E7',
   },
   statusPillActive: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFF4C6',
   },
   statusPillCompleted: {
     backgroundColor: '#ECFDF5',
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   statusPillTextActive: {
-    color: '#2563EB',
+    color: '#5F4A00',
   },
   statusPillTextCompleted: {
     color: '#10B981',
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E3DCCB',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -362,6 +362,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.body,
     fontSize: 11,
     fontWeight: '700',
-    color: '#4B5563',
+    color: '#585448',
   },
 });

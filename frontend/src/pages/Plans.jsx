@@ -5,8 +5,9 @@ import { AuthContext } from '../context/AuthContext';
 import { Pencil, Trash2 } from 'lucide-react';
 
 const Plans = () => {
-    const { user } = useContext(AuthContext);
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+    const { user, activeDivision } = useContext(AuthContext);
+    const isAdmin = ['admin', 'h4_admin', 'superadmin'].includes(user?.role);
+    const isH4Plans = user?.role === 'h4_admin' || activeDivision === 'h4' || String(user?.gymName || '').toLowerCase().includes('h4');
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -82,9 +83,9 @@ const Plans = () => {
         <div className="plans-page fade-in">
             <div className="plans-page-header">
                 <div>
-                    <span className="plans-page-kicker">Membership setup</span>
-                    <h2>Plans Management</h2>
-                    <p>Set clear terms and pricing for every membership.</p>
+                    <span className="plans-page-kicker">{isH4Plans ? 'H4 membership setup' : 'Gym membership setup'}</span>
+                    <h2>{isH4Plans ? 'H4 Membership Plans' : 'Gym Membership Plans'}</h2>
+                    <p>{isH4Plans ? 'H4 members use these branch managed plans. FitPass session passes are managed separately.' : 'These plans are limited to members of the selected gym.'}</p>
                 </div>
                 {isAdmin && (
                     <button className="btn btn-primary" onClick={() => handleOpenModal()}>+ Add New Plan</button>
@@ -120,11 +121,8 @@ const Plans = () => {
                                     <tr key={planId}>
                                         <td>
                                             {plan.name}
-                                            {plan.gymId === 'SYSTEM' && (
-                                                <span style={{ marginLeft: '8px', fontSize: '12px', padding: '2px 6px', backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: '4px' }}>Global</span>
-                                            )}
                                         </td>
-                                        <td>{plan.gymId === 'SYSTEM' ? `${plan.sessions} sessions` : plan.duration}</td>
+                                        <td>{plan.duration}</td>
                                         <td>{plan.price}</td>
                                         {isAdmin && (
                                             <td style={{ display: 'flex', gap: '0.5rem' }}>

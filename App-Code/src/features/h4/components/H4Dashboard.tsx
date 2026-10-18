@@ -42,7 +42,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
-// ─── Member Hero Banner ─────────────────────────────────────────────────────
+//  Member Hero Banner 
 // Replaces the old MembershipPassCard + ActivityStats split into one premium hero.
 function MemberHeroBanner() {
   const { data: plan } = useH4Plan();
@@ -70,7 +70,7 @@ function MemberHeroBanner() {
       style={styles.heroCard}
     >
       <LinearGradient
-        colors={['#DDEEEF', '#F8FBFB', '#FFF3E5']}
+        colors={['#FFF4C6', '#F8FBFB', '#FFF3E5']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -89,7 +89,7 @@ function MemberHeroBanner() {
           </View>
         </View>
 
-        {/* Plan name — the dominant element */}
+        {/* Plan name  the dominant element */}
         <Text style={styles.heroPlanName} numberOfLines={1}>
           {plan?.planName ?? 'H4 Elite Access'}
         </Text>
@@ -114,12 +114,12 @@ function MemberHeroBanner() {
           </View>
           <View style={styles.heroStatRule} />
           <View style={styles.heroStat}>
-            <Text style={styles.heroStatNum}>{visits > 0 ? `${visits}d` : '—'}</Text>
+            <Text style={styles.heroStatNum}>{visits > 0 ? `${visits}d` : ''}</Text>
             <Text style={styles.heroStatLabel}>Streak</Text>
           </View>
           <View style={styles.heroStatRule} />
           <View style={styles.heroStat}>
-            <Text style={styles.heroStatNum}>{lastPaid ? `₹${lastPaid}` : '—'}</Text>
+            <Text style={styles.heroStatNum}>{lastPaid ? `}` : ''}</Text>
             <Text style={styles.heroStatLabel}>Last Paid</Text>
           </View>
         </View>
@@ -130,7 +130,7 @@ function MemberHeroBanner() {
 
 
 
-// ─── Upcoming Studio Classes ───────────────────────────────────────────────
+//  Upcoming Studio Classes 
 function HomeStudioClassesSection() {
   const { data: classes, isLoading } = useH4Classes();
   const bookMutation = useH4BookClass();
@@ -173,7 +173,7 @@ function HomeStudioClassesSection() {
       cls.description?.trim() || 'No class description has been added yet.',
       `Time: ${cls.startTime || 'To be announced'}`,
       `Coach: ${cls.trainerName || 'H4 Trainer'}`,
-      `Seats left: ${cls.seatsAvailable ?? '—'}`,
+      `Seats left: ${cls.seatsAvailable ?? ''}`,
     ].join('\n\n');
     Alert.alert(cls.name || 'Class details', details, [{ text: 'Close' }]);
   };
@@ -233,7 +233,7 @@ function HomeStudioClassesSection() {
                   >
                     <Text style={styles.classNameText} numberOfLines={2}>{cls.name}</Text>
                     <Text style={styles.classMetaText} numberOfLines={2}>
-                      {cls.description?.trim() || `${cls.startTime || 'Time TBA'} · Coach: ${cls.trainerName || 'H4 Trainer'}`}
+                      {cls.description?.trim() || `${cls.startTime || 'Time TBA'}  Coach: ${cls.trainerName || 'H4 Trainer'}`}
                     </Text>
                   </TouchableOpacity>
 
@@ -266,7 +266,7 @@ function HomeStudioClassesSection() {
   );
 }
 
-// ─── Recent Check-ins ────────────────────────────────────────────────────────
+//  Recent Check-ins 
 function RecentCheckIns() {
   const { data, isLoading } = useH4Dashboard();
   const router = useRouter();
@@ -332,7 +332,7 @@ function TodayWorkoutSummaryCard() {
         </TouchableOpacity>
       </View>
 
-      {/* ── Ticket Card ── */}
+      {/*  Ticket Card  */}
       <TouchableOpacity
         activeOpacity={0.96}
         onPress={() => router.push('/(h4)/workouts')}
@@ -364,17 +364,17 @@ function TodayWorkoutSummaryCard() {
           {/* Quick-stat strip */}
           <View style={styles.wktStatStrip}>
             <View style={styles.wktStat}>
-              <Clock size={13} color="#246B78" strokeWidth={2.5} />
+              <Clock size={13} color="#171713" strokeWidth={2.5} />
               <Text style={styles.wktStatValue}>45 min</Text>
             </View>
             <View style={styles.wktStatDot} />
             <View style={styles.wktStat}>
-              <Dumbbell size={13} color="#246B78" strokeWidth={2.5} />
+              <Dumbbell size={13} color="#171713" strokeWidth={2.5} />
               <Text style={styles.wktStatValue}>{exercises.length || 0} exercises</Text>
             </View>
             <View style={styles.wktStatDot} />
             <View style={styles.wktStat}>
-              <Flame size={13} color="#246B78" strokeWidth={2.5} />
+              <Flame size={13} color="#171713" strokeWidth={2.5} />
               <Text style={styles.wktStatValue}>High</Text>
             </View>
           </View>
@@ -382,7 +382,7 @@ function TodayWorkoutSummaryCard() {
           {/* Exercise rows */}
           <View style={styles.wktExList}>
             {exercises.length === 0 && (
-              <Text style={styles.wktNoEx}>No exercises assigned yet — tap to add.</Text>
+              <Text style={styles.wktNoEx}>No exercises assigned yet  tap to add.</Text>
             )}
             {exercises.slice(0, 4).map((ex: any, idx: number) => (
               <View key={idx} style={[
@@ -391,7 +391,7 @@ function TodayWorkoutSummaryCard() {
               ]}>
                 <Text style={styles.wktExNum}>{String(idx + 1).padStart(2, '0')}</Text>
                 <Text style={styles.wktExName} numberOfLines={1}>{ex.name || 'Strength Exercise'}</Text>
-                <Text style={styles.wktExSets}>{ex.sets || 4}×{ex.reps || 10}</Text>
+                <Text style={styles.wktExSets}>{ex.sets || 4}x{ex.reps || 10}</Text>
               </View>
             ))}
             {exercises.length > 4 && (
@@ -406,7 +406,7 @@ function TodayWorkoutSummaryCard() {
             activeOpacity={0.82}
           >
             <Text style={styles.wktCtaText}>Begin Session</Text>
-            <ChevronRight size={15} color="#246B78" strokeWidth={3} />
+            <ChevronRight size={15} color="#171713" strokeWidth={3} />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -414,7 +414,7 @@ function TodayWorkoutSummaryCard() {
   );
 }
 
-// ─── Today's Nutrition & Water Summary Card ───────────────────────────────
+//  Today's Nutrition & Water Summary Card 
 function TodayNutritionSummaryCard() {
   const { data: dietPlans, isLoading } = useH4DietPlans();
   const user = useAuth((s) => s.user);
@@ -518,7 +518,7 @@ function TodayNutritionSummaryCard() {
   );
 }
 
-// ─── Unified Loading Skeleton ────────────────────────────────────────────────
+//  Unified Loading Skeleton 
 function H4DashboardSkeleton() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -538,7 +538,7 @@ function H4DashboardSkeleton() {
   );
 }
 
-// ─── Export Component ────────────────────────────────────────────────────────
+//  Export Component 
 export function H4Dashboard() {
   const { isLoading: dbLoading } = useH4Dashboard();
   const { isLoading: planLoading } = useH4Plan();
@@ -587,14 +587,14 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
 
-  // ── Premium Minimalist Hero Card ────────────────────────────────────────────
+  //  Premium Minimalist Hero Card 
   heroCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#D8E1E4',
+    borderColor: '#E3DCCB',
     overflow: 'hidden',
-    shadowColor: '#182630',
+    shadowColor: '#171713',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 12,
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   },
   heroAccentBar: {
     width: 4,
-    backgroundColor: '#246B78',
+    backgroundColor: '#171713',
   },
   heroInner: {
     flex: 1,
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   heroEyebrow: {
     fontSize: 9,
     fontWeight: '900',
-    color: '#819098',
+    color: '#817B6E',
     letterSpacing: 2,
     fontFamily: theme.typography.caption.fontFamily,
   },
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
   heroPlanName: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#182630',
+    color: '#171713',
     fontFamily: theme.typography.h1.fontFamily,
     lineHeight: 28,
     letterSpacing: -0.3,
@@ -676,12 +676,12 @@ const styles = StyleSheet.create({
   heroMeta: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#819098',
+    color: '#817B6E',
     fontFamily: theme.typography.caption.fontFamily,
   },
   heroDivider: {
     height: 1,
-    backgroundColor: '#D8E1E4',
+    backgroundColor: '#E3DCCB',
     marginBottom: 14,
   },
   heroStatRow: {
@@ -696,21 +696,21 @@ const styles = StyleSheet.create({
   heroStatNum: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#182630',
+    color: '#171713',
     fontFamily: theme.typography.h2.fontFamily,
     lineHeight: 22,
   },
   heroStatLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#819098',
+    color: '#817B6E',
     letterSpacing: 0.5,
     fontFamily: theme.typography.caption.fontFamily,
   },
   heroStatRule: {
     width: 1,
     height: 32,
-    backgroundColor: '#D8E1E4',
+    backgroundColor: '#E3DCCB',
   },
 
   passSkeleton: { height: 140, borderRadius: 20 },
@@ -817,7 +817,7 @@ const styles = StyleSheet.create({
   },
   waterProgressBar: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#5F4A00',
   },
   waterBtn: {
     width: 28,
@@ -834,14 +834,14 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
 
-  // ── Sports-Ticket Workout Card ──────────────────────────────────────────
+  //  Sports-Ticket Workout Card 
   wktTicket: {
     borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: theme.colors.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    shadowColor: '#246B78',
+    shadowColor: '#171713',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.10,
     shadowRadius: 16,
@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
   },
   // Orange header band
   wktHeader: {
-    backgroundColor: '#246B78',
+    backgroundColor: '#171713',
     paddingTop: 20,
     paddingBottom: 22,
     paddingHorizontal: 20,
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
   wktExNum: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#246B78',
+    color: '#171713',
     width: 22,
     fontFamily: theme.typography.h1.fontFamily,
     letterSpacing: 0.5,
@@ -1023,7 +1023,7 @@ const styles = StyleSheet.create({
   wktCtaText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#246B78',
+    color: '#171713',
     fontFamily: theme.typography.h3.fontFamily,
     letterSpacing: 0.2,
   },
