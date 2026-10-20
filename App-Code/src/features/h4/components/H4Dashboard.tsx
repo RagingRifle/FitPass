@@ -70,7 +70,7 @@ function MemberHeroBanner() {
       style={styles.heroCard}
     >
       <LinearGradient
-        colors={['#FFF4C6', '#F8FBFB', '#FFF3E5']}
+        colors={['#FBF2D8', '#F8FBFB', '#FFF3E5']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -221,7 +221,7 @@ function HomeStudioClassesSection() {
                     <Image source={{ uri: cls.imageUrl }} style={styles.classThumbnail} resizeMode="cover" />
                   ) : (
                     <View style={styles.classThumbnailFallback}>
-                      <Dumbbell size={16} color={theme.colors.primary} />
+                      <Dumbbell size={16} color={theme.colors.primaryText} />
                     </View>
                   )}
                   <TouchableOpacity
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
   section: { gap: 14 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: 4 },
   sectionTitle: { fontSize: 10, fontWeight: '900', color: theme.colors.textMuted, fontFamily: theme.typography.h1.fontFamily, letterSpacing: 1.5 },
-  textLink: { fontSize: 11, fontWeight: '800', color: theme.colors.primary, fontFamily: theme.typography.h3.fontFamily },
+  textLink: { fontSize: 11, fontWeight: '800', color: theme.colors.primaryText, fontFamily: theme.typography.h3.fontFamily },
   emptyText: { fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic', paddingHorizontal: 4 },
 
   // Classes (Typographic List)
@@ -1005,7 +1005,7 @@ const styles = StyleSheet.create({
   },
   wktMoreEx: {
     fontSize: 11,
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     paddingTop: 8,
     fontFamily: theme.typography.caption.fontFamily,

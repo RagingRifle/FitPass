@@ -499,7 +499,7 @@ const PayrollPage = () => {
                 {selectedPayslip && (
                     <div style={{ background: '#fff', color: '#111', padding: '1.5rem', borderRadius: '12px', fontFamily: 'sans-serif' }}>
                         {/* Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #F0A020', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #FEDF1E', paddingBottom: '1rem', marginBottom: '1rem' }}>
                             <div>
                                 <h2 style={{ margin: 0, color: '#231D14', fontSize: '1.25rem', fontWeight: 800 }}>FITNESS CLUB PAYSLIP</h2>
                                 <p style={{ margin: '0.2rem 0 0', color: '#666', fontSize: '0.8rem' }}>Salary Statement & Earnings Breakdown</p>

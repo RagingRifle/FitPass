@@ -1004,6 +1004,12 @@ const updateMyProfile = catchAsync(async (req, res, next) => {
         const userUpdateData = {};
         if (avatarUrl !== undefined) {
             const allowedAvatars = [
+                '/avatars/milo.svg',
+                '/avatars/leo.svg',
+                '/avatars/anya.svg',
+                '/avatars/zuri.svg',
+                '/avatars/trex.svg',
+                '/avatars/lion.svg',
                 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
                 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka',
                 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn',

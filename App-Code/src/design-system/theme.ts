@@ -6,8 +6,9 @@ import { radii, spacing, typography } from './tokens';
 
 // Bold FitPass palette: yellow canvas, black navigation, and cream/white content surfaces.
 export const lightColors = {
-  primary: '#F5B800',
-  background: '#F5B800',
+  primary: '#FEDF1E',
+  primaryText: '#735B00',
+  background: '#F8F5ED',
   card: '#FFFFFF',
   surface: '#F8F5ED',
   text: '#171713',
@@ -21,10 +22,10 @@ export const lightColors = {
   warning: '#A97900',
   error: '#A4473F',
   info: '#5C6F70',
-  bgTertiary: '#FFF4C6',
-  borderFocus: '#D9A900',
-  brandLight: '#FFF4C6',
-  brandMuted: 'rgba(245, 184, 0, 0.15)',
+  bgTertiary: '#FBF2D8',
+  borderFocus: '#FEDF1E',
+  brandLight: '#FFF8D6',
+  brandMuted: 'rgba(254, 223, 30, 0.18)',
 };
 
 // Keep the root layout's existing initialization hook while using one app theme.

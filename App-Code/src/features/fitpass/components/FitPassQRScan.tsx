@@ -117,7 +117,7 @@ export function FitPassQRScan() {
     return (
       <SafeAreaView style={styles.center}>
         <View style={styles.permIconCircle}>
-          <QrCode size={36} color={theme.colors.primary} />
+          <QrCode size={36} color={theme.colors.primaryText} />
         </View>
         <Text style={styles.permTitle}>Camera Access Required</Text>
         <Text style={styles.permSubtitle}>
@@ -132,7 +132,7 @@ export function FitPassQRScan() {
           onPress={() => setIsManualModalOpen(true)}
           activeOpacity={0.8}
         >
-          <Building2 size={16} color={theme.colors.primary} />
+          <Building2 size={16} color={theme.colors.primaryText} />
           <Text style={styles.manualFallbackText}>Select Gym Manually</Text>
         </TouchableOpacity>
 
@@ -146,7 +146,7 @@ export function FitPassQRScan() {
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
                 <View style={styles.modalBadgeRow}>
-                  <ShieldCheck size={13} color={theme.colors.primary} />
+                  <ShieldCheck size={13} color={theme.colors.primaryText} />
                   <Text style={styles.modalBadgeText}>FITPASS NETWORK</Text>
                 </View>
                 <Text style={styles.modalTitle}>Select Partner Gym</Text>
@@ -181,7 +181,7 @@ export function FitPassQRScan() {
                     activeOpacity={0.85}
                   >
                     <View style={styles.gymIconBox}>
-                      <Building2 size={20} color={theme.colors.primary} />
+                      <Building2 size={20} color={theme.colors.primaryText} />
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
                       <Text style={styles.gymRowName}>{g.name}</Text>
@@ -224,7 +224,7 @@ export function FitPassQRScan() {
         </View>
 
         <View style={styles.creditPill}>
-          <Activity size={12} color={theme.colors.primary} />
+          <Activity size={12} color={theme.colors.primaryText} />
           <Text style={styles.creditPillText}>{sessionData?.sessionsRemaining ?? 0} LEFT</Text>
         </View>
       </View>
@@ -282,7 +282,7 @@ export function FitPassQRScan() {
           onPress={() => setIsManualModalOpen(true)}
           activeOpacity={0.85}
         >
-          <Building2 size={16} color={theme.colors.primary} />
+          <Building2 size={16} color={theme.colors.primaryText} />
           <Text style={styles.manualTriggerText}>
             Can't scan QR? Select Gym Manually
           </Text>
@@ -295,7 +295,7 @@ export function FitPassQRScan() {
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
               <View style={styles.modalBadgeRow}>
-                <ShieldCheck size={13} color={theme.colors.primary} />
+                <ShieldCheck size={13} color={theme.colors.primaryText} />
                 <Text style={styles.modalBadgeText}>FITPASS NETWORK</Text>
               </View>
               <Text style={styles.modalTitle}>Select Gym for Entry</Text>
@@ -330,7 +330,7 @@ export function FitPassQRScan() {
                   activeOpacity={0.85}
                 >
                   <View style={styles.gymIconBox}>
-                    <Building2 size={20} color={theme.colors.primary} />
+                    <Building2 size={20} color={theme.colors.primaryText} />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={styles.gymRowName}>{g.name}</Text>

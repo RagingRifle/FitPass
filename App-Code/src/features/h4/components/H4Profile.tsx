@@ -6,7 +6,6 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
-  Image,
 } from 'react-native';
 import { theme } from '@/design-system/theme';
 import { Badge, Input, Modal, Button } from '@/components/ui';
@@ -18,6 +17,7 @@ import {
 import { API_CLIENT } from '@/lib/api-client';
 import { H4TopHeader } from './H4TopHeader';
 import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
+import { PROFILE_AVATARS, ProfileAvatarArt } from '@/components/ui/ProfileAvatarArt';
 
 //  Section Block helper 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -56,7 +56,7 @@ export function H4Profile() {
   const [profilePassword, setProfilePassword] = useState('');
   const [updating, setUpdating] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(user?.profileImageUrl ?? '');
-  const avatarChoices = ['https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn'];
+  const avatarChoices = PROFILE_AVATARS;
 
   const handleOpenEdit = () => {
     setProfileName(user?.name ?? '');
@@ -103,12 +103,12 @@ export function H4Profile() {
         <View style={styles.profileHeadInfo}>
           <Text style={[styles.profileName, { color: theme.colors.text }]}>{user?.name ?? ''}</Text>
           <View style={styles.memberBadge}>
-            <ShieldCheck size={13} color={theme.colors.primary} />
+            <ShieldCheck size={13} color={theme.colors.primaryText} />
             <Text style={styles.memberBadgeText}>H4 Member</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.editBtn} onPress={handleOpenEdit} activeOpacity={0.7}>
-          <Edit3 size={16} color={theme.colors.primary} />
+          <Edit3 size={16} color={theme.colors.primaryText} />
         </TouchableOpacity>
       </View>
 
@@ -196,7 +196,7 @@ export function H4Profile() {
       {/*  Edit Profile Modal  */}
       <Modal visible={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Profile">
         <View style={{ gap: 12 }}>
-          <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>{avatarChoices.map((avatar) => <TouchableOpacity key={avatar} onPress={() => setSelectedAvatar(avatar)} style={{ borderWidth: selectedAvatar === avatar ? 3 : 1, borderColor: selectedAvatar === avatar ? theme.colors.primary : theme.colors.border, borderRadius: 40, padding: 2 }}><Image source={{ uri: avatar }} style={{ width: 52, height: 52, borderRadius: 26 }} /></TouchableOpacity>)}</View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>{avatarChoices.map((avatar) => <TouchableOpacity key={avatar.url} onPress={() => setSelectedAvatar(avatar.url)} accessibilityRole="radio" accessibilityState={{ selected: selectedAvatar === avatar.url }} style={{ width: '30%', alignItems: 'center', gap: 3, borderWidth: selectedAvatar === avatar.url ? 2 : 1, borderColor: selectedAvatar === avatar.url ? theme.colors.primary : theme.colors.border, borderRadius: 13, padding: 7 }}><ProfileAvatarArt avatarUrl={avatar.url} size={48} /><Text style={{ color: theme.colors.text, fontSize: 12, fontWeight: '700' }}>{avatar.name}</Text><Text style={{ color: theme.colors.textMuted, fontSize: 9 }}>{avatar.trait}</Text></TouchableOpacity>)}</View>
           <Input label="Name" value={profileName} onChangeText={setProfileName} placeholder="Your name" />
           <Input label="Email" value={profileEmail} onChangeText={setProfileEmail} placeholder="Email address" keyboardType="email-address" />
           <Input label="Phone" value={profilePhone} onChangeText={setProfilePhone} placeholder="Phone number" keyboardType="phone-pad" />
@@ -220,20 +220,20 @@ const styles = StyleSheet.create({
   },
   avatar: {
     width: 56, height: 56, borderRadius: 28,
-    backgroundColor: 'rgba(240,160,32,0.12)',
-    borderWidth: 2, borderColor: 'rgba(240,160,32,0.3)',
+    backgroundColor: 'rgba(254,223,30,0.12)',
+    borderWidth: 2, borderColor: 'rgba(254,223,30,0.3)',
     justifyContent: 'center', alignItems: 'center',
   },
-  avatarText: { fontSize: 22, fontWeight: '800', color: '#F5B800' },
+  avatarText: { fontSize: 22, fontWeight: '800', color: '#735B00' },
   profileHeadInfo: { flex: 1, gap: 4 },
   profileName: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
   memberBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start',
-    backgroundColor: 'rgba(240,160,32,0.1)',
+    backgroundColor: 'rgba(254,223,30,0.1)',
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20,
-    borderWidth: 1, borderColor: 'rgba(240,160,32,0.25)',
+    borderWidth: 1, borderColor: 'rgba(254,223,30,0.25)',
   },
-  memberBadgeText: { fontSize: 11, fontWeight: '700', color: '#F5B800' },
+  memberBadgeText: { fontSize: 11, fontWeight: '700', color: '#735B00' },
   editBtn: {
     width: 36, height: 36, borderRadius: 18,
     borderWidth: 1, borderColor: '#E2E8F0',

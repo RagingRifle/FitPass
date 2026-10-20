@@ -256,7 +256,7 @@ export const PartnerGymsList: React.FC = () => {
       <View style={styles.bannerCard}>
         <View style={styles.bannerLeft}>
           <View style={styles.badgePill}>
-            <Sparkles size={12} color={theme.colors.primary} />
+            <Sparkles size={12} color={theme.colors.primaryText} />
             <Typography variant="caption" style={styles.badgePillText}>
               {isH4 ? 'PHYSICAL BRANCH NETWORK' : 'PARTNER GYMS DIRECTORY'}
             </Typography>
@@ -297,7 +297,7 @@ export const PartnerGymsList: React.FC = () => {
             <View key={branch._id} style={styles.gymCard}>
               <View style={styles.cardHeader}>
                 <View style={styles.gymIconWrapper}>
-                  <Building2 size={22} color={theme.colors.primary} />
+                  <Building2 size={22} color={theme.colors.primaryText} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Typography variant="h3" style={styles.gymName}>{branch.name}</Typography>
@@ -313,7 +313,7 @@ export const PartnerGymsList: React.FC = () => {
                   style={styles.qrIconWrapper}
                   activeOpacity={0.7}
                 >
-                  <QrCode color={theme.colors.primary} size={18} />
+                  <QrCode color={theme.colors.primaryText} size={18} />
                 </TouchableOpacity>
               </View>
 
@@ -347,7 +347,7 @@ export const PartnerGymsList: React.FC = () => {
 
                 <View style={styles.statsMetricsRow}>
                   <View style={styles.statMetric}>
-                    <Users size={14} color={theme.colors.primary} />
+                    <Users size={14} color={theme.colors.primaryText} />
                     <Typography variant="caption" color="primary">
                       {branch.memberCount || 0} Active Members
                     </Typography>
@@ -367,7 +367,7 @@ export const PartnerGymsList: React.FC = () => {
                   onPress={() => setEditingBranch(branch)}
                   activeOpacity={0.7}
                 >
-                  <Edit3 size={14} color={theme.colors.primary} />
+                  <Edit3 size={14} color={theme.colors.primaryText} />
                   <Typography variant="caption" style={styles.editBtnText}>Edit</Typography>
                 </TouchableOpacity>
 
@@ -398,7 +398,7 @@ export const PartnerGymsList: React.FC = () => {
               <View key={gym._id} style={styles.gymCard}>
                 <View style={styles.cardHeader}>
                   <View style={styles.gymIconWrapper}>
-                    <Building2 size={22} color={theme.colors.primary} />
+                    <Building2 size={22} color={theme.colors.primaryText} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Typography variant="h3" style={styles.gymName}>{gym.name}</Typography>
@@ -414,7 +414,7 @@ export const PartnerGymsList: React.FC = () => {
                     style={styles.qrIconWrapper}
                     activeOpacity={0.7}
                   >
-                    <QrCode color={theme.colors.primary} size={18} />
+                    <QrCode color={theme.colors.primaryText} size={18} />
                   </TouchableOpacity>
                 </View>
 
@@ -449,7 +449,7 @@ export const PartnerGymsList: React.FC = () => {
                     onPress={() => setEditingGym(gym)}
                     activeOpacity={0.7}
                   >
-                    <Edit3 size={14} color={theme.colors.primary} />
+                    <Edit3 size={14} color={theme.colors.primaryText} />
                     <Typography variant="caption" style={styles.editBtnText}>Edit</Typography>
                   </TouchableOpacity>
 
@@ -807,13 +807,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgePillText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 10,
     letterSpacing: 0.8,
@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -918,12 +918,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingVertical: 8,
     borderRadius: 10,
   },
   editBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 12,
   },
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
   },
   modalSectionTitle: {
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   qrOverlay: {
     flex: 1,

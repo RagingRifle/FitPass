@@ -96,7 +96,7 @@ function PassCard() {
       <View style={styles.passCardTop}>
         <View>
           <View style={styles.passBadgeRow}>
-            <ShieldCheck size={13} color={theme.colors.primary} />
+            <ShieldCheck size={13} color={theme.colors.primaryText} />
             <Text style={styles.passLabel}>FITPASS NETWORK</Text>
           </View>
           <Text style={styles.passName}>{data?.planName ?? 'No Active Plan'}</Text>
@@ -108,8 +108,8 @@ function PassCard() {
             {
               backgroundColor: hasPlan
                 ? 'rgba(46,125,50,0.14)'
-                : 'rgba(240,160,32,0.14)',
-              borderColor: hasPlan ? 'rgba(76,175,80,0.3)' : 'rgba(240,160,32,0.3)',
+                : 'rgba(254,223,30,0.14)',
+              borderColor: hasPlan ? 'rgba(76,175,80,0.3)' : 'rgba(254,223,30,0.3)',
             },
           ]}
           onPress={() => router.push('/(fitpass)/plans')}
@@ -200,7 +200,7 @@ function PopularFitPassGyms() {
     <View style={styles.section}>
       <View style={styles.sectionRow}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Flame size={16} color={theme.colors.primary} />
+          <Flame size={16} color={theme.colors.primaryText} />
           <Text style={styles.sectionTitle}>Featured Gyms</Text>
         </View>
         <TouchableOpacity
@@ -209,7 +209,7 @@ function PopularFitPassGyms() {
           activeOpacity={0.7}
         >
           <Text style={styles.viewAllText}>View all</Text>
-          <ChevronRight size={14} color={theme.colors.primary} />
+          <ChevronRight size={14} color={theme.colors.primaryText} />
         </TouchableOpacity>
       </View>
 
@@ -334,12 +334,12 @@ function AllPartnerGyms() {
                     <Text style={styles.gridGymName} numberOfLines={1}>
                       {gym.name}
                     </Text>
-                    <ArrowUpRight size={13} color={theme.colors.primary} />
+                    <ArrowUpRight size={13} color={theme.colors.primaryText} />
                   </View>
 
                   {gym.address ? (
                     <View style={styles.gridAddressRow}>
-                      <MapPin size={11} color={theme.colors.primary} />
+                      <MapPin size={11} color={theme.colors.primaryText} />
                       <Text style={styles.gridAddressText} numberOfLines={1}>
                         {gym.address}
                       </Text>
@@ -347,7 +347,7 @@ function AllPartnerGyms() {
                   ) : null}
 
                   <View style={styles.gridFooterPill}>
-                    <BadgeCheck size={10} color={theme.colors.primary} />
+                    <BadgeCheck size={10} color={theme.colors.primaryText} />
                     <Text style={styles.gridFooterPillText}>FITPASS VERIFIED</Text>
                   </View>
                 </View>
@@ -398,9 +398,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
     borderWidth: 1.5,
-    borderColor: '#F5B800',
+    borderColor: '#FEDF1E',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 1,
   },
   passName: {
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(240,160,32,0.12)',
+    backgroundColor: 'rgba(254,223,30,0.12)',
     borderWidth: 2,
     borderColor: theme.colors.primary,
     justifyContent: 'center',
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 24,
     fontWeight: '900',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   sessionsUnit: {
     fontFamily: fontFamilies.header,
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FFF4C6',
+    backgroundColor: '#FBF2D8',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.body,
     fontSize: 12,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
 
   // Popular Carousel Card
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240,160,32,0.10)',
+    backgroundColor: 'rgba(254,223,30,0.10)',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 9,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 0.5,
   },
 

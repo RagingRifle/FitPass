@@ -365,8 +365,8 @@ const Sidebar = () => {
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
             <div className="sidebar-logo">
-                                <div className="sidebar-logo-icon" style={{ background: '#000000', color: '#F5B800', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)' }}>
-                    <Dumbbell size={22} color="#F5B800" />
+                                <div className="sidebar-logo-icon" style={{ background: '#000000', color: '#FEDF1E', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)' }}>
+                    <Dumbbell size={22} color="#FEDF1E" />
                 </div>
                 {!collapsed && (
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -398,7 +398,7 @@ const Sidebar = () => {
                                 fontWeight: '700',
                                 borderRadius: 'var(--radius-sm)',
                                 textTransform: 'uppercase',
-                                color: activeDivision === 'fitpass' ? '#F5B800' : '#000000',
+                                color: activeDivision === 'fitpass' ? '#FEDF1E' : '#000000',
                                 background: activeDivision === 'fitpass' ? '#000000' : 'transparent',
                                 transition: 'var(--transition)',
                             }}
@@ -421,7 +421,7 @@ const Sidebar = () => {
                                 fontWeight: '700',
                                 borderRadius: 'var(--radius-sm)',
                                 textTransform: 'uppercase',
-                                color: activeDivision === 'h4' ? '#F5B800' : '#000000',
+                                color: activeDivision === 'h4' ? '#FEDF1E' : '#000000',
                                 background: activeDivision === 'h4' ? '#000000' : 'transparent',
                                 transition: 'var(--transition)',
                             }}

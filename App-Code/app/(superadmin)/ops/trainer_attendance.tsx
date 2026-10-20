@@ -131,7 +131,7 @@ export default function TrainerAttendanceScreen() {
         )}
 
         {isLogsLoading ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: theme.spacing['2xl'] }} />
+          <ActivityIndicator size="large" color={theme.colors.primaryText} style={{ marginTop: theme.spacing['2xl'] }} />
         ) : (
           <>
             {/* Stats Indicators Row */}

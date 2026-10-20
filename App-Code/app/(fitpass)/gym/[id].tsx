@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   MapPin,
   Phone,
@@ -61,6 +62,7 @@ const AMENITIES = [
 export default function GymDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const toast = useToast();
 
   const { data: gym, isLoading: isGymLoading, error } = usePartnerGymDetail(id);
@@ -172,7 +174,7 @@ export default function GymDetailsScreen() {
           </ScrollView>
 
           {/* Glass Top Overlay Nav */}
-          <View style={styles.topNavRow}>
+          <View style={[styles.topNavRow, { top: insets.top + 12 }]}>
             <TouchableOpacity style={styles.navCircle} onPress={() => router.back()} activeOpacity={0.8}>
               <ChevronLeft size={20} color="#fff" />
             </TouchableOpacity>
@@ -183,7 +185,7 @@ export default function GymDetailsScreen() {
               </TouchableOpacity>
 
               <View style={styles.fitpassBadge}>
-                <BadgeCheck size={13} color="#171713" />
+                <BadgeCheck size={13} color="#735B00" />
                 <Text style={styles.fitpassBadgeText}>FITPASS VERIFIED</Text>
               </View>
             </View>
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
   galleryImg: { width: SCREEN_WIDTH, height: 290 },
   topNavRow: {
     position: 'absolute',
-    top: 44,
+    top: 12,
     left: 16,
     right: 16,
     flexDirection: 'row',
@@ -591,7 +593,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: '#171713',
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
 

@@ -142,7 +142,7 @@ export const FitPrimePlansList: React.FC = () => {
       <View style={styles.bannerContainer}>
         <View style={styles.bannerLeft}>
           <View style={styles.badgePill}>
-            <Sparkles size={12} color={theme.colors.primary} />
+            <Sparkles size={12} color={theme.colors.primaryText} />
             <Typography variant="caption" style={styles.badgePillText}>
               FITPASS MEMBER SUBSCRIPTIONS
             </Typography>
@@ -190,7 +190,7 @@ export const FitPrimePlansList: React.FC = () => {
                 </View>
 
                 <View style={styles.sessionsRow}>
-                  <Ticket size={14} color={theme.colors.primary} />
+                  <Ticket size={14} color={theme.colors.primaryText} />
                   <Typography variant="bodySm" color="secondary" style={styles.sessionsText}>
                     {plan.sessions} Check-in Credits
                   </Typography>
@@ -202,7 +202,7 @@ export const FitPrimePlansList: React.FC = () => {
                     onPress={() => openEditModal(plan)}
                     activeOpacity={0.7}
                   >
-                    <Edit3 size={14} color={theme.colors.primary} />
+                    <Edit3 size={14} color={theme.colors.primaryText} />
                     <Typography variant="caption" style={styles.editBtnText}>
                       Edit
                     </Typography>
@@ -301,13 +301,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgePillText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 10,
     letterSpacing: 0.8,
@@ -395,12 +395,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingVertical: 8,
     borderRadius: 10,
   },
   editBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 12,
   },

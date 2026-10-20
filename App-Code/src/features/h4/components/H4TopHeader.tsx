@@ -37,7 +37,7 @@ export function H4TopHeader({ title, subtitle, showScanBtn = true }: H4TopHeader
         <View style={styles.rightGroup}>
           {showScanBtn && (
             <TouchableOpacity
-              style={[styles.iconBtn, { borderColor: '#F5B800', backgroundColor: '#F5B800' }]}
+              style={[styles.iconBtn, { borderColor: '#FEDF1E', backgroundColor: '#FEDF1E' }]}
               onPress={() => router.push('/(h4)/scan' as any)}
               activeOpacity={0.8}
               accessibilityLabel="Scan QR"
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontFamily: theme.typography.h1.fontFamily,
     fontWeight: '900',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 0.8,
   },
   avatar: {
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: theme.typography.h1.fontFamily,
     fontWeight: '900',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   titleWrap: {
     flex: 1,

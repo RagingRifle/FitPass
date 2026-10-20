@@ -11,14 +11,15 @@ import {
   Linking,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiscoveryGyms, usePublicPostsFeed } from '../api/fitpass.api';
 import type { DiscoveryGymItem } from '../types';
 
 // FitPass discovery palette.
 const COLORS = {
-  primary: '#F5B800',
-  primaryDark: '#D9A900',
-  bgDark: '#F5B800',
+  primary: '#FEDF1E',
+  primaryDark: '#FEDF1E',
+  bgDark: '#F8F5ED',
   cardBg: '#FFFFFF',
   border: '#E3DCCB',
   textPrimary: '#171713',
@@ -39,6 +40,7 @@ const CATEGORIES = [
 ];
 
 export const GymDiscoveryExplore: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGym, setSelectedGym] = useState<DiscoveryGymItem | null>(null);
@@ -62,6 +64,12 @@ export const GymDiscoveryExplore: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.pageIntro}>
+        <Text style={styles.pageEyebrow}>FITPASS DISCOVERY</Text>
+        <Text style={styles.pageTitle}>Gyms</Text>
+        <Text style={styles.pageTagline}>Find your next favourite place to train.</Text>
+      </View>
+
       {/* Search Header */}
       <View style={styles.searchSection}>
         <TextInput
@@ -92,7 +100,7 @@ export const GymDiscoveryExplore: React.FC = () => {
         })}
       </ScrollView>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
         {/* Gym Highlights Posts Horizontal Carousel */}
         {posts.length > 0 && (
           <View style={styles.postsSection}>
@@ -274,13 +282,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.bgDark,
   },
+  pageIntro: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 4 },
+  pageEyebrow: { color: '#735B00', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
+  pageTitle: { color: '#171713', fontSize: 30, fontWeight: '900', letterSpacing: -0.7, marginTop: 3 },
+  pageTagline: { color: '#585448', fontSize: 14, lineHeight: 20, marginTop: 2 },
   searchSection: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 8,
     paddingBottom: 8,
   },
   searchInput: {
     backgroundColor: COLORS.cardBg,
+    flexShrink: 1,
     borderColor: COLORS.border,
     borderWidth: 1,
     borderRadius: 24,
@@ -311,7 +324,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   categoryChipTextActive: {
-    color: COLORS.bgDark,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
   },
   postsSection: {
@@ -343,7 +356,7 @@ const styles = StyleSheet.create({
   },
   postGymName: {
     fontSize: 10,
-    color: COLORS.primary,
+    color: '#735B00',
     fontWeight: 'bold',
   },
   postTitle: {
@@ -354,6 +367,7 @@ const styles = StyleSheet.create({
   },
   listSection: {
     paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   emptyCard: {
     padding: 24,
@@ -426,7 +440,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#735B00',
   },
   gymAddress: {
     fontSize: 12,
@@ -449,7 +463,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   detailsBtnText: {
-    color: COLORS.bgDark,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
     fontSize: 13,
   },
@@ -513,7 +527,7 @@ const styles = StyleSheet.create({
   },
   modalGymSub: {
     fontSize: 12,
-    color: '#FFF4C6',
+    color: '#FBF2D8',
     marginTop: 2,
   },
   modalBody: {
@@ -534,7 +548,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionBtnCallText: {
-    color: COLORS.bgDark,
+    color: COLORS.textPrimary,
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -557,7 +571,7 @@ const styles = StyleSheet.create({
   modalSectionTitle: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#735B00',
     marginTop: 14,
     marginBottom: 6,
   },

@@ -157,6 +157,10 @@ const sendEmail = async (options) => {
     await transporter.sendMail(mailOptions);
   } catch (error) {
     logger.error({ err: error, email: options.email }, 'SMTP send error');
+    // Callers such as registration rely on delivery success before reporting
+    // that verification can continue. Let them handle failures (registration
+    // removes the newly-created unverified account so the user can retry).
+    throw error;
   }
 };
 

@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -10,7 +11,6 @@ import {
   ActivityIndicator,
   ScrollView,
   Image,
-  SafeAreaView,
   ImageBackground,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -141,7 +141,7 @@ export const LoginForm: React.FC = () => {
         // Portal mismatch check: get the division assigned after login
         const assignedDivision = useAuth.getState().activeDivision;
         if (assignedDivision && assignedDivision !== selectedPortal) {
-          // Wrong portal — log them out and show a friendly redirect message
+          // Wrong portal â€” log them out and show a friendly redirect message
           await useAuth.getState().logout();
           const correctPortal = assignedDivision === 'h4' ? 'H4 Portal' : 'Fit-Pass';
           const wrongPortal = selectedPortal === 'h4' ? 'H4 Portal' : 'Fit-Pass';

@@ -486,7 +486,7 @@ export default function OpsDetailScreen() {
           <View style={{ gap: 6 }}>
             <View style={styles.infoRow}>
               <View style={styles.iconMetaRow}>
-                <Phone size={13} color={theme.colors.primary} />
+                <Phone size={13} color={theme.colors.primaryText} />
                 <Typography variant="caption" color="secondary">{item.phone || 'N/A'}</Typography>
               </View>
               <Badge label={item.source || 'Walk-in'} variant="info" />
@@ -501,7 +501,7 @@ export default function OpsDetailScreen() {
 
             <View style={styles.infoFooter}>
               <View style={styles.iconMetaRow}>
-                <Calendar size={13} color={theme.colors.primary} />
+                <Calendar size={13} color={theme.colors.primaryText} />
                 <Typography variant="caption" color="secondary">
                   Follow-up: {formatDate(item.followUpDate || item.createdAt)}
                 </Typography>
@@ -932,7 +932,7 @@ export default function OpsDetailScreen() {
         {/* Content list body */}
         {isLoading || (moduleKey === 'equipments' && equipmentTab === 'maintenance' && isLogsLoading) ? (
           <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.primaryText} />
             <Typography style={{ marginTop: theme.spacing.md }}>Loading records...</Typography>
           </View>
         ) : (

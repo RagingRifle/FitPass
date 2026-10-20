@@ -21,7 +21,7 @@ export default function SuperAdminLayout() {
         headerTitleStyle: styles.headerTitle,
           headerTintColor: '#FFFFFF',
         tabBarStyle: styles.tabBar,
-          tabBarActiveTintColor: '#F5B800',
+          tabBarActiveTintColor: '#FEDF1E',
           tabBarInactiveTintColor: '#D4D0C6',
         tabBarLabelStyle: styles.tabBarLabel,
         headerRight: () => (
@@ -34,7 +34,7 @@ export default function SuperAdminLayout() {
                 activeOpacity={0.7}
                 accessibilityLabel="Switch Portal"
               >
-                <Shuffle color="#F5B800" size={18} />
+                <Shuffle color="#735B00" size={18} />
               </TouchableOpacity>
             )}
             <TouchableOpacity 

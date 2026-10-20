@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
 import { Modal, Skeleton } from '@/components/ui';
@@ -11,6 +11,7 @@ import { API_CLIENT } from '@/lib/api-client';
 import { useToast } from '@/hooks/useToast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
+import { PROFILE_AVATARS, ProfileAvatarArt } from '@/components/ui/ProfileAvatarArt';
 
 export function FitPassProfile() {
   const user = useAuth((s) => s.user);
@@ -28,7 +29,7 @@ export function FitPassProfile() {
   const [showPassword, setShowPassword] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(user?.profileImageUrl ?? '');
-  const avatarChoices = ['https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn'];
+  const avatarChoices = PROFILE_AVATARS;
 
   const handleOpenEdit = () => {
     setProfileName(user?.name ?? '');
@@ -152,7 +153,7 @@ export function FitPassProfile() {
         
         <View style={styles.settingsGroup}>
           <TouchableOpacity style={styles.settingsItem} onPress={handleOpenEdit} activeOpacity={0.7}>
-            <View style={[styles.settingsIconWrap, { backgroundColor: '#FFF4C6' }]}>
+            <View style={[styles.settingsIconWrap, { backgroundColor: '#FBF2D8' }]}>
               <User size={18} color="#5F4A00" />
             </View>
             <View style={styles.settingsTextWrap}>
@@ -192,7 +193,7 @@ export function FitPassProfile() {
       <Modal visible={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Profile">
         <View style={styles.premiumModalForm}>
           <Text style={styles.premiumSubTitle}>Update your client or contact details below</Text>
-          <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center' }}>{avatarChoices.map((avatar) => <TouchableOpacity key={avatar} onPress={() => setSelectedAvatar(avatar)} style={{ borderWidth: selectedAvatar === avatar ? 3 : 1, borderColor: selectedAvatar === avatar ? theme.colors.primary : theme.colors.border, borderRadius: 40, padding: 2 }}><Image source={{ uri: avatar }} style={{ width: 52, height: 52, borderRadius: 26 }} /></TouchableOpacity>)}</View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>{avatarChoices.map((avatar) => <TouchableOpacity key={avatar.url} onPress={() => setSelectedAvatar(avatar.url)} accessibilityRole="radio" accessibilityState={{ selected: selectedAvatar === avatar.url }} style={{ width: '30%', alignItems: 'center', gap: 3, borderWidth: selectedAvatar === avatar.url ? 2 : 1, borderColor: selectedAvatar === avatar.url ? theme.colors.primary : theme.colors.border, borderRadius: 13, padding: 7 }}><ProfileAvatarArt avatarUrl={avatar.url} size={48} /><Text style={{ color: theme.colors.text, fontSize: 12, fontWeight: '700' }}>{avatar.name}</Text><Text style={{ color: theme.colors.textMuted, fontSize: 9 }}>{avatar.trait}</Text></TouchableOpacity>)}</View>
           
           <View style={styles.premiumInputGroup}>
             <Text style={styles.premiumInputLabel}>FULL NAME *</Text>
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#FFF4C6',
+    backgroundColor: '#FBF2D8',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#FFF4C6',
+    backgroundColor: '#FBF2D8',
     borderWidth: 1.5,
     borderColor: '#F0E1A8',
     alignItems: 'center',

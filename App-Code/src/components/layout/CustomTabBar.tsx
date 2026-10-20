@@ -24,7 +24,7 @@ const FITPASS_TABS = ['dashboard', 'gyms', 'scan', 'plans', 'profile'];
 export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, portalType }) => {
   const insets = useSafeAreaInsets();
   const isH4 = portalType === 'h4';
-  const activeColor = '#F5B800';
+  const activeColor = '#FEDF1E';
   const inactiveColor = '#E8E2D6';
   const activeBackground = '#2B2A25';
   const visibleRoutes = (isH4 ? H4_TABS : FITPASS_TABS)

@@ -68,7 +68,7 @@ export default function ReportsScreen() {
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Card style={styles.headerCard}>
-          <FileText size={48} color={theme.colors.primary} style={{ marginBottom: theme.spacing.sm }} />
+          <FileText size={48} color={theme.colors.primaryText} style={{ marginBottom: theme.spacing.sm }} />
           <Typography variant="h3" style={{ fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>
             Monthly Business Reports
           </Typography>

@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View, Text, Modal as RNModal, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Text, Modal as RNModal, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronDown } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 

@@ -193,7 +193,7 @@ export function H4Diets() {
   if (isQueryLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -274,7 +274,7 @@ export function H4Diets() {
       {/*  Diet Plan / Macros  */}
       {!activeDiet ? (
         <View style={styles.emptyCard}>
-          <Apple size={40} color={theme.colors.primary} />
+          <Apple size={40} color={theme.colors.primaryText} />
           <Text style={styles.emptyTitle}>Personalised Diet Plan Pending</Text>
           <Text style={styles.emptyDesc}>
             Your assigned H4 Fitness nutrition coach has not updated your customized meal schedule and macro targets yet. Once your coach creates your plan, it will load here automatically!
@@ -293,7 +293,7 @@ export function H4Diets() {
                 ) : null}
               </View>
               <View style={styles.appleBadge}>
-                <Apple size={24} color={theme.colors.primary} />
+                <Apple size={24} color={theme.colors.primaryText} />
               </View>
             </View>
 
@@ -414,7 +414,7 @@ export function H4Diets() {
       {/*  Trainer Attribution Card (Bottom)  */}
       <View style={styles.trainerFooterCard}>
         <View style={styles.trainerAvatarBg}>
-          <UserCheck size={22} color={theme.colors.primary} />
+          <UserCheck size={22} color={theme.colors.primaryText} />
         </View>
         <View style={styles.trainerFooterInfo}>
           <Text style={styles.trainerFooterTag}>ASSIGNED NUTRITION COACH</Text>
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   macroLbl: { fontSize: 13, fontWeight: '600', color: '#0F172A' },
   macroVal: { fontSize: 12, color: '#64748B' },
   barBg: { height: 7, backgroundColor: '#E2E8F0', borderRadius: 4, overflow: 'hidden' },
-  barFill: { height: '100%', backgroundColor: '#F5B800', borderRadius: 4 },
+  barFill: { height: '100%', backgroundColor: '#FEDF1E', borderRadius: 4 },
   macroGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(240,160,32,0.12)',
+    backgroundColor: 'rgba(254,223,30,0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   Apple,
   CalendarCheck,
@@ -40,7 +41,7 @@ export default function H4MoreScreen() {
               accessibilityLabel={`${title}. ${detail}`}
             >
               <View style={styles.iconTile}>
-                <Icon size={21} color={theme.colors.primary} strokeWidth={2.2} />
+                <Icon size={21} color={theme.colors.primaryText} strokeWidth={2.2} />
               </View>
               <Text style={styles.cardTitle}>{title}</Text>
               <Text style={styles.cardDetail}>{detail}</Text>
@@ -55,7 +56,7 @@ export default function H4MoreScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
   content: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 112 },
-  eyebrow: { color: theme.colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 1.8 },
+  eyebrow: { color: theme.colors.primaryText, fontSize: 11, fontWeight: '800', letterSpacing: 1.8 },
   title: { color: theme.colors.text, fontSize: 27, lineHeight: 33, fontWeight: '800', marginTop: 8 },
   subtitle: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 5, marginBottom: 22 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },

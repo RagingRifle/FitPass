@@ -34,7 +34,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
     return (
       <View style={[styles.container, styles.center, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }

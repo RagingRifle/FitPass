@@ -375,7 +375,7 @@ const Dashboard = () => {
                             {(() => {
                                 const methodData = Array.isArray(stats?.methodBreakdown) ? stats.methodBreakdown : [];
                                 const totalCollections = methodData.reduce((acc, curr) => acc + (Number(curr.value) || 0), 0);
-                                const METHOD_COLORS = ['#F0A020', '#34d399', '#60a5fa', '#a78bfa', '#f59e0b', '#f43f5e'];
+                                const METHOD_COLORS = ['#FEDF1E', '#34d399', '#60a5fa', '#a78bfa', '#f59e0b', '#f43f5e'];
 
                                 return (
                                     <>
@@ -387,7 +387,7 @@ const Dashboard = () => {
                                             {totalCollections > 0 && (
                                                 <div style={{ background: 'rgba(240, 160, 32, 0.1)', border: '1px solid rgba(240, 160, 32, 0.25)', borderRadius: '8px', padding: '0.35rem 0.75rem', textAlign: 'right' }}>
                                                     <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Total Collections</div>
-                                                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-color, #F0A020)' }}>₹{totalCollections.toLocaleString('en-IN')}</div>
+                                                    <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-color, #FEDF1E)' }}>₹{totalCollections.toLocaleString('en-IN')}</div>
                                                 </div>
                                             )}
                                         </div>
@@ -431,7 +431,7 @@ const Dashboard = () => {
                                                                             boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
                                                                         }}>
                                                                             <p style={{ color: 'var(--text-secondary, #A39686)', fontSize: 12, marginBottom: 4, fontWeight: 600 }}>{item.name || item.payload._id}</p>
-                                                                            <p style={{ color: item.color || '#F0A020', fontWeight: 800, fontSize: 14, margin: 0 }}>
+                                                                            <p style={{ color: item.color || '#FEDF1E', fontWeight: 800, fontSize: 14, margin: 0 }}>
                                                                                 ₹{Number(item.value).toLocaleString('en-IN')} <span style={{ fontSize: 11, color: 'var(--text-muted, #6D6154)', fontWeight: 500 }}>({pct}%)</span>
                                                                             </p>
                                                                         </div>

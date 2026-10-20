@@ -103,7 +103,7 @@ export const UserControlHub: React.FC = () => {
       {/* Header Widget */}
       <Card style={styles.headerCard}>
         <View style={styles.headerRow}>
-          <Users size={24} color="#D99B00" />
+          <Users size={24} color="#B9983D" />
           <Typography variant="h2" style={styles.headerTitle}>User Control Hub (A-Z)</Typography>
         </View>
         <Typography variant="caption" color="secondary" style={{ marginTop: 4 }}>
@@ -191,7 +191,7 @@ export const UserControlHub: React.FC = () => {
                   <View style={styles.statsRow}>
                     <View style={styles.statBox}>
                       <Typography variant="caption" color="secondary">Remaining</Typography>
-                      <Typography variant="h2" style={{ color: '#D99B00', fontWeight: '900' }}>
+                      <Typography variant="h2" style={{ color: '#B9983D', fontWeight: '900' }}>
                         {selectedUser.sessionsRemaining}
                       </Typography>
                     </View>
@@ -279,7 +279,7 @@ export const UserControlHub: React.FC = () => {
                       title={selectedUser.status === 'Active' ? 'Freeze Account' : 'Activate Account'}
                       onPress={() => handleToggleStatus(selectedUser.status === 'Active' ? 'Frozen' : 'Active')}
                       loading={updateStatusMutation.isPending}
-                      style={{ flex: 1, backgroundColor: selectedUser.status === 'Active' ? '#D99B00' : '#2E7D32' }}
+                      style={{ flex: 1, backgroundColor: selectedUser.status === 'Active' ? '#B9983D' : '#2E7D32' }}
                     />
                     <Button
                       title={selectedUser.status === 'Blocked' ? 'Unblock User' : 'Block User'}

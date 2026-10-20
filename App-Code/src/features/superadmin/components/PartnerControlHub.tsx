@@ -105,7 +105,7 @@ export const PartnerControlHub: React.FC = () => {
       {/* Header Info */}
       <Card style={styles.headerCard}>
         <View style={styles.headerRow}>
-          <Building2 size={24} color="#D99B00" />
+          <Building2 size={24} color="#B9983D" />
           <Typography variant="h2" style={styles.headerTitle}>Partner Control Hub (A-Z)</Typography>
         </View>
         <Typography variant="caption" color="secondary" style={{ marginTop: 4 }}>

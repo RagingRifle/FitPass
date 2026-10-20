@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Image, SafeAreaView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Globe, ArrowRight, ShieldCheck, Lock } from '@/components/ui/app-icons';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -48,7 +49,7 @@ export default function PortalSelectionScreen() {
             <View style={[styles.portalCard, styles.fitpassBorder]}>
               <View style={styles.cardHeaderRow}>
                 <View style={[styles.iconContainer, { backgroundColor: 'rgba(255, 224, 27, 0.15)' }]}>
-                  <Globe size={28} color="#D99B00" strokeWidth={2.2} />
+                  <Globe size={28} color="#B9983D" strokeWidth={2.2} />
                 </View>
                 <View style={styles.arrowBadge}>
                   <ArrowRight size={18} color="#1A1510" strokeWidth={2.5} />

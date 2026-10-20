@@ -423,7 +423,7 @@ const Members = () => {
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.4rem',
                                 padding: '0.5rem 0.85rem', background: 'transparent',
-                                border: 'none', color: 'var(--primary, #F0A020)', fontWeight: 600,
+                                border: 'none', color: 'var(--primary, #FEDF1E)', fontWeight: 600,
                                 cursor: isExporting ? 'wait' : 'pointer'
                             }}
                             title="Export currently filtered view to CSV"
@@ -438,7 +438,7 @@ const Members = () => {
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.4rem',
                                 padding: '0.5rem 0.85rem', background: 'rgba(240, 160, 32, 0.12)',
-                                border: 'none', color: 'var(--primary, #F0A020)', fontWeight: 700,
+                                border: 'none', color: 'var(--primary, #FEDF1E)', fontWeight: 700,
                                 cursor: isExporting ? 'wait' : 'pointer'
                             }}
                             title="Export entire member database to CSV"

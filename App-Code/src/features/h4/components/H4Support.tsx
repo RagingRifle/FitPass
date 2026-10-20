@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Text } from 'react-native';
 import { LifeBuoy, Send, PlusCircle, ChevronRight, MessageSquare, Award } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
@@ -113,7 +113,7 @@ export function H4Support() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -124,7 +124,7 @@ export function H4Support() {
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerGroup}>
           <View style={styles.headerIconWrap}>
-            <LifeBuoy size={18} color="#F5B800" strokeWidth={2.5} />
+            <LifeBuoy size={18} color="#735B00" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="h2" style={styles.headerTitle}>H4 Help Center</Typography>
@@ -141,7 +141,7 @@ export function H4Support() {
         {tickets.length === 0 ? (
           <Card style={styles.emptyCard}>
             <View style={styles.emptyIconCircle}>
-              <LifeBuoy size={28} color="#F5B800" />
+              <LifeBuoy size={28} color="#735B00" />
             </View>
             <Typography variant="bodySm" style={styles.emptyTitle}>No Support Tickets</Typography>
             <Typography variant="caption" color="secondary" style={styles.emptyDesc}>
@@ -170,7 +170,7 @@ export function H4Support() {
                         {t.messages?.length || 0} Message{(t.messages?.length || 0) === 1 ? '' : 's'}
                       </Text>
                     </View>
-                    <ChevronRight size={16} color="#F5B800" />
+                    <ChevronRight size={16} color="#735B00" />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
-  catChipActive: { backgroundColor: '#F5B800', borderColor: '#F5B800' },
+  catChipActive: { backgroundColor: '#FEDF1E', borderColor: '#FEDF1E' },
   catChipText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
   catChipTextActive: { color: '#FFFFFF' },
   
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   threadCategoryText: { fontSize: 12, color: '#64748B', fontWeight: '600' },
   messagesScroll: { maxHeight: 260 },
   msgBubble: { padding: 12, borderRadius: 12, gap: 4, marginVertical: 3 },
-  msgUser: { backgroundColor: 'rgba(240, 160, 32, 0.08)', alignSelf: 'flex-end', width: '85%', borderWidth: 1, borderColor: 'rgba(240, 160, 32, 0.15)' },
+  msgUser: { backgroundColor: 'rgba(254, 223, 30, 0.08)', alignSelf: 'flex-end', width: '85%', borderWidth: 1, borderColor: 'rgba(254, 223, 30, 0.15)' },
   msgSupport: { backgroundColor: '#F8F5ED', alignSelf: 'flex-start', width: '85%', borderWidth: 1, borderColor: '#E2E8F0' },
   msgSender: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   msgText: { color: '#1E293B', fontSize: 13, lineHeight: 18 },

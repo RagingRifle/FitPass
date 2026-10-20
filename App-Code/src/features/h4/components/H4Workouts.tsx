@@ -164,7 +164,7 @@ export function H4Workouts() {
   if (isQueryLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -235,7 +235,7 @@ export function H4Workouts() {
       {/* Day Notice Banners */}
       {isStarterMode ? (
         <View style={styles.infoBanner}>
-          <Trophy size={20} color={theme.colors.primary} />
+          <Trophy size={20} color={theme.colors.primaryText} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.infoTitle}>Personalised Workout Schedule Pending</Text>
             <Text style={styles.infoText}>
@@ -245,7 +245,7 @@ export function H4Workouts() {
         </View>
       ) : isSelectedFuture ? (
         <View style={styles.infoBanner}>
-          <Clock size={20} color={theme.colors.primary} />
+          <Clock size={20} color={theme.colors.primaryText} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.infoTitle}>Upcoming Workout  {FULL_DAYS[selectedDayIdx]}</Text>
             <Text style={styles.infoText}>
@@ -255,7 +255,7 @@ export function H4Workouts() {
         </View>
       ) : isSelectedToday && todayExercises.length === 0 ? (
         <View style={styles.infoBanner}>
-          <Trophy size={20} color={theme.colors.primary} />
+          <Trophy size={20} color={theme.colors.primaryText} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={styles.infoTitle}>No Workout Assigned for Today ({FULL_DAYS[selectedDayIdx]})</Text>
             <Text style={styles.infoText}>
@@ -424,12 +424,12 @@ const styles = StyleSheet.create({
   nextTaskBanner: {
     padding: 14,
     borderRadius: 12,
-    backgroundColor: 'rgba(240,160,32,0.1)',
+    backgroundColor: 'rgba(254,223,30,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(240,160,32,0.3)',
+    borderColor: 'rgba(254,223,30,0.3)',
     gap: 4,
   },
-  nextTaskTitle: { fontSize: 13, fontWeight: '700', color: '#F5B800' },
+  nextTaskTitle: { fontSize: 13, fontWeight: '700', color: '#735B00' },
   nextTaskDesc: { fontSize: 14, fontWeight: '800', color: '#0F172A', marginTop: 2 },
 
   tomorrowInfoBox: {
@@ -450,9 +450,9 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 14,
-    backgroundColor: 'rgba(240,160,32,0.08)',
+    backgroundColor: 'rgba(254,223,30,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(240,160,32,0.3)',
+    borderColor: 'rgba(254,223,30,0.3)',
   },
   infoTitle: { fontSize: 14, fontWeight: '800', color: '#0F172A' },
   infoText: { fontSize: 12, color: '#64748B', lineHeight: 18, marginTop: 2 },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
-  dayBtnActive: { backgroundColor: '#F5B800', borderColor: '#F5B800' },
+  dayBtnActive: { backgroundColor: '#FEDF1E', borderColor: '#FEDF1E' },
   dayText: { fontSize: 13, fontWeight: '600', color: '#64748B' },
   dayTextActive: { color: '#FFFFFF' },
 
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 14,

@@ -6,7 +6,7 @@ import API from '../services/api';
 // ─── Badge component ─────────────────────────────────────────────────────────
 const statusColors = {
     New:       '#1976D2',
-    Contacted: '#F0A020',
+    Contacted: '#FEDF1E',
     Interested:'#7B1FA2',
     Converted: '#2E7D32',
     Lost:      '#C62828',

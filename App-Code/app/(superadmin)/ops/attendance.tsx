@@ -308,7 +308,7 @@ export default function MemberAttendanceScreen() {
             <Typography variant="h3" style={styles.sectionHeader}>Today's Member Check-Ins</Typography>
 
             {isTodayLoading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: theme.spacing.lg }} />
+              <ActivityIndicator size="large" color={theme.colors.primaryText} style={{ marginTop: theme.spacing.lg }} />
             ) : (todayAttendance || []).length === 0 ? (
               <EmptyState 
                 iconText="📋"
@@ -425,7 +425,7 @@ export default function MemberAttendanceScreen() {
             <Typography variant="h3" style={styles.sectionHeader}>Staff On Duty Today</Typography>
 
             {isStaffLoading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: theme.spacing.lg }} />
+              <ActivityIndicator size="large" color={theme.colors.primaryText} style={{ marginTop: theme.spacing.lg }} />
             ) : (todayStaffAttendance || []).length === 0 ? (
               <EmptyState 
                 iconText="🛡️"

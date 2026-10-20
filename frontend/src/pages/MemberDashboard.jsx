@@ -9,6 +9,15 @@ import './fitpass.css';
 import './member-dashboard.css';
 import './member-featured.css';
 
+const PROFILE_AVATARS = [
+    { url: '/avatars/milo.svg', name: 'Milo', trait: 'Easygoing' },
+    { url: '/avatars/leo.svg', name: 'Leo', trait: 'Big energy' },
+    { url: '/avatars/anya.svg', name: 'Anya', trait: 'Bold' },
+    { url: '/avatars/zuri.svg', name: 'Zuri', trait: 'Curious' },
+    { url: '/avatars/trex.svg', name: 'Rex', trait: 'Tiny roar' },
+    { url: '/avatars/lion.svg', name: 'Sunny', trait: 'Brave heart' },
+];
+
 const MemberDashboard = () => {
     const { user, updateUserLocal } = useContext(AuthContext);
     const toast = useToast();
@@ -236,7 +245,7 @@ const MemberDashboard = () => {
                     contact: plan?.phone
                 },
                 theme: {
-                    color: "#F5B800"
+                    color: "#FEDF1E"
                 }
             };
 
@@ -290,7 +299,7 @@ const MemberDashboard = () => {
                     description: `${selectedRenewalPlan.name} membership`,
                     order_id: order.id,
                     prefill: { name: plan?.name, email: plan?.email, contact: plan?.phone },
-                    theme: { color: '#F5B800' },
+                    theme: { color: '#FEDF1E' },
                     handler: async (response) => {
                         try { await finishPurchase(response); }
                         catch (error) { toast.error(error.response?.data?.message || 'Payment verification failed.'); }
@@ -358,7 +367,7 @@ const MemberDashboard = () => {
                     <h1>Good {today.getHours() < 12 ? 'morning' : today.getHours() < 17 ? 'afternoon' : 'evening'},<br /><em>{(plan?.name || 'athlete').split(' ')[0]}.</em></h1>
                     <p>Your movement, membership and progress — all in one place.</p>
                     <div className="member-overview-actions">
-                        {user?.profileImageUrl && <img src={user.profileImageUrl} alt="Your profile avatar" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #F5B800' }} />}
+                        {user?.profileImageUrl && <img src={user.profileImageUrl} alt="Your profile avatar" style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #FEDF1E' }} />}
                         {isFitPrimeMember && <a href="/explore-gyms">Explore gyms <ArrowUpRight size={15} /></a>}
                         <a href="/member-classes">Find a class <ArrowUpRight size={15} /></a>
                         <button type="button" className="member-profile-action" onClick={openProfileEditModal}>Edit profile</button>
@@ -385,12 +394,12 @@ const MemberDashboard = () => {
                 <article className="member-activity-panel">
                     <div className="member-panel-heading"><div><small>YOUR CONSISTENCY</small><h2>Weekly activity</h2></div><span className="member-panel-tag"><i /> LAST 7 DAYS</span></div>
                     <div className="member-chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={weeklyActivity} margin={{ top: 12, right: 8, left: -20, bottom: 0 }}>
-                                                <defs><linearGradient id="memberActivityFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#F5B800" stopOpacity={0.4}/><stop offset="100%" stopColor="#F5B800" stopOpacity={0.02}/></linearGradient></defs>
+                                                <defs><linearGradient id="memberActivityFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#FEDF1E" stopOpacity={0.4}/><stop offset="100%" stopColor="#FEDF1E" stopOpacity={0.02}/></linearGradient></defs>
                         <CartesianGrid vertical={false} stroke="#EDE8DE" strokeDasharray="3 5" />
                         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#000000', fontSize: 11, fontWeight: 700 }} dy={9}/>
                         <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#000000', fontSize: 10, fontWeight: 700 }} width={30}/>
                         <Tooltip contentStyle={{ border: '1.5px solid #DFD7C7', borderRadius: 10, background: '#FFFFFF', color: '#000000', fontWeight: 700, fontSize: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }} />
-                        <Area type="monotone" dataKey="visits" name="Check-ins" stroke="#F5B800" strokeWidth={3.5} fill="url(#memberActivityFill)" activeDot={{ r: 6, fill: '#000000', stroke: '#F5B800', strokeWidth: 3 }}/>
+                        <Area type="monotone" dataKey="visits" name="Check-ins" stroke="#FEDF1E" strokeWidth={3.5} fill="url(#memberActivityFill)" activeDot={{ r: 6, fill: '#000000', stroke: '#FEDF1E', strokeWidth: 3 }}/>
                     </AreaChart></ResponsiveContainer></div>
                     <div className="member-chart-footer"><span>One visit at a time adds up.</span><b>{weeklyActivity.reduce((sum, item) => sum + item.visits, 0)} check-ins this week</b></div>
                 </article>
@@ -421,7 +430,7 @@ const MemberDashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
 
                 {/* Plan Card */}
-                <div className="glass" style={{ padding: '1.1rem', borderRadius: '16px', borderLeft: '6px solid #F5B800' }}>
+                <div className="glass" style={{ padding: '1.1rem', borderRadius: '16px', borderLeft: '6px solid #FEDF1E' }}>
                     <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current Plan</h3>
                     <p style={{ fontSize: '1.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{plan?.planId?.name || 'No Plan'}</p>
                     {plan?.status === 'Frozen' && (
@@ -493,7 +502,7 @@ const MemberDashboard = () => {
                                 onClick={openPaymentModal}
                                 disabled={paying}
                                 className="btn btn-primary"
-                                style={{ width: '100%', marginTop: '1rem', background: '#F5B800', color: '#000000', fontWeight: '900', border: '1.5px solid #DF9E00' }}
+                                style={{ width: '100%', marginTop: '1rem', background: '#FEDF1E', color: '#000000', fontWeight: '900', border: '1.5px solid #B9983D' }}
                             >
                                 {paying ? 'Processing...' : ` Pay Now`}
                             </button>
@@ -870,7 +879,25 @@ const MemberDashboard = () => {
                         }}
                     >
                         <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800' }}>Edit Profile &amp; Credentials</h3>
-                        <div><strong>Choose an avatar</strong><div style={{ display: 'flex', gap: 12, marginTop: 10 }}>{['https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn'].map((avatar) => <button type="button" key={avatar} onClick={() => setSelectedAvatar(avatar)} aria-label="Choose cartoon avatar" style={{ padding: 3, border: selectedAvatar === avatar ? '3px solid #F5B800' : '2px solid #ddd', borderRadius: '50%', background: 'white' }}><img src={avatar} alt="Cartoon avatar" width="54" height="54" /></button>)}</div></div>
+                        <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+                            <legend style={{ fontWeight: 700, marginBottom: 10 }}>Choose your avatar</legend>
+                            <div className="member-avatar-grid">
+                                {PROFILE_AVATARS.map(({ url, name, trait }) => (
+                                    <button
+                                        type="button"
+                                        key={url}
+                                        className={`member-avatar-option${selectedAvatar === url ? ' is-selected' : ''}`}
+                                        onClick={() => setSelectedAvatar(url)}
+                                        aria-pressed={selectedAvatar === url}
+                                        aria-label={`${name}, ${trait}`}
+                                    >
+                                        <img src={url} alt="" width="64" height="64" />
+                                        <span className="member-avatar-name">{name}</span>
+                                        <span className="member-avatar-trait">{trait}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </fieldset>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>
                             Your name, email, and mobile number are locked. Contact your gym admin to change them.
                         </p>

@@ -185,7 +185,7 @@ export function PartnerGymsList() {
       <View style={styles.header}>
         <View>
           <View style={styles.brandRow}>
-            <ShieldCheck size={14} color={theme.colors.primary} />
+            <ShieldCheck size={14} color={theme.colors.primaryText} />
             <Text style={styles.brandText}>FITPASS DIRECTORY</Text>
           </View>
           <Text style={styles.headerTitle}>Partner Gyms ({list.length})</Text>
@@ -289,12 +289,12 @@ export function PartnerGymsList() {
                     <Text style={styles.gridGymName} numberOfLines={1}>
                       {gym.name}
                     </Text>
-                    <ArrowUpRight size={13} color={theme.colors.primary} />
+                    <ArrowUpRight size={13} color={theme.colors.primaryText} />
                   </View>
 
                   {gym.address ? (
                     <View style={styles.gridAddressRow}>
-                      <MapPin size={11} color={theme.colors.primary} />
+                      <MapPin size={11} color={theme.colors.primaryText} />
                       <Text style={styles.gridAddressText} numberOfLines={1}>
                         {gym.address}
                       </Text>
@@ -307,7 +307,7 @@ export function PartnerGymsList() {
                       onPress={() => Linking.openURL(`tel:${gym.phone}`)}
                       activeOpacity={0.7}
                     >
-                      <Phone size={10} color={theme.colors.primary} />
+                      <Phone size={10} color={theme.colors.primaryText} />
                       <Text style={styles.callText} numberOfLines={1}>
                         {gym.phone}
                       </Text>
@@ -315,7 +315,7 @@ export function PartnerGymsList() {
                   ) : null}
 
                   <View style={styles.gridFooterPill}>
-                    <BadgeCheck size={10} color={theme.colors.primary} />
+                    <BadgeCheck size={10} color={theme.colors.primaryText} />
                     <Text style={styles.gridFooterPillText}>FITPASS VERIFIED</Text>
                   </View>
                 </View>
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 0.8,
   },
   headerTitle: {
@@ -456,14 +456,14 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.body,
     fontSize: 10,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
 
   gridFooterPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240,160,32,0.10)',
+    backgroundColor: 'rgba(254,223,30,0.10)',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 9,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 0.5,
   },
 
@@ -512,8 +512,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   locWarningBar: {
-    backgroundColor: 'rgba(240,160,32,0.08)',
-    borderColor: 'rgba(240,160,32,0.2)',
+    backgroundColor: 'rgba(254,223,30,0.08)',
+    borderColor: 'rgba(254,223,30,0.2)',
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 12,
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   locWarningText: {
     fontFamily: fontFamilies.body,
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     textAlign: 'center',
     fontWeight: '600',
   },

@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   totalBadge: {
-    backgroundColor: '#FFF4C6',
+    backgroundColor: '#FBF2D8',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   nodePointActive: {
-    borderColor: '#D9A900',
-    backgroundColor: '#FFF4C6',
+    borderColor: '#FEDF1E',
+    backgroundColor: '#FBF2D8',
   },
   nodePointCompleted: {
     borderColor: '#10B981',
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F1E7',
   },
   statusPillActive: {
-    backgroundColor: '#FFF4C6',
+    backgroundColor: '#FBF2D8',
   },
   statusPillCompleted: {
     backgroundColor: '#ECFDF5',

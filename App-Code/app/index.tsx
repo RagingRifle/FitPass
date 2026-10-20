@@ -5,7 +5,7 @@ import { theme } from '@/design-system/theme';
 export default function IndexScreen() {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={theme.colors.primary} />
+      <ActivityIndicator size="large" color={theme.colors.primaryText} />
     </View>
   );
 }

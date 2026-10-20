@@ -12,7 +12,7 @@ import API from '../services/api';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
-  primary:   '#F0A020',
+  primary:   '#FEDF1E',
   dark:      '#D9860F',
   success:   '#2E7D32',
   error:     '#C62828',

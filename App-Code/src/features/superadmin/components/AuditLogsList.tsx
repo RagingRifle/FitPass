@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   activeTabText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   controlsRow: {
     flexDirection: 'row',
@@ -400,10 +400,10 @@ const styles = StyleSheet.create({
   },
   sessionAction: {
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   sessionEntity: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     marginTop: 2,
   },

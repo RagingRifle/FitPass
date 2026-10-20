@@ -249,7 +249,7 @@ const Classes = () => {
                                             fontSize: '0.75rem',
                                             fontWeight: '700',
                                             background: 'rgba(240, 160, 32, 0.12)',
-                                            color: '#F0A020',
+                                            color: '#FEDF1E',
                                             padding: '0.2rem 0.6rem',
                                             borderRadius: '8px',
                                             border: '1px solid rgba(240, 160, 32, 0.25)'
@@ -361,7 +361,7 @@ const Classes = () => {
                                 <button 
                                     type="button" 
                                     onClick={handleSelectAllBranches} 
-                                    style={{ background: 'none', border: 'none', color: '#F0A020', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
+                                    style={{ background: 'none', border: 'none', color: '#FEDF1E', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                                 >
                                     {formData.branchIds.length === branches.length ? 'Clear All' : 'Select All'}
                                 </button>
@@ -387,7 +387,7 @@ const Classes = () => {
                                                 borderRadius: '8px',
                                                 cursor: 'pointer',
                                                 background: isChecked ? 'rgba(240, 160, 32, 0.15)' : 'rgba(255,255,255,0.02)',
-                                                border: isChecked ? '1px solid #F0A020' : '1px solid var(--border-color)',
+                                                border: isChecked ? '1px solid #FEDF1E' : '1px solid var(--border-color)',
                                                 color: isChecked ? '#FFFFFF' : 'var(--text-secondary)'
                                             }}
                                         >
@@ -395,7 +395,7 @@ const Classes = () => {
                                                 type="checkbox" 
                                                 checked={isChecked} 
                                                 onChange={() => handleBranchToggle(bId)}
-                                                style={{ accentColor: '#F0A020' }}
+                                                style={{ accentColor: '#FEDF1E' }}
                                             />
                                             <span style={{ fontWeight: isChecked ? 700 : 500 }}>{b.name}</span>
                                         </label>

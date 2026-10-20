@@ -20,7 +20,7 @@ export const SafeAreaWrapper: React.FC<SafeAreaWrapperProps> = ({
     return (
       <SafeAreaView style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </SafeAreaView>
     );
   }

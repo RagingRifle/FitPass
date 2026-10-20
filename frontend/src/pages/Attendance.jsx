@@ -117,8 +117,8 @@ const Attendance = () => {
                     style={{
                         background: activeTab === 'member_attendance' ? 'rgba(240, 160, 32, 0.15)' : 'none',
                         border: 'none',
-                        borderBottom: activeTab === 'member_attendance' ? '2px solid #F0A020' : '2px solid transparent',
-                        color: activeTab === 'member_attendance' ? '#F0A020' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'member_attendance' ? '2px solid #FEDF1E' : '2px solid transparent',
+                        color: activeTab === 'member_attendance' ? '#FEDF1E' : 'var(--text-secondary)',
                         fontWeight: '700',
                         fontSize: '0.9rem',
                         padding: '0.5rem 1rem',
@@ -135,8 +135,8 @@ const Attendance = () => {
                     style={{
                         background: activeTab === 'staff_duty' ? 'rgba(240, 160, 32, 0.15)' : 'none',
                         border: 'none',
-                        borderBottom: activeTab === 'staff_duty' ? '2px solid #F0A020' : '2px solid transparent',
-                        color: activeTab === 'staff_duty' ? '#F0A020' : 'var(--text-secondary)',
+                        borderBottom: activeTab === 'staff_duty' ? '2px solid #FEDF1E' : '2px solid transparent',
+                        color: activeTab === 'staff_duty' ? '#FEDF1E' : 'var(--text-secondary)',
                         fontWeight: '700',
                         fontSize: '0.9rem',
                         padding: '0.5rem 1rem',
@@ -365,7 +365,7 @@ const Attendance = () => {
                             <QRCodeCanvas value={dutyQRModal.qrData} size={220} level="H" />
                         </div>
                         <div style={{ marginTop: '1.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '800', background: 'rgba(240, 160, 32, 0.15)', color: '#F0A020', padding: '0.3rem 0.8rem', borderRadius: '8px' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '800', background: 'rgba(240, 160, 32, 0.15)', color: '#FEDF1E', padding: '0.3rem 0.8rem', borderRadius: '8px' }}>
                                 Date: {dutyQRModal.date}
                             </span>
                         </div>

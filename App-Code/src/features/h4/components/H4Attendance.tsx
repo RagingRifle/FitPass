@@ -130,7 +130,7 @@ export function H4Attendance() {
             <Typography variant="caption" style={{ color: '#0F172A', fontWeight: '700' }}>
               Sessions Remaining:
             </Typography>
-            <Typography variant="bodySm" style={{ color: theme.colors.primary, fontWeight: '900' }}>
+            <Typography variant="bodySm" style={{ color: theme.colors.primaryText, fontWeight: '900' }}>
               {passData?.member?.sessionsTotal ? `${passData?.member?.sessionsRemaining} / ${passData?.member?.sessionsTotal} Sessions` : 'Unlimited Access'}
             </Typography>
           </View>
@@ -245,7 +245,7 @@ export function H4Attendance() {
           <View style={styles.legendRow}>
             <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>Less</Typography>
             <View style={[styles.legendCell, { backgroundColor: '#C6D7DA' }]} />
-            <View style={[styles.legendCell, { backgroundColor: 'rgba(240, 160, 32, 0.4)' }]} />
+            <View style={[styles.legendCell, { backgroundColor: 'rgba(254, 223, 30, 0.4)' }]} />
             <View style={[styles.legendCell, { backgroundColor: theme.colors.primary }]} />
             <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>More</Typography>
             <Typography variant="caption" color="secondary" style={{ fontSize: 10, marginLeft: 'auto' }}>
@@ -328,20 +328,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 6,
   },
-  memberTagText: { color: theme.colors.primary, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
+  memberTagText: { color: theme.colors.primaryText, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   memberName: { color: theme.colors.text, fontWeight: '900', fontSize: 20 },
   countdownBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.3)',
+    borderColor: 'rgba(254, 223, 30, 0.3)',
   },
-  countdownText: { color: theme.colors.primary, fontWeight: '900', fontSize: 12 },
+  countdownText: { color: theme.colors.primaryText, fontWeight: '900', fontSize: 12 },
 
   qrWrapper: { alignItems: 'center', marginVertical: 4 },
   qrWhiteBox: {
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     flexShrink: 0,
   },
-  pinText: { color: theme.colors.primary, fontWeight: '900', letterSpacing: 1, fontSize: 13 },
+  pinText: { color: theme.colors.primaryText, fontWeight: '900', letterSpacing: 1, fontSize: 13 },
 
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   markBtn: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 14,
   },
-  scanBtnText: { color: theme.colors.primary, fontWeight: '800', fontSize: 13 },
+  scanBtnText: { color: theme.colors.primaryText, fontWeight: '800', fontSize: 13 },
 
   successBanner: {
     flexDirection: 'row',
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heatmapHeader: { flexDirection: 'column', alignItems: 'flex-start', gap: 5, marginBottom: 2 },
-  heatmapCount: { color: theme.colors.primary, fontWeight: '800', fontSize: 11, lineHeight: 15, marginLeft: 24, flexShrink: 1 },
+  heatmapCount: { color: theme.colors.primaryText, fontWeight: '800', fontSize: 11, lineHeight: 15, marginLeft: 24, flexShrink: 1 },
   gridMatrix: { flexDirection: 'row', gap: 4, paddingVertical: 4 },
   gridColumn: { gap: 4 },
   gridCell: {

@@ -118,7 +118,7 @@ export const H4BranchControlHub: React.FC = () => {
       <View style={styles.bannerCard}>
         <View style={styles.bannerLeft}>
           <View style={styles.badgePill}>
-            <Sparkles size={12} color={theme.colors.primary} />
+            <Sparkles size={12} color={theme.colors.primaryText} />
             <Typography variant="caption" style={styles.badgePillText}>
               PHYSICAL BRANCH CONTROL
             </Typography>
@@ -143,7 +143,7 @@ export const H4BranchControlHub: React.FC = () => {
 
       {/* Branch List */}
       {isLoading ? (
-        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginVertical: 30 }} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} style={{ marginVertical: 30 }} />
       ) : filtered.length === 0 ? (
         <View style={styles.emptyCard}>
           <Typography variant="bodySm" color="secondary">No H4 branches found matching your search query.</Typography>
@@ -157,7 +157,7 @@ export const H4BranchControlHub: React.FC = () => {
                 {/* Header Row */}
                 <View style={styles.cardTopRow}>
                   <View style={styles.branchIconWrapper}>
-                    <Building2 size={22} color={theme.colors.primary} />
+                    <Building2 size={22} color={theme.colors.primaryText} />
                   </View>
                   <View style={styles.branchMainInfo}>
                     <View style={styles.titleStatusRow}>
@@ -182,7 +182,7 @@ export const H4BranchControlHub: React.FC = () => {
                     style={styles.qrIconWrapper}
                     activeOpacity={0.7}
                   >
-                    <QrCode color={theme.colors.primary} size={18} />
+                    <QrCode color={theme.colors.primaryText} size={18} />
                   </TouchableOpacity>
                 </View>
 
@@ -191,7 +191,7 @@ export const H4BranchControlHub: React.FC = () => {
                 {/* All Detailed Metadata Fields */}
                 <View style={styles.detailSection}>
                   <View style={styles.iconInfoRow}>
-                    <User size={14} color={theme.colors.primary} />
+                    <User size={14} color={theme.colors.primaryText} />
                     <Typography variant="bodySm" style={styles.detailTextBold}>
                       Branch Manager: <Typography variant="bodySm" color="secondary">{b.managerName || 'Not Assigned'}</Typography>
                     </Typography>
@@ -214,7 +214,7 @@ export const H4BranchControlHub: React.FC = () => {
                   {/* Members & Revenue Stats Badges */}
                   <View style={styles.statsMetricsRow}>
                     <View style={styles.statMetric}>
-                      <Users size={14} color={theme.colors.primary} />
+                      <Users size={14} color={theme.colors.primaryText} />
                       <Typography variant="caption" color="primary">
                         {b.memberCount || 0} Members
                       </Typography>
@@ -235,7 +235,7 @@ export const H4BranchControlHub: React.FC = () => {
                     onPress={() => setEditingBranch(b)}
                     activeOpacity={0.7}
                   >
-                    <Edit3 size={14} color={theme.colors.primary} />
+                    <Edit3 size={14} color={theme.colors.primaryText} />
                     <Typography variant="caption" style={styles.editBtnText}>Edit Branch</Typography>
                   </TouchableOpacity>
 
@@ -373,13 +373,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgePillText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 10,
     letterSpacing: 0.8,
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -487,12 +487,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingVertical: 8,
     borderRadius: 10,
   },
   editBtnText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 12,
   },
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },

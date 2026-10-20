@@ -206,7 +206,7 @@ export default function GymProfileDiscovery() {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: '#A39686' }}>
-        <div style={{ fontSize: '18px', fontWeight: '600', color: '#F0A020' }}>Loading Gym Discovery Profile...</div>
+        <div style={{ fontSize: '18px', fontWeight: '600', color: '#FEDF1E' }}>Loading Gym Discovery Profile...</div>
       </div>
     );
   }
@@ -237,8 +237,8 @@ export default function GymProfileDiscovery() {
               borderRadius: '20px',
               fontWeight: 'bold',
               background: profile.status === 'Approved' ? 'rgba(46, 125, 50, 0.2)' : profile.status === 'Rejected' ? 'rgba(198, 40, 40, 0.2)' : 'rgba(240, 160, 32, 0.2)',
-              color: profile.status === 'Approved' ? '#4CAF50' : profile.status === 'Rejected' ? '#FF5252' : '#F0A020',
-              border: `1px solid ${profile.status === 'Approved' ? '#4CAF50' : profile.status === 'Rejected' ? '#FF5252' : '#F0A020'}`
+              color: profile.status === 'Approved' ? '#4CAF50' : profile.status === 'Rejected' ? '#FF5252' : '#FEDF1E',
+              border: `1px solid ${profile.status === 'Approved' ? '#4CAF50' : profile.status === 'Rejected' ? '#FF5252' : '#FEDF1E'}`
             }}>
               ● Status: {profile.status || 'Pending Review'}
             </span>
@@ -258,7 +258,7 @@ export default function GymProfileDiscovery() {
               fontWeight: 'bold',
               cursor: 'pointer',
               border: 'none',
-              background: activeTab === 'profile' ? '#F0A020' : '#3A3025',
+              background: activeTab === 'profile' ? '#FEDF1E' : '#3A3025',
               color: activeTab === 'profile' ? '#231D14' : '#A39686'
             }}
           >
@@ -272,7 +272,7 @@ export default function GymProfileDiscovery() {
               fontWeight: 'bold',
               cursor: 'pointer',
               border: 'none',
-              background: activeTab === 'posts' ? '#F0A020' : '#3A3025',
+              background: activeTab === 'posts' ? '#FEDF1E' : '#3A3025',
               color: activeTab === 'posts' ? '#231D14' : '#A39686'
             }}
           >
@@ -319,7 +319,7 @@ export default function GymProfileDiscovery() {
             
             {/* Visual Branding Section */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Visual Branding & Covers</h3>
+              <h3 style={{ fontSize: '16px', color: '#FEDF1E', marginBottom: '16px' }}> Visual Branding & Covers</h3>
               
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '13px', color: '#A39686', marginBottom: '6px' }}>Cover Image URL (Hero Banner)</label>
@@ -345,7 +345,7 @@ export default function GymProfileDiscovery() {
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', background: '#231D14', border: '1px solid #3A3025', color: '#FFF' }}
                 />
                 {profile.logoUrl && (
-                  <img src={profile.logoUrl} alt="Logo Preview" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', marginTop: '8px', border: '2px solid #F0A020' }} />
+                  <img src={profile.logoUrl} alt="Logo Preview" style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', marginTop: '8px', border: '2px solid #FEDF1E' }} />
                 )}
               </div>
 
@@ -374,7 +374,7 @@ export default function GymProfileDiscovery() {
 
             {/* Contact & Location Section */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Contact & Map Location</h3>
+              <h3 style={{ fontSize: '16px', color: '#FEDF1E', marginBottom: '16px' }}> Contact & Map Location</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
                 <div>
@@ -465,7 +465,7 @@ export default function GymProfileDiscovery() {
 
             {/* Operating Schedule & Badges */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Operating Schedule & Badges</h3>
+              <h3 style={{ fontSize: '16px', color: '#FEDF1E', marginBottom: '16px' }}> Operating Schedule & Badges</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
                 <div>
@@ -517,7 +517,7 @@ export default function GymProfileDiscovery() {
 
             {/* Amenities & Equipment Checklist */}
             <div style={{ background: '#2D251C', padding: '20px', borderRadius: '12px', border: '1px solid #3A3025', gridColumn: '1 / -1' }}>
-              <h3 style={{ fontSize: '16px', color: '#F0A020', marginBottom: '16px' }}> Detailed Amenities & Equipment Checklist</h3>
+              <h3 style={{ fontSize: '16px', color: '#FEDF1E', marginBottom: '16px' }}> Detailed Amenities & Equipment Checklist</h3>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div>
@@ -536,7 +536,7 @@ export default function GymProfileDiscovery() {
                             fontSize: '12px',
                             border: 'none',
                             cursor: 'pointer',
-                            background: isSelected ? '#F0A020' : '#231D14',
+                            background: isSelected ? '#FEDF1E' : '#231D14',
                             color: isSelected ? '#231D14' : '#A39686',
                             fontWeight: isSelected ? 'bold' : 'normal'
                           }}
@@ -564,7 +564,7 @@ export default function GymProfileDiscovery() {
                             fontSize: '12px',
                             border: 'none',
                             cursor: 'pointer',
-                            background: isSelected ? '#F0A020' : '#231D14',
+                            background: isSelected ? '#FEDF1E' : '#231D14',
                             color: isSelected ? '#231D14' : '#A39686',
                             fontWeight: isSelected ? 'bold' : 'normal'
                           }}
@@ -587,7 +587,7 @@ export default function GymProfileDiscovery() {
               style={{
                 padding: '14px 28px',
                 borderRadius: '8px',
-                background: '#F0A020',
+                background: '#FEDF1E',
                 color: '#231D14',
                 fontWeight: 'bold',
                 fontSize: '16px',
@@ -611,7 +611,7 @@ export default function GymProfileDiscovery() {
               style={{
                 padding: '10px 20px',
                 borderRadius: '8px',
-                background: '#F0A020',
+                background: '#FEDF1E',
                 color: '#231D14',
                 fontWeight: 'bold',
                 border: 'none',
@@ -645,7 +645,7 @@ export default function GymProfileDiscovery() {
                         padding: '3px 8px',
                         borderRadius: '12px',
                         background: post.status === 'Approved' ? 'rgba(46,125,50,0.2)' : post.status === 'Rejected' ? 'rgba(198,40,40,0.2)' : 'rgba(240,160,32,0.2)',
-                        color: post.status === 'Approved' ? '#4CAF50' : post.status === 'Rejected' ? '#FF5252' : '#F0A020'
+                        color: post.status === 'Approved' ? '#4CAF50' : post.status === 'Rejected' ? '#FF5252' : '#FEDF1E'
                       }}>
                         {post.status}
                       </span>
@@ -706,7 +706,7 @@ export default function GymProfileDiscovery() {
             maxHeight: '90vh',
             overflowY: 'auto'
           }}>
-            <h2 style={{ fontSize: '20px', color: '#F0A020', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '20px', color: '#FEDF1E', marginBottom: '16px' }}>
               {editingPostId ? 'Edit Gym Post' : 'Create New Gym Post'}
             </h2>
 
@@ -771,7 +771,7 @@ export default function GymProfileDiscovery() {
                 <button
                   type="submit"
                   disabled={saving}
-                  style={{ padding: '10px 20px', borderRadius: '6px', background: '#F0A020', color: '#231D14', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                  style={{ padding: '10px 20px', borderRadius: '6px', background: '#FEDF1E', color: '#231D14', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
                 >
                   {saving ? 'Submitting...' : 'Submit Post for Review'}
                 </button>

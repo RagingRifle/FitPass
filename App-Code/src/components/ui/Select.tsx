@@ -104,7 +104,7 @@ export const Select: React.FC<SelectProps> = ({
                     >
                       {item.label}
                     </Text>
-                    {isSelected && <Check color={theme.colors.primary} size={18} />}
+                    {isSelected && <Check color={theme.colors.primaryText} size={18} />}
                   </TouchableOpacity>
                 );
               }}
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     ...theme.typography.bodySm,
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
   },
   optionsList: {

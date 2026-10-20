@@ -29,14 +29,14 @@ export const H4ManagementHub: React.FC = () => {
     {
       title: 'Gym Management',
       items: [
-        { key: 'profile', name: 'Gym Profile', subtitle: 'Settings & Specs', icon: <User size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'members', name: 'Members', subtitle: 'Roster & Passports', icon: <Users size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'leads', name: 'Leads', subtitle: 'Prospect Inquiries', icon: <Target size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'plans', name: 'Plans', subtitle: 'Tiers & Pricing', icon: <Package size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'classes', name: 'Classes', subtitle: 'Schedules & Slots', icon: <Calendar size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'assessments', name: 'Assessments', subtitle: 'Fitness Tests', icon: <Award size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'equipments', name: 'Equipments', subtitle: 'Assets & Repair', icon: <Wrench size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
-        { key: 'staff', name: 'Staff', subtitle: 'Roles & Access', icon: <ShieldAlert size={20} color={theme.colors.primary} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
+        { key: 'profile', name: 'Gym Profile', subtitle: 'Settings & Specs', icon: <User size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'members', name: 'Members', subtitle: 'Roster & Passports', icon: <Users size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'leads', name: 'Leads', subtitle: 'Prospect Inquiries', icon: <Target size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'plans', name: 'Plans', subtitle: 'Tiers & Pricing', icon: <Package size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'classes', name: 'Classes', subtitle: 'Schedules & Slots', icon: <Calendar size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'assessments', name: 'Assessments', subtitle: 'Fitness Tests', icon: <Award size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'equipments', name: 'Equipments', subtitle: 'Assets & Repair', icon: <Wrench size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
+        { key: 'staff', name: 'Staff', subtitle: 'Roles & Access', icon: <ShieldAlert size={20} color={theme.colors.primaryText} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
       ],
     },
     {
@@ -44,7 +44,7 @@ export const H4ManagementHub: React.FC = () => {
       items: [
         { key: 'payments', name: 'Payments', subtitle: 'Revenue Logs', icon: <CreditCard size={20} color={theme.colors.success} />, bgColor: 'rgba(46, 125, 50, 0.12)' },
         { key: 'expenses', name: 'Expenses', subtitle: 'Bills & Maintenance', icon: <DollarSign size={20} color={theme.colors.error} />, bgColor: 'rgba(198, 40, 40, 0.12)' },
-        { key: 'pending_dues', name: 'Pending Dues', subtitle: 'Outstanding Balances', icon: <AlertCircle size={20} color={theme.colors.warning} />, bgColor: 'rgba(240, 160, 32, 0.12)' },
+        { key: 'pending_dues', name: 'Pending Dues', subtitle: 'Outstanding Balances', icon: <AlertCircle size={20} color={theme.colors.warning} />, bgColor: 'rgba(254, 223, 30, 0.12)' },
         { key: 'attendance', name: 'Attendance', subtitle: 'Member Scans', icon: <Scan size={20} color={theme.colors.info} />, bgColor: 'rgba(25, 118, 210, 0.12)' },
         { key: 'trainer_attendance', name: 'Trainer Attendance', subtitle: 'Duty Logs', icon: <MapPin size={20} color={theme.colors.info} />, bgColor: 'rgba(25, 118, 210, 0.12)' },
         { key: 'payroll', name: 'Payroll', subtitle: 'Salaries & Payouts', icon: <ClipboardList size={20} color={theme.colors.error} />, bgColor: 'rgba(198, 40, 40, 0.12)' },

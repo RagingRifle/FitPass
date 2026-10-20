@@ -31,6 +31,7 @@ import {
   useSessionStatus,
 } from '@/features/fitpass/api/fitpass.api';
 import { useAuth } from '@/features/auth';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FitPassPlansScreen() {
   const router = useRouter();
@@ -72,6 +73,7 @@ export default function FitPassPlansScreen() {
   };
 
   return (
+    <SafeAreaView style={styles.safeRoot} edges={['top']}>
     <ScrollView
       style={styles.root}
       contentContainerStyle={styles.content}
@@ -79,8 +81,7 @@ export default function FitPassPlansScreen() {
     >
       {/* Top Custom Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          
+          <View style={{ flex: 1 }}>
           <Text style={styles.headerEyebrow}>FITPASS MEMBERSHIP</Text>
           <Text style={styles.headerTitle}>Choose your next pass</Text>
         </View>
@@ -95,7 +96,7 @@ export default function FitPassPlansScreen() {
 
       {sessionStatus?.planName ? (
         <View style={styles.currentPassBox}>
-          <Activity size={16} color={theme.colors.primary} />
+          <Activity size={16} color={theme.colors.primaryText} />
           <View style={{ flex: 1 }}>
             <Text style={styles.currentPassText}>
               Current pass:{' '}
@@ -171,7 +172,7 @@ export default function FitPassPlansScreen() {
               </View>
 
               <View style={styles.valueBar}>
-                <Activity size={14} color={theme.colors.primary} />
+                <Activity size={14} color={theme.colors.primaryText} />
                 <Text style={styles.valueText}>
                   INR {costPerSession} per session | Save up to 50% vs single drop-ins
                 </Text>
@@ -212,7 +213,7 @@ export default function FitPassPlansScreen() {
 
       {/* Checkout mode stays explicit until the native Razorpay adapter is enabled. */}
       <View style={styles.reassuranceBox}>
-        <ShieldCheck size={18} color={theme.colors.primary} />
+        <ShieldCheck size={18} color={theme.colors.primaryText} />
         <Text style={styles.reassuranceText}>
           Demo checkout | No real payment is collected
         </Text>
@@ -229,7 +230,7 @@ export default function FitPassPlansScreen() {
           <View style={styles.payModalCard}>
             <View style={styles.payModalHeader}>
               <View style={styles.razorpayBrandRow}>
-                <ShieldCheck size={20} color={theme.colors.primary} />
+                <ShieldCheck size={20} color={theme.colors.primaryText} />
                 <Text style={styles.razorpayTitle}>FitPass demo checkout</Text>
               </View>
               <TouchableOpacity onPress={() => setIsPayModalOpen(false)}>
@@ -251,7 +252,7 @@ export default function FitPassPlansScreen() {
             )}
 
             <View style={styles.testModeNotice}>
-              <Lock size={14} color={theme.colors.primary} />
+              <Lock size={14} color={theme.colors.primaryText} />
               <Text style={styles.testModeText}>
                 This is a simulated payment. No card or bank details are needed and no money is charged.
               </Text>
@@ -289,35 +290,37 @@ export default function FitPassPlansScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeRoot: { flex: 1, backgroundColor: '#171713' },
   root: { flex: 1, backgroundColor: theme.colors.background },
-  content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 110, gap: 16 },
+  content: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 120, gap: 16 },
 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#171713', marginHorizontal: -20, marginTop: -16, paddingHorizontal: 20, paddingVertical: 18, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#171713', marginHorizontal: -20, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 18, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
   badgeWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.25)',
+    borderColor: 'rgba(254, 223, 30, 0.25)',
   },
   badgeText: {
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 0.8,
   },
   headerEyebrow: {
-    color: '#F5B800',
+    color: '#FEDF1E',
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '900',
@@ -391,8 +394,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#4CAF50',
   },
-  renewPill: { backgroundColor: '#FFF4C6', borderColor: '#F0E1A8' },
-  renewDot: { backgroundColor: '#D9A900' },
+  renewPill: { backgroundColor: '#FBF2D8', borderColor: '#F0E1A8' },
+  renewDot: { backgroundColor: '#FEDF1E' },
   renewPillText: { color: '#5F4A00' },
 
   // Plan Cards
@@ -407,7 +410,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   planCardPopular: {
-    borderColor: '#D9A900',
+    borderColor: '#FEDF1E',
     borderWidth: 1.5,
   },
   planCardCurrent: {
@@ -430,7 +433,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '800',
-    color: '#F5B800',
+    color: '#FEDF1E',
     letterSpacing: 0.5,
   },
 
@@ -490,6 +493,7 @@ const styles = StyleSheet.create({
   valueBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
     backgroundColor: '#FFF8DF',
     paddingHorizontal: 12,
@@ -499,10 +503,15 @@ const styles = StyleSheet.create({
     borderColor: '#F0E1A8',
   },
   valueText: {
+    flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
     fontFamily: fontFamilies.body,
     fontSize: 12,
     fontWeight: '700',
     color: '#5F4A00',
+    lineHeight: 17,
+    textAlign: 'center',
   },
 
   featureList: { gap: 10 },
@@ -530,7 +539,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 15,
     fontWeight: '800',
-    color: '#F5B800',
+    color: '#FEDF1E',
     letterSpacing: 0.3,
   },
 
@@ -596,7 +605,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     letterSpacing: 0.8,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -610,7 +619,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 22,
     fontWeight: '900',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   summaryDetail: {
     fontFamily: fontFamilies.body,
@@ -642,7 +651,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
     height: 48,
     borderRadius: 14,
   },

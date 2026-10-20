@@ -27,7 +27,7 @@ export function H4PaymentHistory() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerGroup}>
           <View style={styles.headerIconWrap}>
-            <Award size={18} color="#F5B800" strokeWidth={2.5} />
+            <Award size={18} color="#735B00" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="h2" style={styles.headerTitle}>Renewals & Receipts</Typography>
@@ -47,7 +47,7 @@ export function H4PaymentHistory() {
             {items.map((p) => (
               <Card key={p.id} style={styles.row}>
                 <View style={styles.icon}>
-                  <CreditCard size={16} color="#F5B800" />
+                  <CreditCard size={16} color="#735B00" />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Typography variant="bodySm" style={styles.planNameText}>
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },

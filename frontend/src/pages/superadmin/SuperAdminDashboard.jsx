@@ -20,7 +20,7 @@ const formatCurrency = (v) => {
     return `₹${v}`;
 };
 
-const AMBER_COLORS = ['#F0A020', '#D9860F', '#a78bfa', '#34d399', '#f43f5e', '#60a5fa'];
+const AMBER_COLORS = ['#FEDF1E', '#D9860F', '#a78bfa', '#34d399', '#f43f5e', '#60a5fa'];
 
 const CustomTooltipRevenue = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -30,7 +30,7 @@ const CustomTooltipRevenue = ({ active, payload, label }) => {
             padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
         }}>
             <p style={{ color: '#A39686', fontSize: 12, marginBottom: 4 }}>{label}</p>
-            <p style={{ color: '#F0A020', fontWeight: 700, fontSize: 15 }}>{formatCurrency(payload[0].value)}</p>
+            <p style={{ color: '#FEDF1E', fontWeight: 700, fontSize: 15 }}>{formatCurrency(payload[0].value)}</p>
         </div>
     );
 };
@@ -43,14 +43,14 @@ const CustomTooltipBar = ({ active, payload, label }) => {
             padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
         }}>
             <p style={{ color: '#A39686', fontSize: 12, marginBottom: 4 }}>{label}</p>
-            <p style={{ color: '#F0A020', fontWeight: 700, fontSize: 15 }}>{formatCurrency(payload[0].value)}</p>
+            <p style={{ color: '#FEDF1E', fontWeight: 700, fontSize: 15 }}>{formatCurrency(payload[0].value)}</p>
         </div>
     );
 };
 
 // ─── Quick Action Cards ───────────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-    { label: 'Partner Gyms', desc: 'Manage gym network', icon: Building2, path: '/superadmin/gyms', color: '#F0A020' },
+    { label: 'Partner Gyms', desc: 'Manage gym network', icon: Building2, path: '/superadmin/gyms', color: '#FEDF1E' },
     { label: 'Fit-Prime Plans', desc: 'Subscription plans', icon: Package, path: '/superadmin/plans', color: '#D9860F' },
     { label: 'FitPass Members', desc: 'Pass holder roster', icon: Users, path: '/superadmin/fitpass-members', color: '#a78bfa' },
     { label: 'FitPass Reports', desc: 'Analytics & insights', icon: Zap, path: '/superadmin/fitpass-analytics', color: '#34d399' },
@@ -112,7 +112,7 @@ function SuperAdminDashboard() {
     const kpiCards = [
         {
             title: 'Total Members', value: stats?.totalMembers ?? 0,
-            icon: <Users size={20} />, color: '#F0A020',
+            icon: <Users size={20} />, color: '#FEDF1E',
             sub: 'Across all gyms'
         },
         {
@@ -147,7 +147,7 @@ function SuperAdminDashboard() {
         },
         {
             title: 'Net Profit', value: formatCurrency(stats?.monthlyProfit),
-            icon: <TrendingUp size={20} />, color: '#F0A020',
+            icon: <TrendingUp size={20} />, color: '#FEDF1E',
             sub: 'Revenue − Expenses'
         },
     ];
@@ -285,7 +285,7 @@ function SuperAdminDashboard() {
                                     {card.icon}
                                 </div>
                             </div>
-                            <div className="kpi-value" style={{ color: card.color === '#F0A020' ? 'var(--text-primary)' : 'var(--text-primary)' }}>
+                            <div className="kpi-value" style={{ color: card.color === '#FEDF1E' ? 'var(--text-primary)' : 'var(--text-primary)' }}>
                                 {card.value}
                             </div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
@@ -319,15 +319,15 @@ function SuperAdminDashboard() {
                             <AreaChart data={revenueTrendData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="colorAmtSA" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#F0A020" stopOpacity={0.25} />
-                                        <stop offset="95%" stopColor="#F0A020" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#FEDF1E" stopOpacity={0.25} />
+                                        <stop offset="95%" stopColor="#FEDF1E" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(58,48,37,0.8)" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#A39686', fontSize: 11, fontWeight: 500 }} dy={10} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#A39686', fontSize: 11, fontWeight: 500 }} dx={-5} tickFormatter={v => `₹${v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v}`} />
                                 <Tooltip content={<CustomTooltipRevenue />} />
-                                <Area type="monotone" dataKey="amount" stroke="#F0A020" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAmtSA)" dot={{ r: 4, fill: '#F0A020', stroke: '#2D251C', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#F0A020' }} />
+                                <Area type="monotone" dataKey="amount" stroke="#FEDF1E" strokeWidth={2.5} fillOpacity={1} fill="url(#colorAmtSA)" dot={{ r: 4, fill: '#FEDF1E', stroke: '#2D251C', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#FEDF1E' }} />
                             </AreaChart>
                         </ResponsiveContainer>
                     ) : (
@@ -387,7 +387,7 @@ function SuperAdminDashboard() {
                                     {totalCollections > 0 && (
                                         <div style={{ background: 'rgba(240, 160, 32, 0.1)', border: '1px solid rgba(240, 160, 32, 0.25)', borderRadius: '8px', padding: '0.35rem 0.75rem', textAlign: 'right' }}>
                                             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total</div>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#F0A020' }}>{formatCurrency(totalCollections)}</div>
+                                            <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#FEDF1E' }}>{formatCurrency(totalCollections)}</div>
                                         </div>
                                     )}
                                 </div>
@@ -412,7 +412,7 @@ function SuperAdminDashboard() {
                                                                     padding: '10px 14px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
                                                                 }}>
                                                                     <p style={{ color: '#A39686', fontSize: 12, marginBottom: 4, fontWeight: 600 }}>{item.name}</p>
-                                                                    <p style={{ color: '#F0A020', fontWeight: 800, fontSize: 14, margin: 0 }}>
+                                                                    <p style={{ color: '#FEDF1E', fontWeight: 800, fontSize: 14, margin: 0 }}>
                                                                         {formatCurrency(item.value)} <span style={{ fontSize: 11, color: '#6D6154', fontWeight: 500 }}>({pct}%)</span>
                                                                     </p>
                                                                 </div>
@@ -478,7 +478,7 @@ function SuperAdminDashboard() {
                         {[
                             { label: 'Active Members', value: stats?.activeMembers ?? 0, total: stats?.totalMembers ?? 1, color: '#2E7D32' },
                             { label: 'Expired Members', value: stats?.expiredMembers ?? 0, total: stats?.totalMembers ?? 1, color: '#C62828' },
-                            { label: 'Expiring Soon', value: stats?.expiringSoonCount ?? 0, total: stats?.activeMembers ?? 1, color: '#F0A020' },
+                            { label: 'Expiring Soon', value: stats?.expiringSoonCount ?? 0, total: stats?.activeMembers ?? 1, color: '#FEDF1E' },
                             { label: 'New This Month', value: stats?.newMembersThisMonth ?? 0, total: stats?.totalMembers ?? 1, color: '#a78bfa' },
                         ].map((item, idx) => {
                             const pct = item.total ? Math.min(100, Math.round((item.value / item.total) * 100)) : 0;
@@ -573,7 +573,7 @@ function SuperAdminDashboard() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                                                 <div style={{
                                                     width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                                                    background: 'linear-gradient(135deg, #F0A020, #D9860F)',
+                                                    background: 'linear-gradient(135deg, #FEDF1E, #D9860F)',
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                     fontWeight: 800, fontSize: '0.8rem', color: '#231D14'
                                                 }}>
@@ -598,7 +598,7 @@ function SuperAdminDashboard() {
                                                 fontSize: '0.7rem', fontWeight: 700, padding: '0.25rem 0.65rem',
                                                 borderRadius: 999, display: 'inline-block',
                                                 background: log.type === 'FitPrime' ? 'rgba(240,160,32,0.15)' : 'rgba(25,118,210,0.15)',
-                                                color: log.type === 'FitPrime' ? '#F0A020' : '#60a5fa',
+                                                color: log.type === 'FitPrime' ? '#FEDF1E' : '#60a5fa',
                                                 border: `1px solid ${log.type === 'FitPrime' ? 'rgba(240,160,32,0.25)' : 'rgba(96,165,250,0.25)'}`,
                                                 textTransform: 'uppercase', letterSpacing: '0.05em'
                                             }}>

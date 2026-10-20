@@ -568,7 +568,7 @@ const Settings = () => {
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '0.5rem',
                                     padding: '0.75rem 1.75rem', fontWeight: 700, fontSize: '0.9rem',
-                                    background: 'linear-gradient(135deg, #F0A020 0%, #D9860F 100%)',
+                                    background: 'linear-gradient(135deg, #FEDF1E 0%, #D9860F 100%)',
                                     color: '#FFFFFF', border: 'none', borderRadius: '10px'
                                 }}
                             >

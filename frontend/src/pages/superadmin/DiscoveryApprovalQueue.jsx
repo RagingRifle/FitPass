@@ -78,7 +78,7 @@ export default function DiscoveryApprovalQueue() {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: '#A39686' }}>
-        <div style={{ fontSize: '18px', color: '#F0A020', fontWeight: 'bold' }}>Loading FitPass Approval Queue...</div>
+        <div style={{ fontSize: '18px', color: '#FEDF1E', fontWeight: 'bold' }}>Loading FitPass Approval Queue...</div>
       </div>
     );
   }
@@ -99,7 +99,7 @@ export default function DiscoveryApprovalQueue() {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#FFF8ED' }}>
              FitPass Discovery Approval Queue
           </h1>
           <p style={{ color: '#A39686', fontSize: '14px', marginTop: '6px', marginBottom: 0 }}>
@@ -116,7 +116,7 @@ export default function DiscoveryApprovalQueue() {
               fontWeight: 'bold',
               border: 'none',
               cursor: 'pointer',
-              background: activeSubTab === 'profiles' ? '#F0A020' : '#3A3025',
+              background: activeSubTab === 'profiles' ? '#FEDF1E' : '#3A3025',
               color: activeSubTab === 'profiles' ? '#231D14' : '#A39686'
             }}
           >
@@ -131,7 +131,7 @@ export default function DiscoveryApprovalQueue() {
               fontWeight: 'bold',
               border: 'none',
               cursor: 'pointer',
-              background: activeSubTab === 'posts' ? '#F0A020' : '#3A3025',
+              background: activeSubTab === 'posts' ? '#FEDF1E' : '#3A3025',
               color: activeSubTab === 'posts' ? '#231D14' : '#A39686'
             }}
           >
@@ -165,7 +165,7 @@ export default function DiscoveryApprovalQueue() {
                     <img
                       src={p.logoUrl || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=80&auto=format&fit=crop&q=60"}
                       alt={p.gym?.name}
-                      style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover', border: '2px solid #F0A020' }}
+                      style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover', border: '2px solid #FEDF1E' }}
                     />
                     <div>
                       <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 4px 0', color: '#FFF' }}>
@@ -174,7 +174,7 @@ export default function DiscoveryApprovalQueue() {
                       <div style={{ fontSize: '13px', color: '#A39686' }}>
                          {p.city || 'Chennai'} | {p.address} | Owner: {p.ownerName || 'N/A'}
                       </div>
-                      <div style={{ fontSize: '13px', color: '#F0A020', marginTop: '4px' }}>
+                      <div style={{ fontSize: '13px', color: '#FEDF1E', marginTop: '4px' }}>
                         Hours: {p.openingTime} - {p.closingTime}
                       </div>
                     </div>
@@ -232,7 +232,7 @@ export default function DiscoveryApprovalQueue() {
                     <img src={post.images[0]} alt={post.title} style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
                   )}
                   <div style={{ padding: '16px' }}>
-                    <div style={{ fontSize: '12px', color: '#F0A020', fontWeight: 'bold', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '12px', color: '#FEDF1E', fontWeight: 'bold', marginBottom: '4px' }}>
                       Gym: {post.gym?.name}
                     </div>
                     <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 6px 0', color: '#FFF' }}>{post.title}</h3>

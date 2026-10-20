@@ -89,6 +89,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   iconWrapActive: {
-    backgroundColor: 'rgba(240, 160, 32, 0.14)',
+    backgroundColor: 'rgba(254, 223, 30, 0.14)',
   },
 });

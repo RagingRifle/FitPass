@@ -45,7 +45,7 @@ export const SuperAdminDashboard: React.FC = () => {
     backgroundGradientFrom: theme.colors.card,
     backgroundGradientTo: theme.colors.card,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(240, 160, 32, ${opacity})`,
+    color: (opacity = 1) => `rgba(254, 223, 30, ${opacity})`,
     labelColor: (opacity = 1) => theme.colors.textSecondary,
     style: {
       borderRadius: 16,
@@ -119,7 +119,7 @@ export const SuperAdminDashboard: React.FC = () => {
       <View style={styles.bannerContainer}>
         <View style={styles.bannerLeft}>
           <View style={styles.badgePill}>
-            {isFitPass ? <Activity size={12} color={theme.colors.primary} /> : <ShieldCheck size={12} color={theme.colors.primary} />}
+            {isFitPass ? <Activity size={12} color={theme.colors.primaryText} /> : <ShieldCheck size={12} color={theme.colors.primaryText} />}
             <Typography variant="caption" style={styles.badgePillText}>
               {isFitPass ? 'FITPASS NETWORK ANALYTICS' : 'H4 EXECUTIVE ANALYTICS'}
             </Typography>
@@ -141,8 +141,8 @@ export const SuperAdminDashboard: React.FC = () => {
               <View style={styles.kpiCard}>
                 <View style={styles.kpiHeader}>
                   <Typography variant="caption" color="secondary" style={styles.kpiTitle}>SUBSCRIBERS</Typography>
-                  <View style={[styles.iconBox, { backgroundColor: 'rgba(240, 160, 32, 0.12)' }]}>
-                    <Users size={16} color={theme.colors.primary} />
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(254, 223, 30, 0.12)' }]}>
+                    <Users size={16} color={theme.colors.primaryText} />
                   </View>
                 </View>
                 <Typography variant="h2" style={styles.kpiValue}>{fpSubscribers}</Typography>
@@ -203,8 +203,8 @@ export const SuperAdminDashboard: React.FC = () => {
               <View style={styles.kpiCard}>
                 <View style={styles.kpiHeader}>
                   <Typography variant="caption" color="secondary" style={styles.kpiTitle}>MEMBERSHIP</Typography>
-                  <View style={[styles.iconBox, { backgroundColor: 'rgba(240, 160, 32, 0.12)' }]}>
-                    <Users size={16} color={theme.colors.primary} />
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(254, 223, 30, 0.12)' }]}>
+                    <Users size={16} color={theme.colors.primaryText} />
                   </View>
                 </View>
                 <Typography variant="h2" style={styles.kpiValue}>{totalMembers}</Typography>
@@ -267,7 +267,7 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* ── Analytical Chart 1: Real API Financial & Usage Chart ───────────────────── */}
       <View style={styles.analyticsSection}>
         <View style={styles.sectionTitleRow}>
-          <BarChart3 size={18} color={theme.colors.primary} />
+          <BarChart3 size={18} color={theme.colors.primaryText} />
           <Typography variant="h3" style={styles.sectionHeaderTitle}>
             {isFitPass ? 'Partner Gym Check-in Distribution (Real)' : 'Monthly Revenue Trend (Real Data)'}
           </Typography>
@@ -316,7 +316,7 @@ export const SuperAdminDashboard: React.FC = () => {
       {/* ── Analytical Chart 2: Real Membership Distribution Breakdown ─────────────────── */}
       <View style={styles.analyticsSection}>
         <View style={styles.sectionTitleRow}>
-          <PieIcon size={18} color={theme.colors.primary} />
+          <PieIcon size={18} color={theme.colors.primaryText} />
           <Typography variant="h3" style={styles.sectionHeaderTitle}>
             {isFitPass ? 'FitPass Subscriber Breakdown' : 'Member Status Distribution'}
           </Typography>
@@ -349,7 +349,7 @@ export const SuperAdminDashboard: React.FC = () => {
             <View style={styles.breakdownRow}>
               <View style={styles.breakdownHeader}>
                 <Typography variant="bodySm" style={styles.breakdownLabel}>Expiring in 7 Days</Typography>
-                <Typography variant="bodySm" style={{ color: theme.colors.primary, fontWeight: '700' }}>
+                <Typography variant="bodySm" style={{ color: theme.colors.primaryText, fontWeight: '700' }}>
                   {expiringSoon} ({totalMembers ? ((expiringSoon / totalMembers) * 100).toFixed(0) : 0}%)
                 </Typography>
               </View>
@@ -394,7 +394,7 @@ export const SuperAdminDashboard: React.FC = () => {
       {isFitPass && (
         <View style={styles.analyticsSection}>
           <View style={styles.sectionTitleRow}>
-            <MapPin size={18} color={theme.colors.primary} />
+            <MapPin size={18} color={theme.colors.primaryText} />
             <Typography variant="h3" style={styles.sectionHeaderTitle}>
               Top Performing Partner Gyms
             </Typography>
@@ -466,13 +466,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgePillText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 10,
     letterSpacing: 0.8,
@@ -616,12 +616,12 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(240, 160, 32, 0.15)',
+    backgroundColor: 'rgba(254, 223, 30, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   rankText: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
     fontSize: 12,
   },

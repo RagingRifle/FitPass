@@ -1,6 +1,7 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
 import { useRouter } from 'expo-router';
-import { SafeAreaView, StyleSheet, StatusBar } from 'react-native';
+import { StyleSheet, StatusBar } from 'react-native';
 import { theme } from '@/design-system/theme';
 import { FitPassDashboard } from '@/features/fitpass';
 

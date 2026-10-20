@@ -133,8 +133,8 @@ export default function FitPassGymExplore() {
           width: '320px',
           height: '320px',
           borderRadius: '50%',
-          border: '2px solid rgba(245, 184, 0, 0.25)',
-          boxShadow: '0 0 0 30px rgba(245, 184, 0, 0.05)',
+          border: '2px solid rgba(216, 183, 71, 0.25)',
+          boxShadow: '0 0 0 30px rgba(216, 183, 71, 0.05)',
           pointerEvents: 'none'
         }} />
 
@@ -146,7 +146,7 @@ export default function FitPassGymExplore() {
           letterSpacing: '-0.03em',
           fontFamily: "'Outfit', sans-serif"
         }}>
-          Explore & Discover <span style={{ color: '#F5B800' }}>FitPass Partner Gyms</span>
+          Explore & Discover <span style={{ color: '#FEDF1E' }}>FitPass Partner Gyms</span>
         </h1>
         <p style={{
           color: '#E2DDD2',
@@ -183,13 +183,13 @@ export default function FitPassGymExplore() {
             style={{
               padding: '14px 30px',
               borderRadius: '30px',
-              background: '#F5B800',
+              background: '#FEDF1E',
               color: '#000000',
               fontWeight: '900',
               fontSize: '15px',
-              border: '1.5px solid #DF9E00',
+              border: '1.5px solid #B9983D',
               cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(245, 184, 0, 0.4)',
+              boxShadow: '0 4px 16px rgba(216, 183, 71, 0.4)',
               transition: 'all 0.18s ease'
             }}
           >
@@ -212,11 +212,11 @@ export default function FitPassGymExplore() {
                 fontSize: '13px',
                 fontWeight: '800',
                 whiteSpace: 'nowrap',
-                border: isActive ? '1.5px solid #DF9E00' : '1.5px solid #DFD7C7',
+                border: isActive ? '1.5px solid #B9983D' : '1.5px solid #DFD7C7',
                 cursor: 'pointer',
-                background: isActive ? '#F5B800' : '#FFFFFF',
+                background: isActive ? '#FEDF1E' : '#FFFFFF',
                 color: '#000000',
-                boxShadow: isActive ? '0 4px 14px rgba(245, 184, 0, 0.35)' : '0 2px 6px rgba(0,0,0,0.04)',
+                boxShadow: isActive ? '0 4px 14px rgba(216, 183, 71, 0.35)' : '0 2px 6px rgba(0,0,0,0.04)',
                 transition: 'all 0.18s ease'
               }}
             >
@@ -313,8 +313,8 @@ export default function FitPassGymExplore() {
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.borderColor = '#F5B800';
-                  e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(245, 184, 0, 0.4)';
+                  e.currentTarget.style.borderColor = '#FEDF1E';
+                  e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(216, 183, 71, 0.4)';
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.transform = 'translateY(0)';
@@ -359,7 +359,7 @@ export default function FitPassGymExplore() {
                       </span>
                     )}
                     {p.distanceKm !== null && (
-                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#000000', color: '#F5B800', fontWeight: '800' }}>
+                      <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px', background: '#000000', color: '#FEDF1E', fontWeight: '800' }}>
                         {p.distanceKm} km
                       </span>
                     )}
@@ -370,8 +370,8 @@ export default function FitPassGymExplore() {
                 <div style={{ padding: '28px 18px 18px 18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#000000' }}>{gym.name}</h3>
-                    <span style={{ fontSize: '13px', fontWeight: '900', color: '#000000', display: 'flex', alignItems: 'center', gap: '4px', background: '#FFF5D6', padding: '3px 8px', borderRadius: '6px', border: '1px solid #F5B800' }}>
-                      <Star size={12} fill="#F5B800" color="#F5B800" /> {p.rating || 4.8}
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: '#000000', display: 'flex', alignItems: 'center', gap: '4px', background: '#FBF2D8', padding: '3px 8px', borderRadius: '6px', border: '1px solid #FEDF1E' }}>
+                      <Star size={12} fill="#FEDF1E" color="#FEDF1E" /> {p.rating || 4.8}
                     </span>
                   </div>
 
@@ -406,16 +406,16 @@ export default function FitPassGymExplore() {
                       width: '100%',
                       padding: '11px',
                       borderRadius: '10px',
-                      background: '#F5B800',
+                      background: '#FEDF1E',
                       color: '#000000',
                       fontWeight: '900',
                       fontSize: '13px',
-                      border: '1.5px solid #DF9E00',
+                      border: '1.5px solid #B9983D',
                       cursor: 'pointer',
                       transition: 'all 0.18s ease'
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#FFC51A'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#F5B800'}
+                    onMouseEnter={e => e.currentTarget.style.background = '#FEDF1E'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#FEDF1E'}
                   >
                     View Complete Gym Profile →
                   </button>
@@ -474,13 +474,13 @@ export default function FitPassGymExplore() {
                 <img
                   src={selectedGym.discoveryProfile?.logoUrl || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=80&auto=format&fit=crop&q=60"}
                   alt={selectedGym.name}
-                  style={{ width: '70px', height: '70px', borderRadius: '50%', border: '3px solid #F5B800', background: '#FFFFFF' }}
+                  style={{ width: '70px', height: '70px', borderRadius: '50%', border: '3px solid #FEDF1E', background: '#FFFFFF' }}
                 />
                 <div>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', margin: 0, color: '#FFFFFF', textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
                     {selectedGym.name}
                   </h2>
-                  <div style={{ fontSize: '13px', color: '#F5B800', fontWeight: '800', marginTop: '4px', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                  <div style={{ fontSize: '13px', color: '#FEDF1E', fontWeight: '800', marginTop: '4px', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
                     FitPass Verified Partner • ★ {selectedGym.discoveryProfile?.rating || 4.8} ({selectedGym.discoveryProfile?.reviewCount || 0} reviews)
                   </div>
                 </div>
@@ -494,9 +494,9 @@ export default function FitPassGymExplore() {
                 <a
                   href={`tel:${selectedGym.discoveryProfile?.contactNumber}`}
                   style={{
-                    flex: 1, padding: '12px', borderRadius: '10px', background: '#F5B800',
+                    flex: 1, padding: '12px', borderRadius: '10px', background: '#FEDF1E',
                     color: '#000000', fontWeight: '800', textAlign: 'center', textDecoration: 'none',
-                    border: '1.5px solid #DF9E00', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                    border: '1.5px solid #B9983D', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                   }}
                 >
                   <Phone size={16} /> Call Gym ({selectedGym.discoveryProfile?.contactNumber || 'Available'})
@@ -555,7 +555,7 @@ export default function FitPassGymExplore() {
                   <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#000000', marginBottom: '12px' }}>Equipment Available</h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {selectedGym.discoveryProfile?.equipments?.map(item => (
-                      <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#FFF5D6', color: '#000000', fontSize: '13px', border: '1px solid #F5B800', fontWeight: '700' }}>
+                      <span key={item} style={{ padding: '6px 14px', borderRadius: '20px', background: '#FBF2D8', color: '#000000', fontSize: '13px', border: '1px solid #FEDF1E', fontWeight: '700' }}>
                         {item}
                       </span>
                     ))}

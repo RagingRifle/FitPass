@@ -60,7 +60,7 @@ export const H4MemberControlHub: React.FC = () => {
       {/* Header Widget */}
       <Card style={styles.headerCard}>
         <View style={styles.headerRow}>
-          <Users size={24} color="#D99B00" />
+          <Users size={24} color="#B9983D" />
           <Typography variant="h2" style={styles.headerTitle}>H4 Member Control Hub (A-Z)</Typography>
         </View>
         <Typography variant="caption" color="secondary" style={{ marginTop: 4 }}>
@@ -200,7 +200,7 @@ export const H4MemberControlHub: React.FC = () => {
                       title={selectedMember.status === 'Active' ? 'Freeze Member' : 'Activate Member'}
                       onPress={() => handleToggleStatus(selectedMember.status === 'Active' ? 'Frozen' : 'Active')}
                       loading={updateMutation.isPending}
-                      style={{ flex: 1, backgroundColor: selectedMember.status === 'Active' ? '#D99B00' : '#2E7D32' }}
+                      style={{ flex: 1, backgroundColor: selectedMember.status === 'Active' ? '#B9983D' : '#2E7D32' }}
                     />
                     <Button
                       title={selectedMember.status === 'Blocked' ? 'Unblock Member' : 'Block Member'}

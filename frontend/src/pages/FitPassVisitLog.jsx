@@ -150,7 +150,7 @@ const FitPassVisitLog = () => {
 
             {/* ── Stats row ── */}
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <StatCard icon={User}      label="Total Visits (this view)" value={meta.total ?? 0}      color="var(--primary, #F0A020)" />
+                <StatCard icon={User}      label="Total Visits (this view)" value={meta.total ?? 0}      color="var(--primary, #FEDF1E)" />
                 <StatCard icon={Calendar}  label="Current Page"             value={`${meta.page ?? 1} / ${totalPages || 1}`} color="#1976D2" />
             </div>
 

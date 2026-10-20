@@ -294,7 +294,7 @@ export default function PayrollScreen() {
             </View>
 
             {isSlipsLoading ? (
-              <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: theme.spacing['2xl'] }} />
+              <ActivityIndicator size="large" color={theme.colors.primaryText} style={{ marginTop: theme.spacing['2xl'] }} />
             ) : (paySlips || []).length === 0 ? (
               <EmptyState 
                 iconText="💵"
@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     fontWeight: '800',
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
   },
   configCard: {
     padding: theme.spacing.md,

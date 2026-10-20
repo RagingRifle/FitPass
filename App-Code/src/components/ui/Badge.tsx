@@ -33,7 +33,7 @@ export const Badge: React.FC<BadgeProps> = ({ label, variant = 'info', showDot =
       case 'frozen':
       case 'warning':
         return {
-          bg: 'rgba(240, 160, 32, 0.14)',
+          bg: 'rgba(254, 223, 30, 0.14)',
           text: '#FFB74D',
           border: 'rgba(255, 183, 77, 0.3)',
           dot: '#FFB74D',

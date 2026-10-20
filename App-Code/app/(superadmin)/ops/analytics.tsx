@@ -35,7 +35,7 @@ export default function AnalyticsScreen() {
       <SafeAreaWrapper scrollable={false}>
         <Tabs.Screen options={{ title: 'Business Analytics' }} />
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color={theme.colors.primaryText} />
           <Typography style={{ marginTop: theme.spacing.md }}>Building 360° Business Analytics...</Typography>
         </View>
       </SafeAreaWrapper>
@@ -65,7 +65,7 @@ export default function AnalyticsScreen() {
     datasets: [
       {
         data: revValues.length > 0 ? revValues : [0],
-        color: (opacity = 1) => `rgba(240, 160, 32, ${opacity})`,
+        color: (opacity = 1) => `rgba(254, 223, 30, ${opacity})`,
         strokeWidth: 3,
       },
     ],
@@ -88,7 +88,7 @@ export default function AnalyticsScreen() {
     backgroundGradientFrom: theme.colors.card,
     backgroundGradientTo: theme.colors.card,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(240, 160, 32, ${opacity})`,
+    color: (opacity = 1) => `rgba(254, 223, 30, ${opacity})`,
     labelColor: (opacity = 1) => `rgba(163, 150, 134, ${opacity})`,
     style: {
       borderRadius: 16,
@@ -133,7 +133,7 @@ export default function AnalyticsScreen() {
               style={styles.headerBackBtn}
               disabled={isRefetching}
             >
-              <RefreshCw size={18} color={theme.colors.primary} />
+              <RefreshCw size={18} color={theme.colors.primaryText} />
             </TouchableOpacity>
           )
         }} 
@@ -181,7 +181,7 @@ export default function AnalyticsScreen() {
               <Card style={styles.statCard}>
                 <View style={styles.statHeader}>
                   <Typography variant="caption" color="secondary">Monthly Revenue</Typography>
-                  <Wallet size={18} color={theme.colors.primary} />
+                  <Wallet size={18} color={theme.colors.primaryText} />
                 </View>
                 <Typography variant="h2" style={styles.statValue}>
                   INR {(analyticsData.monthlyRevenue || 0).toLocaleString('en-IN')}
@@ -280,7 +280,7 @@ export default function AnalyticsScreen() {
                 (analyticsData.paymentMethods || []).map((m: any, idx: number) => (
                   <View key={m.method || idx} style={styles.memberRow}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
-                      <Layers size={16} color={theme.colors.primary} />
+                      <Layers size={16} color={theme.colors.primaryText} />
                       <Typography variant="bodySm" style={{ fontWeight: '700', textTransform: 'capitalize' }}>
                         {m.method || 'Direct Cash'}
                       </Typography>
@@ -334,7 +334,7 @@ export default function AnalyticsScreen() {
               <Card style={styles.statCard}>
                 <View style={styles.statHeader}>
                   <Typography variant="caption" color="secondary">Top LTV Champion</Typography>
-                  <Award size={18} color={theme.colors.primary} />
+                  <Award size={18} color={theme.colors.primaryText} />
                 </View>
                 <Typography variant="h2" style={styles.statValue}>
                   {(analyticsData.topMembers || [])[0]?.name?.split(' ')[0] || 'N/A'}
@@ -375,7 +375,7 @@ export default function AnalyticsScreen() {
                 (analyticsData.topMembers || []).map((m: any, idx: number) => (
                   <View key={m._id || idx} style={styles.memberRow}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-                      <Typography variant="bodySm" style={{ fontWeight: '800', color: theme.colors.primary }}>
+                      <Typography variant="bodySm" style={{ fontWeight: '800', color: theme.colors.primaryText }}>
                         #{idx + 1}
                       </Typography>
                       <View>
@@ -433,7 +433,7 @@ export default function AnalyticsScreen() {
               <Card style={StyleSheet.flatten([styles.statCard, { borderLeftColor: theme.colors.primary }])}>
                 <View style={styles.statHeader}>
                   <Typography variant="caption" color="secondary">Total Leads Pipeline</Typography>
-                  <BarChart3 size={18} color={theme.colors.primary} />
+                  <BarChart3 size={18} color={theme.colors.primaryText} />
                 </View>
                 <Typography variant="h2" style={styles.statValue}>{leadFunnel.totalLeads}</Typography>
                 <Typography variant="caption" color="muted">{leadFunnel.pendingLeads} Active Prospects</Typography>
@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tabTextActive: {
-    color: theme.colors.primary,
+    color: theme.colors.primaryText,
     fontWeight: '700',
   },
   statsGrid: {

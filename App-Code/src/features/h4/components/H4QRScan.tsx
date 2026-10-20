@@ -160,7 +160,7 @@ export function H4QRScan() {
     return (
       <SafeAreaView style={styles.center}>
         <View style={styles.permIconCircle}>
-          <Dumbbell size={36} color="#F5B800" />
+          <Dumbbell size={36} color="#735B00" />
         </View>
         <Text style={styles.permTitle}>Camera Access Required</Text>
         <Text style={styles.permSubtitle}>
@@ -175,7 +175,7 @@ export function H4QRScan() {
           onPress={() => setIsManualModalOpen(true)}
           activeOpacity={0.8}
         >
-          <Dumbbell size={16} color="#F5B800" />
+          <Dumbbell size={16} color="#735B00" />
           <Text style={styles.manualFallbackText}>Select H4 Branch Manually</Text>
         </TouchableOpacity>
 
@@ -189,7 +189,7 @@ export function H4QRScan() {
             <View style={styles.modalHeader}>
               <View style={{ flex: 1 }}>
                 <View style={styles.modalBadgeRow}>
-                  <ShieldCheck size={13} color="#F5B800" />
+                  <ShieldCheck size={13} color="#735B00" />
                   <Text style={styles.modalBadgeText}>H4 ATHLETE VERIFICATION</Text>
                 </View>
                 <Text style={styles.modalTitle}>Select H4 Gym / Branch</Text>
@@ -219,7 +219,7 @@ export function H4QRScan() {
                   activeOpacity={0.85}
                 >
                   <View style={[styles.gymIconBox, g.isHomeGym && styles.homeGymIconBox]}>
-                    <Dumbbell size={20} color="#F5B800" />
+                    <Dumbbell size={20} color="#735B00" />
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -268,7 +268,7 @@ export function H4QRScan() {
         </View>
 
         <View style={styles.brandBadge}>
-          <Dumbbell size={13} color="#F5B800" />
+          <Dumbbell size={13} color="#735B00" />
           <Text style={styles.brandBadgeText}>H4</Text>
         </View>
       </View>
@@ -306,7 +306,7 @@ export function H4QRScan() {
                     ? '#DC2626'
                     : scanState === 'done'
                     ? '#16A34A'
-                    : '#F5B800',
+                    : '#FEDF1E',
               },
             ]}
           />
@@ -326,7 +326,7 @@ export function H4QRScan() {
           onPress={() => setIsManualModalOpen(true)}
           activeOpacity={0.85}
         >
-          <Dumbbell size={16} color="#F5B800" />
+          <Dumbbell size={16} color="#735B00" />
           <Text style={styles.manualTriggerText}>
             Can't scan? Select H4 Branch Manually
           </Text>
@@ -339,7 +339,7 @@ export function H4QRScan() {
           <View style={styles.modalHeader}>
             <View style={{ flex: 1 }}>
               <View style={styles.modalBadgeRow}>
-                <ShieldCheck size={13} color="#F5B800" />
+                <ShieldCheck size={13} color="#735B00" />
                 <Text style={styles.modalBadgeText}>H4 FITNESS BRANCHES ONLY</Text>
               </View>
               <Text style={styles.modalTitle}>Select H4 Branch / Gym</Text>
@@ -369,7 +369,7 @@ export function H4QRScan() {
                 activeOpacity={0.85}
               >
                 <View style={[styles.gymIconBox, g.isHomeGym && styles.homeGymIconBox]}>
-                  <Dumbbell size={20} color="#F5B800" />
+                  <Dumbbell size={20} color="#735B00" />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -418,9 +418,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     borderWidth: 1.5,
-    borderColor: 'rgba(240, 160, 32, 0.35)',
+    borderColor: 'rgba(254, 223, 30, 0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   grantBtn: {
-    backgroundColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 14,
@@ -457,12 +457,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(240, 160, 32, 0.1)',
+    backgroundColor: 'rgba(254, 223, 30, 0.1)',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.25)',
+    borderColor: 'rgba(254, 223, 30, 0.25)',
     width: '100%',
     justifyContent: 'center',
   },
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '800',
-    color: '#F5B800',
+    color: '#735B00',
   },
   goBackBtn: { paddingVertical: 8 },
   goBackText: {
@@ -519,18 +519,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(240, 160, 32, 0.12)',
+    backgroundColor: 'rgba(254, 223, 30, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.3)',
+    borderColor: 'rgba(254, 223, 30, 0.3)',
   },
   brandBadgeText: {
     fontFamily: fontFamilies.header,
     fontSize: 11,
     fontWeight: '900',
-    color: '#F5B800',
+    color: '#735B00',
   },
 
   scannerViewportFrame: {
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: 'hidden',
     borderWidth: 3,
-    borderColor: '#F5B800',
+    borderColor: '#FEDF1E',
     backgroundColor: '#000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -567,15 +567,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cornerTL: { position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#F5B800', borderTopLeftRadius: 14 },
-  cornerTR: { position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#F5B800', borderTopRightRadius: 14 },
-  cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#F5B800', borderBottomLeftRadius: 14 },
-  cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#F5B800', borderBottomRightRadius: 14 },
+  cornerTL: { position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#FEDF1E', borderTopLeftRadius: 14 },
+  cornerTR: { position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#FEDF1E', borderTopRightRadius: 14 },
+  cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#FEDF1E', borderBottomLeftRadius: 14 },
+  cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#FEDF1E', borderBottomRightRadius: 14 },
   laserLine: {
     width: '90%',
     height: 2,
-    backgroundColor: '#F5B800',
-    shadowColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
+    shadowColor: '#FEDF1E',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 8,
@@ -619,17 +619,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: 'rgba(240, 160, 32, 0.1)',
+    backgroundColor: 'rgba(254, 223, 30, 0.1)',
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.3)',
+    borderColor: 'rgba(254, 223, 30, 0.3)',
   },
   manualTriggerText: {
     fontFamily: fontFamilies.header,
     fontSize: 14,
     fontWeight: '800',
-    color: '#F5B800',
+    color: '#735B00',
     letterSpacing: 0.2,
   },
 
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.header,
     fontSize: 10,
     fontWeight: '800',
-    color: '#F5B800',
+    color: '#735B00',
     letterSpacing: 0.8,
   },
   modalTitle: {
@@ -699,21 +699,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   homeGymRow: {
-    borderColor: 'rgba(240, 160, 32, 0.4)',
+    borderColor: 'rgba(254, 223, 30, 0.4)',
     backgroundColor: '#FFFDF9',
   },
   gymIconBox: {
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: 'rgba(240, 160, 32, 0.1)',
+    backgroundColor: 'rgba(254, 223, 30, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(240, 160, 32, 0.25)',
+    borderColor: 'rgba(254, 223, 30, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   homeGymIconBox: {
-    backgroundColor: 'rgba(240, 160, 32, 0.18)',
+    backgroundColor: 'rgba(254, 223, 30, 0.18)',
   },
   gymRowName: {
     fontFamily: fontFamilies.header,
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
   homePill: {
-    backgroundColor: 'rgba(240, 160, 32, 0.15)',
+    backgroundColor: 'rgba(254, 223, 30, 0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
   homePillText: {
     fontSize: 9,
     fontWeight: '900',
-    color: '#F5B800',
+    color: '#735B00',
   },
   gymRowAddress: {
     fontFamily: fontFamilies.body,
@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#F5B800',
+    backgroundColor: '#FEDF1E',
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,

@@ -8,10 +8,10 @@
     --member-cream: #F6F3EC;
     --member-cream-soft: #F9F6F0;
     --member-white: #FFFFFF;
-    --member-yellow: #F5B800;
-    --member-yellow-hover: #E0A700;
-    --member-yellow-light: #FFF5D6;
-    --member-yellow-border: #E8B000;
+    --member-yellow: #FEDF1E;
+    --member-yellow-hover: #FEDF1E;
+    --member-yellow-light: #FBF2D8;
+    --member-yellow-border: #BFA044;
     --member-border: #DFD7C7;
     --member-border-light: #EBE5D8;
     color: #000000;
@@ -41,11 +41,11 @@
     position: absolute;
     width: 380px;
     height: 380px;
-    border: 2px solid rgba(245, 184, 0, 0.25);
+    border: 2px solid rgba(216, 183, 71, 0.25);
     border-radius: 50%;
     right: -80px;
     top: -150px;
-    box-shadow: 0 0 0 36px rgba(245, 184, 0, 0.06), 0 0 0 80px rgba(245, 184, 0, 0.03);
+    box-shadow: 0 0 0 36px rgba(216, 183, 71, 0.06), 0 0 0 80px rgba(216, 183, 71, 0.03);
     pointer-events: none;
 }
 
@@ -59,7 +59,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #F5B800 !important;
+    color: #FEDF1E !important;
     font: 800 10px 'Outfit', sans-serif;
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -73,7 +73,7 @@
 }
 
 .member-overview-copy h1 em {
-    color: #F5B800 !important;
+    color: #FEDF1E !important;
     font-family: inherit;
     font-style: normal;
     font-weight: 800;
@@ -99,20 +99,20 @@
     gap: 10px;
     text-decoration: none;
     color: #000000 !important;
-    background: #F5B800;
+    background: #FEDF1E;
     padding: 11px 18px;
     border-radius: 10px;
     font: 800 11px 'Outfit', sans-serif;
     letter-spacing: 0.03em;
-    border: 1.5px solid #E0A700;
-    box-shadow: 0 4px 14px rgba(245, 184, 0, 0.35);
+    border: 1.5px solid #FEDF1E;
+    box-shadow: 0 4px 14px rgba(216, 183, 71, 0.35);
     transition: all 0.18s ease;
 }
 
 .member-overview-actions a:hover {
-    background: #FFC51A;
+    background: #FEDF1E;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(245, 184, 0, 0.5);
+    box-shadow: 0 6px 20px rgba(216, 183, 71, 0.5);
 }
 
 .member-overview-actions a + a {
@@ -123,8 +123,8 @@
 }
 
 .member-overview-actions a + a:hover {
-    background: #FFF5D6;
-    border-color: #F5B800;
+    background: #FBF2D8;
+    border-color: #FEDF1E;
 }
 
 .member-profile-action {
@@ -139,9 +139,9 @@
 }
 
 .member-profile-action:hover {
-    border-color: #F5B800;
-    color: #F5B800 !important;
-    background: rgba(245, 184, 0, 0.12);
+    border-color: #FEDF1E;
+    color: #FEDF1E !important;
+    background: rgba(216, 183, 71, 0.12);
 }
 
 /* ── Pass Summary inside Hero ── */
@@ -172,9 +172,9 @@
     align-items: center;
     gap: 6px;
     padding: 5px 9px;
-    background: #FFF5D6;
+    background: #FBF2D8;
     color: #000000 !important;
-    border: 1px solid #F5B800;
+    border: 1px solid #FEDF1E;
     border-radius: 9999px;
     font-size: 9px;
     font-weight: 800;
@@ -189,7 +189,7 @@
 }
 
 .member-active-pill.is-renewal-due i {
-    background: #D9A900;
+    background: #FEDF1E;
 }
 
 .member-pass-summary > strong {
@@ -217,7 +217,7 @@
 .member-pass-progress span {
     height: 100%;
     display: block;
-    background: #F5B800;
+    background: #FEDF1E;
     border-radius: 9999px;
 }
 
@@ -241,7 +241,7 @@
     position: absolute;
     right: 20px;
     bottom: 16px;
-    color: rgba(245, 184, 0, 0.35);
+    color: rgba(216, 183, 71, 0.35);
 }
 
 /* ── Metric Cards Grid ── */
@@ -265,8 +265,8 @@
 
 .member-metric-card:hover {
     transform: translateY(-2px);
-    border-color: #F5B800;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(245, 184, 0, 0.4);
+    border-color: #FEDF1E;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(216, 183, 71, 0.4);
 }
 
 .member-metric-icon {
@@ -278,9 +278,9 @@
     border-radius: 10px;
     display: grid;
     place-items: center;
-    background: #FFF5D6;
+    background: #FBF2D8;
     color: #000000;
-    border: 1px solid #F5B800;
+    border: 1px solid #FEDF1E;
 }
 
 .member-metric-card small {
@@ -372,7 +372,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #F5B800;
+    background: #FEDF1E;
 }
 
 .member-chart-wrap {
@@ -412,9 +412,9 @@
     border-radius: 12px;
     display: grid;
     place-items: center;
-    background: #FFF5D6;
+    background: #FBF2D8;
     color: #000000;
-    border: 1.5px solid #F5B800;
+    border: 1.5px solid #FEDF1E;
 }
 
 .member-next-content b {
@@ -436,22 +436,22 @@
     align-items: center;
     justify-content: space-between;
     padding: 13px 18px;
-    background: #F5B800;
-    border: 1.5px solid #DF9E00;
+    background: #FEDF1E;
+    border: 1.5px solid #B9983D;
     border-radius: 11px;
     color: #000000 !important;
     text-decoration: none;
     font: 900 11px 'Outfit', sans-serif;
     letter-spacing: 0.04em;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(245, 184, 0, 0.35);
+    box-shadow: 0 4px 14px rgba(216, 183, 71, 0.35);
     transition: all 0.18s ease;
 }
 
 .member-next-button:hover {
-    background: #FFC51A;
+    background: #FEDF1E;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(245, 184, 0, 0.5);
+    box-shadow: 0 6px 20px rgba(216, 183, 71, 0.5);
 }
 
 /* ── Clean Card & Glass Radii in Dashboard ── */
@@ -465,8 +465,8 @@
 
 .fitpass-member-dashboard .glass:hover,
 .fitpass-member-dashboard .card:hover {
-    border-color: #F5B800 !important;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(245, 184, 0, 0.35) !important;
+    border-color: #FEDF1E !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(216, 183, 71, 0.35) !important;
 }
 
 /* ── Responsive adjustments ── */
@@ -517,9 +517,9 @@
     gap: 8px;
     width: 100%;
     margin-top: 18px;
-    border: 1px solid #D9A900;
+    border: 1px solid #FEDF1E;
     border-radius: 12px;
-    background: #F5B800;
+    background: #FEDF1E;
     color: #171713;
     font-weight: 800;
 }
@@ -607,7 +607,7 @@
 
 .fitpass-renewal-option:hover {
     transform: translateY(-1px);
-    border-color: #D9A900;
+    border-color: #FEDF1E;
     background: #FFF9E4;
 }
 
@@ -664,11 +664,43 @@
 .fitpass-renewal-actions .btn-primary {
     border-color: #171713 !important;
     background: #171713 !important;
-    color: #F5B800 !important;
+    color: #FEDF1E !important;
 }
 
 @media (max-width: 520px) {
     .fitpass-renewal-overlay { padding: 12px; }
     .fitpass-renewal-actions { flex-direction: column-reverse; }
     .fitpass-renewal-actions .btn { width: 100%; }
+}
+.member-avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.member-avatar-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 9px 5px 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+.member-avatar-option:hover { transform: translateY(-2px); }
+.member-avatar-option:focus-visible { outline: 3px solid var(--primary-color); outline-offset: 2px; }
+.member-avatar-option.is-selected { border-color: var(--primary-color); background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary)); }
+.member-avatar-option img { width: 64px; height: 64px; border-radius: 50%; }
+.member-avatar-name { font-size: 0.82rem; font-weight: 750; }
+.member-avatar-trait { color: var(--text-secondary); font-size: 0.68rem; }
+
+@media (max-width: 400px) {
+    .member-avatar-grid { gap: 7px; }
+    .member-avatar-option img { width: 54px; height: 54px; }
 }
