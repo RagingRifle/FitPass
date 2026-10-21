@@ -27,7 +27,7 @@ type PortalType = 'fitpass' | 'h4' | null;
 export const LoginForm: React.FC = () => {
   const router = useRouter();
   const toast = useToast();
-  const { login, checkUser, verifyOTP } = useAuth();
+  const { login, verifyOTP } = useAuth();
 
   const [selectedPortal, setSelectedPortal] = useState<PortalType>(null);
   const [email, setEmail] = useState('');
@@ -58,26 +58,10 @@ export const LoginForm: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await checkUser(trimmedEmail);
-      
-      if (response.status === 'new') {
-        if (selectedPortal === 'h4') {
-          toast.show('Account not found. Please contact H4 Gym admin to register.', 'error');
-        } else {
-          toast.show('New user detected. Redirecting to registration...', 'info');
-          router.push({
-            pathname: '/register' as any,
-            params: { email: trimmedEmail, portal: 'fitpass' }
-          });
-        }
-      } else if (['superadmin', 'partner', 'admin', 'trainer', 'receptionist', 'fitpass_admin', 'h4_admin'].includes(response.role || '')) {
-        setShowOTPField(false);
-        setShowPasswordField(true);
-      } else {
-        setShowPasswordField(false);
-        setShowOTPField(true);
-        toast.show('Verification code sent to your email', 'success');
-      }
+      // Existing H4 and FitPass accounts use password login. OTP is reserved
+      // for the one-time verification step in the registration flow.
+      setShowOTPField(false);
+      setShowPasswordField(true);
     } catch (error: any) {
       const endpoint = `${error.config?.baseURL || ''}${error.config?.url || ''}`;
       const message = error.response?.data?.message

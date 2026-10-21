@@ -10,7 +10,7 @@ import { Pencil, Trash2, Smartphone, FileText, RefreshCw, ArrowRightLeft, Downlo
 const Members = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useContext(AuthContext);
+    const { user, selectedGymId, selectedBranchId } = useContext(AuthContext);
     const [members, setMembers] = useState([]);
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -123,7 +123,7 @@ const Members = () => {
 
     useEffect(() => {
         fetchData();
-    }, [page, statusFilter]);
+    }, [page, statusFilter, selectedGymId, selectedBranchId]);
 
     const fetchData = async () => {
         try {
@@ -423,7 +423,7 @@ const Members = () => {
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.4rem',
                                 padding: '0.5rem 0.85rem', background: 'transparent',
-                                border: 'none', color: 'var(--primary, #FEDF1E)', fontWeight: 600,
+                                border: 'none', color: '#3B3000', fontWeight: 700,
                                 cursor: isExporting ? 'wait' : 'pointer'
                             }}
                             title="Export currently filtered view to CSV"
@@ -438,7 +438,7 @@ const Members = () => {
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '0.4rem',
                                 padding: '0.5rem 0.85rem', background: 'rgba(240, 160, 32, 0.12)',
-                                border: 'none', color: 'var(--primary, #FEDF1E)', fontWeight: 700,
+                                border: 'none', color: '#3B3000', fontWeight: 800,
                                 cursor: isExporting ? 'wait' : 'pointer'
                             }}
                             title="Export entire member database to CSV"

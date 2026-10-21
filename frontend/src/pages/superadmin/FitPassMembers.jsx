@@ -39,7 +39,7 @@ function FitPassMembers() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState('All'); // 'All' | 'Active' | 'Expired'
+    const [statusFilter, setStatusFilter] = useState('Active');
 
     // Add Member Modal state
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -61,7 +61,7 @@ function FitPassMembers() {
         try {
             setLoading(true);
             const [rosterRes, plansRes] = await Promise.all([
-                API.get('/superadmin/fitpass/members'),
+                API.get('/superadmin/fitpass/members?pageSize=100'),
                 API.get('/superadmin/plans')
             ]);
             setMembers(rosterRes.data?.data || []);
@@ -153,11 +153,7 @@ function FitPassMembers() {
             m.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.plan?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-        if (statusFilter === 'Active') {
-            return matchesSearch && !m.isExpired && m.status === 'Active';
-        } else if (statusFilter === 'Expired') {
-            return matchesSearch && (m.isExpired || m.status === 'Expired');
-        }
+        if (statusFilter !== 'All' && m.status !== statusFilter) return false;
         return matchesSearch;
     });
 
@@ -212,7 +208,7 @@ function FitPassMembers() {
                     </div>
                     <div>
                         <div className="fitprime-stat-val">{totalMembersCount}</div>
-                        <div className="fitprime-stat-lbl">Total FitPass Subscribers</div>
+                        <div className="fitprime-stat-lbl">Total FitPass Accounts</div>
                     </div>
                 </div>
 
@@ -262,7 +258,7 @@ function FitPassMembers() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-tertiary)', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                        {['All', 'Active', 'Expired'].map(st => (
+                        {['Active', 'Expired', 'No Subscription', 'All'].map(st => (
                             <button
                                 key={st}
                                 onClick={() => setStatusFilter(st)}
@@ -285,9 +281,9 @@ function FitPassMembers() {
                 <EmptyState
                     icon={Users}
                     title="No FitPass Members Found"
-                    description={searchTerm || statusFilter !== 'All' 
-                        ? 'No member records match your current search criteria or status filter.' 
-                        : 'No subscribers registered yet. Click "Add Member" to register a subscriber.'}
+                    description={searchTerm || statusFilter !== 'All'
+                        ? 'No member records match your current search criteria or status filter.'
+                        : 'No FitPass accounts found yet. Click "Add FitPass Member" to register one.'}
                     primaryAction={{
                         label: '+ Add First Member',
                         onClick: handleOpenAddModal
@@ -300,7 +296,8 @@ function FitPassMembers() {
                         const remainingSess = member.sessionsRemaining || 0;
                         const usedSess = member.sessionsUsed || Math.max(0, totalSess - remainingSess);
                         const progressPct = totalSess > 0 ? Math.min(100, Math.round((usedSess / totalSess) * 100)) : 0;
-                        const isExpired = member.isExpired || new Date(member.expiryDate) <= new Date();
+                        const hasSubscription = Boolean(member.planId);
+                        const isExpired = hasSubscription && (member.isExpired || member.status === 'Expired');
 
                         return (
                             <div key={member.id} className="fitpass-member-card">
@@ -313,8 +310,8 @@ function FitPassMembers() {
                                                 <span>{member.phone || 'No phone'}</span>
                                             </div>
                                         </div>
-                                        <span className={`status-pill-${isExpired ? 'failed' : 'success'}`}>
-                                            {isExpired ? 'Expired Pass' : 'Active Pass'}
+                                        <span className={`status-pill-${isExpired ? 'failed' : hasSubscription ? 'success' : 'warning'}`}>
+                                            {!hasSubscription ? 'No Subscription' : isExpired ? 'Expired Pass' : 'Active Pass'}
                                         </span>
                                     </div>
 
@@ -323,7 +320,7 @@ function FitPassMembers() {
                                         <Ticket size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                                {member.plan?.name || 'FitPass Session Package'}
+                                                {member.plan?.name || (hasSubscription ? 'FitPass Session Package' : 'No active subscription')}
                                             </div>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                                 Price: ₹{member.plan?.price ? member.plan.price.toLocaleString('en-IN') : 'N/A'}
@@ -332,7 +329,7 @@ function FitPassMembers() {
                                     </div>
 
                                     {/* Session Balance Progress Meter */}
-                                    <div className="fitpass-session-meter-container">
+                                    {hasSubscription && <div className="fitpass-session-meter-container">
                                         <div className="fitpass-session-meter-header">
                                             <span>Session Balance</span>
                                             <strong style={{ color: 'var(--primary)' }}>
@@ -349,7 +346,7 @@ function FitPassMembers() {
                                             <span>{usedSess} used</span>
                                             <span>{remainingSess} remaining</span>
                                         </div>
-                                    </div>
+                                    </div>}
 
                                     {/* Additional Details */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
@@ -359,10 +356,10 @@ function FitPassMembers() {
                                                 <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{member.email}</span>
                                             </div>
                                         )}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        {member.expiryDate && <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             <Calendar size={14} style={{ color: 'var(--primary)' }} />
                                             <span>Pass Expiry: <strong>{new Date(member.expiryDate).toLocaleDateString()}</strong></span>
-                                        </div>
+                                        </div>}
                                         {member.lastCheckInAt && (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                 <Clock size={14} style={{ color: 'var(--primary)' }} />

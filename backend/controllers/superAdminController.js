@@ -543,64 +543,79 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
 
     const h4Gym = await prisma.gym.findFirst({ where: { name: 'H4' } });
     const h4GymId = h4Gym ? h4Gym.id : H4_GYM_IDS[0];
+    const excludedH4GymIds = [...new Set([...H4_GYM_IDS, h4GymId])];
 
-    const where = { 
-        planId: { in: fitPassPlanIds },
-        gymId: { not: h4GymId }
-    };
     const now = new Date();
 
-    if (req.query.status === 'Active') {
-        where.status = 'Active';
-        where.expiryDate = { gt: now };
-    } else if (req.query.status === 'Expired') {
-        where.OR = [{ status: 'Expired' }, { expiryDate: { lte: now } }];
-    }
-    if (req.query.search) {
-        where.OR = [
-            { name: { contains: req.query.search, mode: 'insensitive' } },
-            { phone: { contains: req.query.search } },
-        ];
-    }
-
-    const [total, members] = await Promise.all([
-        prisma.member.count({ where }),
+    const [members, fitpassAccounts] = await Promise.all([
         prisma.member.findMany({
-            where,
+            where: { gymId: { notIn: excludedH4GymIds } },
             orderBy: { createdAt: 'desc' },
-            skip,
-            take: pageSize,
             select: {
-                id: true,
-                name: true,
-                phone: true,
-                email: true,
-                status: true,
-                planId: true,
-                joinDate: true,
-                expiryDate: true,
-                sessionsTotal: true,
-                sessionsRemaining: true,
-                lastCheckInAt: true,
-                gymId: true,
+                id: true, name: true, phone: true, email: true, status: true,
+                planId: true, joinDate: true, expiryDate: true, sessionsTotal: true,
+                sessionsRemaining: true, lastCheckInAt: true, gymId: true,
             },
+        }),
+        prisma.user.findMany({
+            where: { role: 'member', gymId: { notIn: excludedH4GymIds } },
+            select: { id: true, name: true, email: true, phone: true, gymId: true, memberId: true, createdAt: true },
         }),
     ]);
 
-    // Attach plan info
-    const planMap = {};
-    fitPassPlans.forEach(p => { planMap[p.id] = p; });
+    const planMap = Object.fromEntries(fitPassPlans.map(p => [p.id, p]));
+    const memberById = new Map(members.map(m => [m.id, m]));
+    const memberByContact = new Map();
+    members.forEach(m => {
+        if (m.email) memberByContact.set(`email:${m.email.toLowerCase()}`, m);
+        if (m.phone) memberByContact.set(`phone:${m.phone}`, m);
+    });
+    const matchedMemberIds = new Set();
+    const roster = fitpassAccounts.map(account => {
+        const member = (account.memberId && memberById.get(account.memberId))
+            || (account.email && memberByContact.get(`email:${account.email.toLowerCase()}`))
+            || (account.phone && memberByContact.get(`phone:${account.phone}`));
+        if (member) matchedMemberIds.add(member.id);
+        const subscribed = Boolean(member && planMap[member.planId]);
+        const expired = subscribed && (member.status === 'Expired' || new Date(member.expiryDate) <= now);
+        return {
+            id: member?.id || account.id,
+            userId: account.id,
+            name: member?.name || account.name,
+            phone: member?.phone || account.phone,
+            email: member?.email || account.email,
+            status: !subscribed ? 'No Subscription' : expired ? 'Expired' : 'Active',
+            planId: subscribed ? member.planId : null,
+            joinDate: member?.joinDate || account.createdAt,
+            expiryDate: member?.expiryDate || null,
+            sessionsTotal: member?.sessionsTotal || 0,
+            sessionsRemaining: member?.sessionsRemaining || 0,
+            sessionsUsed: member ? Math.max(0, (member.sessionsTotal || 0) - (member.sessionsRemaining || 0)) : 0,
+            lastCheckInAt: member?.lastCheckInAt || null,
+            gymId: member?.gymId || account.gymId,
+            plan: subscribed ? planMap[member.planId] : null,
+            isExpired: expired,
+        };
+    });
+    members.filter(m => planMap[m.planId] && !matchedMemberIds.has(m.id)).forEach(member => {
+        const expired = member.status === 'Expired' || new Date(member.expiryDate) <= now;
+        roster.push({ ...member, sessionsUsed: Math.max(0, (member.sessionsTotal || 0) - (member.sessionsRemaining || 0)), plan: planMap[member.planId], isExpired: expired, status: expired ? 'Expired' : 'Active' });
+    });
 
-    const enriched = members.map(m => ({
-        ...m,
-        sessionsUsed: (m.sessionsTotal || 0) - (m.sessionsRemaining || 0),
-        plan: planMap[m.planId] || null,
-        isExpired: new Date(m.expiryDate) <= now,
-    }));
+    let filtered = roster;
+    if (req.query.status === 'Active') filtered = filtered.filter(m => m.status === 'Active');
+    else if (req.query.status === 'Expired') filtered = filtered.filter(m => m.status === 'Expired');
+    else if (req.query.status === 'No Subscription') filtered = filtered.filter(m => m.status === 'No Subscription');
+    if (req.query.search) {
+        const search = req.query.search.toLowerCase();
+        filtered = filtered.filter(m => [m.name, m.phone, m.email, m.plan?.name].some(v => String(v || '').toLowerCase().includes(search)));
+    }
+    const total = filtered.length;
+    const pageMembers = filtered.slice(skip, skip + pageSize);
 
     res.json({
         success: true,
-        data: enriched,
+        data: pageMembers,
         plans: fitPassPlans,
         meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     });
