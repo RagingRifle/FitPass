@@ -123,17 +123,36 @@ const Members = () => {
 
     useEffect(() => {
         fetchData();
-    }, [page, statusFilter, selectedGymId, selectedBranchId]);
+    }, [page, statusFilter]);
+
+    useEffect(() => {
+        // A branch or gym can have fewer pages than the previous scope.
+        // Reset pagination so the directory does not request an empty page.
+        if (page === 1) {
+            fetchData();
+        } else {
+            setPage(1);
+        }
+    }, [selectedGymId, selectedBranchId]);
 
     const fetchData = async () => {
         try {
-            const [membersData, plansData, branchesRes] = await Promise.all([
-                getMembers(statusFilter, page),
+            // Load the directory independently so a plans/branches request
+            // failure cannot leave a valid members response hidden.
+            const membersData = await getMembers(statusFilter, page);
+            setMembers(membersData.members || []);
+            setPages(membersData.pages || 1);
+        } catch (error) {
+            console.error('Error fetching members:', error);
+            setMembers([]);
+            setPages(1);
+        }
+
+        try {
+            const [plansData, branchesRes] = await Promise.all([
                 getPlans(),
                 API.get('/branches')
             ]);
-            setMembers(membersData.members || []);
-            setPages(membersData.pages || 1);
             setPlans(plansData);
             setBranches(branchesRes.data || []);
 
@@ -149,7 +168,7 @@ const Members = () => {
                 setGyms(list);
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error fetching member directory supporting data:', error);
         } finally {
             setLoading(false);
         }
@@ -157,7 +176,6 @@ const Members = () => {
 
     useEffect(() => {
         setPage(1);
-        fetchData();
     }, [statusFilter]);
 
     const handleOpenModal = (member = null) => {
@@ -519,7 +537,7 @@ const Members = () => {
                                 } : {}}
                             >
                                 <td>
-                                    <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '0.85rem', color: 'var(--primary, #f59e0b)', background: 'rgba(245, 158, 11, 0.08)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                    <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '0.85rem', color: '#5F4A00', background: '#FBF2D8', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #F0E1A8' }}>
                                         {member.displayId || member.empid || `MEM${1001 + idx}`}
                                     </span>
                                 </td>
@@ -564,7 +582,7 @@ const Members = () => {
                                             <ArrowRightLeft size={16} />
                                         </button>
                                         {user?.role === 'superadmin' && (
-                                            <button className="btn" style={{ padding: '0.4rem', border: '1px solid var(--border-color)', color: 'var(--primary)', background: 'rgba(240,160,32,0.1)' }} title="Audit Trail" onClick={() => handleOpenAudit(member)}>
+                                            <button className="btn" style={{ padding: '0.4rem', border: '1px solid #E7D9AD', color: '#5F4A00', background: '#FBF2D8' }} title="Audit Trail" aria-label={`View audit trail for ${member.name}`} onClick={() => handleOpenAudit(member)}>
                                                 <FileText size={16} />
                                             </button>
                                         )}
