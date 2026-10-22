@@ -21,8 +21,9 @@ const createMemberSchema = z.object({
     name: z.string().min(1, 'Name is required').max(100),
     phone: z.string().min(10, 'Phone must be at least 10 digits'),
     email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
-    planId: z.string().min(1, 'Plan ID is required'),
+    planId: z.string().optional().or(z.literal('')),
     joinDate: z.string().optional(),
+    durationDays: z.coerce.number().int().min(1).optional(),
     branchId: z.string().optional().nullable(),
     gymId: z.string().optional(),
     discount: z.union([z.number(), z.string()]).optional(),
@@ -48,7 +49,7 @@ const transferMemberSchema = z.object({
 
 router.route('/')
     .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, getMembers)
-    .post(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: createMemberSchema }), createMember);
+    .post(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, validate({ body: createMemberSchema }), createMember);
 
 router.get('/export/csv', protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, exportMembersCSV);
 router.get('/expiring-soon', protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, getExpiringSoonMembers);

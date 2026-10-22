@@ -5,18 +5,18 @@ import { AuthContext } from '../context/AuthContext';
 import { Pencil, Trash2 } from 'lucide-react';
 
 const Plans = () => {
-    const { user, activeDivision } = useContext(AuthContext);
+    const { user, activeDivision, selectedGymId } = useContext(AuthContext);
     const isAdmin = ['admin', 'h4_admin', 'superadmin'].includes(user?.role);
-    const isH4Plans = user?.role === 'h4_admin' || activeDivision === 'h4' || String(user?.gymName || '').toLowerCase().includes('h4');
+    const isH4Plans = user?.role === 'h4_admin' || activeDivision === 'h4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || '')) || String(user?.gymName || '').toLowerCase().includes('h4');
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
-    const [formData, setFormData] = useState({ name: '', duration: '', price: '' });
+    const [formData, setFormData] = useState({ name: '', duration: '30', durationPreset: '30', price: '' });
 
     useEffect(() => {
         fetchPlans();
-    }, []);
+    }, [selectedGymId, activeDivision]);
 
     const fetchPlans = async () => {
         try {
@@ -34,10 +34,12 @@ const Plans = () => {
     const handleOpenModal = (plan = null) => {
         if (plan) {
             setEditingPlan(plan);
-            setFormData({ name: plan.name, duration: plan.duration, price: plan.price });
+            const duration = String(plan.duration ?? 30);
+            const durationPreset = ['30', '60'].includes(duration) ? duration : 'custom';
+            setFormData({ name: plan.name, duration, durationPreset, price: plan.price });
         } else {
             setEditingPlan(null);
-            setFormData({ name: '', duration: '', price: '' });
+            setFormData({ name: '', duration: '30', durationPreset: '30', price: '' });
         }
         setIsModalOpen(true);
     };
@@ -152,7 +154,37 @@ const Plans = () => {
                     <div className="form-grid">
                         <div className="input-group">
                             <label>Duration (days)</label>
-                            <input className="input" type="number" placeholder="e.g. 30" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required />
+                            {isH4Plans ? (
+                                <>
+                                    <select
+                                        className="input"
+                                        value={formData.durationPreset}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            durationPreset: e.target.value,
+                                            duration: e.target.value === 'custom' ? '' : e.target.value
+                                        })}
+                                    >
+                                        <option value="30">30 days</option>
+                                        <option value="60">60 days</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                    {formData.durationPreset === 'custom' && (
+                                        <input
+                                            className="input"
+                                            style={{ marginTop: '0.5rem' }}
+                                            type="number"
+                                            min="1"
+                                            placeholder="Enter number of days"
+                                            value={formData.duration}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            required
+                                        />
+                                    )}
+                                </>
+                            ) : (
+                                <input className="input" type="number" min="1" placeholder="e.g. 30" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} required />
+                            )}
                         </div>
                         <div className="input-group">
                             <label>Price (₹)</label>

@@ -3,6 +3,7 @@ const AppError = require('../utils/appError');
 const Member = require('../models/Member');
 const Plan = require('../models/Plan');
 const User = require('../models/User');
+const prisma = require('../config/prisma');
 const { jsonToCsv } = require('../utils/csvUtils');
 const { logAudit } = require('../utils/auditLogger');
 const { H4_GYM_IDS } = require('../config/constants');
@@ -30,6 +31,10 @@ const buildMemberQuery = async (req, memberId) => {
     }
 
     if (req.user.role === 'superadmin') {
+        const selectedGymId = String(req.tenantFilter?.gymId || '');
+        if (H4_GYM_IDS.includes(selectedGymId)) {
+            query.gymId = selectedGymId;
+        }
         return query;
     }
 
@@ -61,13 +66,17 @@ const createMember = catchAsync(async (req, res, next) => {
     try {
         const { name, phone, email, planId, joinDate, branchId, gymId } = req.body;
 
-        if (!name || !phone || !planId) {
+        const selectedGymId = String(req.tenantFilter?.gymId || '');
+        const isH4Registration = req.user.role === 'h4_admin'
+            || H4_GYM_IDS.includes(String(req.user.gymId || ''))
+            || (req.user.role === 'superadmin' && H4_GYM_IDS.includes(selectedGymId));
+        if (!name || !phone || (!planId && !isH4Registration)) {
             res.status(400);
-            return res.json({ success: false, message: 'Name, phone, and plan are required' });
+            return res.json({ success: false, message: isH4Registration ? 'Name and phone are required' : 'Name, phone, and plan are required' });
         }
 
-        const plan = await Plan.findById(planId);
-        if (!plan) {
+        const plan = planId ? await Plan.findById(planId) : null;
+        if (planId && !plan) {
             res.status(404);
             return res.json({ success: false, message: 'Plan not found' });
         }
@@ -83,18 +92,25 @@ const createMember = catchAsync(async (req, res, next) => {
             });
         }
 
-        const durationDays = plan.duration || (plan.validityDays ? Number(plan.validityDays) : 30);
         const startDate = joinDate ? new Date(joinDate) : new Date();
+        const requestedDurationDays = Number(req.body.durationDays);
+        const durationDays = plan
+            ? Number(plan.duration) || Number(plan.validityDays) || 30
+            : Number.isFinite(requestedDurationDays) && requestedDurationDays > 0
+                ? Math.floor(requestedDurationDays)
+                : 30;
         const expiryDate = new Date(startDate);
-        expiryDate.setDate(startDate.getDate() + durationDays);
+        expiryDate.setUTCDate(expiryDate.getUTCDate() + durationDays);
 
-        const status = expiryDate < new Date() ? 'Expired' : 'Active';
+        const status = expiryDate && expiryDate < new Date() ? 'Expired' : 'Active';
 
         let targetGymId;
         if (req.user.gymId && req.user.gymId !== 'SYSTEM') {
             targetGymId = req.user.gymId;
         } else if (gymId) {
             targetGymId = gymId;
+        } else if (isH4Registration && selectedGymId) {
+            targetGymId = selectedGymId;
         } else if (plan && plan.gymId && plan.gymId !== 'SYSTEM') {
             targetGymId = plan.gymId;
         } else if (plan && plan.gymId === 'SYSTEM') {
@@ -107,27 +123,27 @@ const createMember = catchAsync(async (req, res, next) => {
             targetGymId = h4Gym ? h4Gym._id.toString() : H4_GYM_IDS[0];
         }
 
-        if (plan.gymId === 'SYSTEM' && Number(plan.sessions) <= 0) {
+        if (plan?.gymId === 'SYSTEM' && Number(plan.sessions) <= 0) {
             await migrateLegacyH4Plan(plan, targetGymId);
         }
-        if (plan.gymId === 'SYSTEM') {
+        if (plan?.gymId === 'SYSTEM') {
             const fitPassAdminCreate = req.user.role === 'fitpass_admin'
                 || (req.user.role === 'superadmin' && String(gymId || '') === 'SYSTEM');
             if (!fitPassAdminCreate || String(targetGymId) !== 'SYSTEM' || !(Number(plan.sessions) > 0)) {
                 return res.status(400).json({ success: false, message: 'FitPass session plans are reserved for FitPass members. Use a gym membership plan for H4 registration.' });
             }
         }
-        if (String(plan.gymId) !== String(targetGymId)) {
+        if (plan && String(plan.gymId) !== String(targetGymId)) {
             return res.status(403).json({ success: false, message: 'This plan belongs to a different gym. Choose a plan from the member’s gym.' });
         }
 
         const targetBranchId = req.user.branchId || branchId || null;
-        if (plan.branchId && String(plan.branchId) !== String(targetBranchId || '')) {
+        if (plan?.branchId && String(plan.branchId) !== String(targetBranchId || '')) {
             return res.status(403).json({ success: false, message: 'This plan is assigned to a different branch.' });
         }
 
         const numericDiscount = Math.max(0, Number(req.body.discount) || 0);
-        const catalogPrice = Number(plan.price) || 0;
+        const catalogPrice = Number(plan?.price) || 0;
         const netAgreedPrice = req.body.finalPrice !== undefined && req.body.finalPrice !== null && req.body.finalPrice !== ''
             ? Math.max(0, Number(req.body.finalPrice))
             : Math.max(0, catalogPrice - numericDiscount);
@@ -138,13 +154,13 @@ const createMember = catchAsync(async (req, res, next) => {
             name,
             phone,
             email: email || null,
-            planId,
+            planId: plan?._id || null,
             joinDate: startDate,
             expiryDate,
             status,
             planPrice: netAgreedPrice,
             paidAmount: numericPaid,
-            ...(plan.gymId === 'SYSTEM' ? { sessionsRemaining: Number(plan.sessions) || 0, sessionsTotal: Number(plan.sessions) || 0 } : {}),
+            ...(plan?.gymId === 'SYSTEM' ? { sessionsRemaining: Number(plan.sessions) || 0, sessionsTotal: Number(plan.sessions) || 0 } : {}),
             gymId: targetGymId,
             branchId: targetBranchId
         });
@@ -182,7 +198,7 @@ const createMember = catchAsync(async (req, res, next) => {
                 'MEMBER_REGISTERED',
                 'Member',
                 member._id,
-                `Registered new member ${member.name} with plan '${plan.name}' (Catalogue: ₹${catalogPrice}, Discount: ₹${numericDiscount}, Net Fee: ₹${netAgreedPrice}, Paid Upfront: ₹${numericPaid})`,
+                `Registered new member ${member.name}${plan ? ` with plan '${plan.name}'` : ' without a subscription plan'} (Catalogue: ₹${catalogPrice}, Discount: ₹${numericDiscount}, Net Fee: ₹${netAgreedPrice}, Paid Upfront: ₹${numericPaid})`,
                 member.name
             );
 
@@ -250,11 +266,17 @@ const getMembers = catchAsync(async (req, res, next) => {
             ? await User.find({ memberId: { $in: memberIds } }).select('memberId profileImageUrl').lean()
             : [];
         const profileImages = new Map(linkedUsers.map((user) => [String(user.memberId), user.profileImageUrl || null]));
+        const branchIds = [...new Set(members.map(member => member.branchId).filter(Boolean).map(String))];
+        const branchRecords = branchIds.length
+            ? await prisma.branch.findMany({ where: { id: { in: branchIds } }, select: { id: true, name: true } })
+            : [];
+        const branchNames = new Map(branchRecords.map(branch => [String(branch.id), branch.name]));
 
         const { getMemberCode } = require('../utils/idGenerator');
         const formattedMembers = members.map((m, idx) => ({
             ...m,
             profileImageUrl: profileImages.get(String(m._id || m.id)) || null,
+            branchName: m.branchId ? branchNames.get(String(m.branchId)) || null : null,
             empid: getMemberCode(m, skip + idx),
             displayId: getMemberCode(m, skip + idx)
         }));

@@ -10,8 +10,10 @@ import { Pencil, Trash2, Smartphone, FileText, RefreshCw, ArrowRightLeft, Downlo
 const Members = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, selectedGymId, selectedBranchId } = useContext(AuthContext);
+    const { user, selectedGymId, selectedBranchId, activeDivision } = useContext(AuthContext);
+    const isH4Context = activeDivision === 'h4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || user?.gymId || ''));
     const [members, setMembers] = useState([]);
+    const fetchRequestRef = useRef(0);
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +26,7 @@ const Members = () => {
     const [editingMember, setEditingMember] = useState(null);
     const [branches, setBranches] = useState([]);
     const [branchFilter, setBranchFilter] = useState('');
-    const [formData, setFormData] = useState({ name: '', phone: '', email: '', planId: '', joinDate: '', branchId: '', gymId: '', password: '' });
+    const [formData, setFormData] = useState({ name: '', phone: '', email: '', planId: '', joinDate: '', branchId: '', gymId: '', password: '', durationPreset: '30', durationDays: '30' });
     const [wizardStep, setWizardStep] = useState(1);
     const [questionnaire, setQuestionnaire] = useState({
         fitnessGoal: 'Fat Loss',
@@ -89,7 +91,9 @@ const Members = () => {
             joinDate: new Date().toISOString().split('T')[0],
             branchId: leadBranchId || user?.branchId || '',
             gymId: leadGymId || '',
-            password: ''
+            password: '',
+            durationPreset: '30',
+            durationDays: '30'
         });
         setConvertingLeadId(convertLeadId);
         setIsModalOpen(true);
@@ -136,38 +140,60 @@ const Members = () => {
     }, [selectedGymId, selectedBranchId]);
 
     const fetchData = async () => {
+        const requestId = ++fetchRequestRef.current;
         try {
             // Load the directory independently so a plans/branches request
             // failure cannot leave a valid members response hidden.
             const membersData = await getMembers(statusFilter, page);
+            if (requestId !== fetchRequestRef.current) return;
             setMembers(membersData.members || []);
             setPages(membersData.pages || 1);
         } catch (error) {
+            if (requestId !== fetchRequestRef.current) return;
             console.error('Error fetching members:', error);
             setMembers([]);
             setPages(1);
         }
 
         try {
-            const [plansData, branchesRes] = await Promise.all([
+            const [plansResult, branchesResult, h4GymResult] = await Promise.allSettled([
                 getPlans(),
-                API.get('/branches')
+                API.get('/branches'),
+                user?.role === 'superadmin' || user?.role === 'fitpass_admin'
+                    ? API.get('/superadmin/h4-gym').catch(() => ({ data: null }))
+                    : Promise.resolve({ data: null })
             ]);
-            setPlans(plansData);
-            setBranches(branchesRes.data || []);
+            if (requestId !== fetchRequestRef.current) return;
+            if (plansResult.status === 'fulfilled') {
+                setPlans(Array.isArray(plansResult.value) ? plansResult.value : []);
+            } else {
+                console.error('Error fetching membership plans:', plansResult.reason);
+            }
+            const branchList = branchesResult.status === 'fulfilled' ? (branchesResult.value.data || []) : [];
+            if (branchesResult.status === 'rejected') {
+                console.error('Error fetching branches for member form:', branchesResult.reason);
+            }
+            const h4GymData = h4GymResult.status === 'fulfilled' ? h4GymResult.value.data : null;
+            const activeH4GymId = h4GymData?._id || h4GymData?.id || (isH4Context ? selectedGymId : '');
+            const h4GymIds = new Set((activeH4GymId
+                ? [activeH4GymId]
+                : ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d']
+            ).filter(Boolean).map(String));
+            setBranches(isH4Context ? branchList.filter(b => h4GymIds.has(String(b.gymId?._id || b.gymId?.id || b.gymId || ''))) : branchList);
 
             if (user?.role === 'superadmin' || user?.role === 'fitpass_admin') {
                 const gymsRes = await API.get('/superadmin/gyms');
                 // Include H4 gym in the list so superadmin can switch to it!
-                const h4GymRes = await API.get('/superadmin/h4-gym');
                 const list = gymsRes.data || [];
-                const hasH4 = list.some(g => g.name === 'H4' || g._id === h4GymRes.data._id);
-                if (!hasH4 && h4GymRes.data) {
-                    list.unshift(h4GymRes.data);
+                const h4GymId = h4GymData?._id || h4GymData?.id;
+                const hasH4 = list.some(g => g.name === 'H4' || (g._id || g.id) === h4GymId);
+                if (!hasH4 && h4GymData) {
+                    list.unshift(h4GymData);
                 }
                 setGyms(list);
             }
         } catch (error) {
+            if (requestId !== fetchRequestRef.current) return;
             console.error('Error fetching member directory supporting data:', error);
         } finally {
             setLoading(false);
@@ -190,11 +216,13 @@ const Members = () => {
                 joinDate: member.joinDate ? member.joinDate.split('T')[0] : '',
                 branchId: member.branchId?._id || member.branchId || '',
                 gymId: member.gymId?._id || member.gymId || '',
-                password: ''
+                password: '',
+                durationPreset: '30',
+                durationDays: '30'
             });
         } else {
             setEditingMember(null);
-            setFormData({ name: '', phone: '', email: '', planId: '', joinDate: new Date().toISOString().split('T')[0], branchId: user?.branchId || '', gymId: '', password: '' });
+            setFormData({ name: '', phone: '', email: '', planId: '', joinDate: new Date().toISOString().split('T')[0], branchId: user?.branchId || '', gymId: '', password: '', durationPreset: '30', durationDays: '30' });
         }
         setIsModalOpen(true);
     };
@@ -259,6 +287,8 @@ const Members = () => {
                 branchId: user?.branchId || '',
                 gymId: '',
                 password: '',
+                durationPreset: '30',
+                durationDays: '30',
                 discount: 0,
                 paidAmount: '',
                 paymentMethod: 'Cash'
@@ -487,7 +517,7 @@ const Members = () => {
                     <option value="Expired">Expired</option>
                     <option value="Frozen"> Frozen</option>
                 </select>
-                {!user?.branchId && branches.length > 0 && (
+                {!isH4Context && !user?.branchId && branches.length > 0 && (
                     <select
                         className="input"
                         style={{ flex: '1', minWidth: '150px' }}
@@ -561,11 +591,20 @@ const Members = () => {
                                 <td className="hide-mobile">
                                     {member.branchId ? (
                                         <span style={{ background: 'rgba(14,165,233,0.1)', color: '#0ea5e9', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '600' }}>
-                                             {branches.find(b => b._id === (member.branchId?._id || member.branchId))?.name || 'Branch'}
+                                             {(() => {
+                                                 const memberBranchId = String(member.branchId?._id || member.branchId?.id || member.branchId || '');
+                                                 const branchFromDirectory = branches.find(b => String(b._id || b.id) === memberBranchId);
+                                                 const branchName = branchFromDirectory?.name || member.branchId?.name || member.branchName;
+                                                 return branchName && branchName.trim().toLowerCase() !== 'branch' ? branchName : 'Unknown branch';
+                                             })()}
                                         </span>
                                     ) : <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>—</span>}
                                 </td>
-                                <td className="hide-mobile">{new Date(member.expiryDate).toLocaleDateString()}</td>
+                                <td className="hide-mobile">
+                                    {member.expiryDate && Number.isFinite(new Date(member.expiryDate).getTime())
+                                        ? new Date(member.expiryDate).toLocaleDateString()
+                                        : 'No expiry'}
+                                </td>
                                 <td><span className={`badge badge-${member.status.toLowerCase()}`}>{member.status}</span></td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -681,7 +720,7 @@ const Members = () => {
                                 <input className="input" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                             </div>
                             <div className="input-group">
-                                <label>Subscription Plan *</label>
+                                <label>Subscription Plan {isH4Context ? '(Optional)' : '*'}</label>
                                 <select
                                     className="input"
                                     value={formData.planId}
@@ -696,12 +735,43 @@ const Members = () => {
                                             paidAmount: net
                                         });
                                     }}
-                                    required
+                                    required={!isH4Context}
                                 >
                                     <option value="">Select a plan</option>
                                     {plans.map(p => <option key={p._id} value={p._id}>{p.name} (₹{p.price})</option>)}
                                 </select>
                             </div>
+
+                            {isH4Context && !editingMember && !formData.planId && (
+                                <div className="input-group">
+                                    <label>Membership Duration</label>
+                                    <select
+                                        className="input"
+                                        value={formData.durationPreset}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            durationPreset: e.target.value,
+                                            durationDays: e.target.value === 'custom' ? '' : e.target.value
+                                        })}
+                                    >
+                                        <option value="30">30 days</option>
+                                        <option value="60">60 days</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                    {formData.durationPreset === 'custom' && (
+                                        <input
+                                            className="input"
+                                            style={{ marginTop: '0.5rem' }}
+                                            type="number"
+                                            min="1"
+                                            placeholder="Enter number of days"
+                                            value={formData.durationDays}
+                                            onChange={(e) => setFormData({ ...formData, durationDays: e.target.value })}
+                                            required
+                                        />
+                                    )}
+                                </div>
+                            )}
 
                             {/* Plan Pricing & Discount Breakdown */}
                             {formData.planId && (
@@ -791,16 +861,19 @@ const Members = () => {
                                 </>
                             )}
 
-                            {!user?.branchId && (
+                            {(!user?.branchId || isH4Context) && (
                                 <div className="input-group">
                                     <label>Branch (optional)</label>
                                     <select className="input" value={formData.branchId} onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}>
                                         <option value="">No Branch / All Locations</option>
-                                        {branches.map(b => <option key={b._id} value={b._id}> {b.name}</option>)}
+                                        {branches.map(b => {
+                                            const branchId = b._id || b.id;
+                                            return <option key={branchId} value={branchId}>{b.name}</option>;
+                                        })}
                                     </select>
                                 </div>
                             )}
-                            {['superadmin', 'fitpass_admin'].includes(user?.role) && (
+                            {['superadmin', 'fitpass_admin'].includes(user?.role) && !isH4Context && (
                                 <div className="input-group">
                                     <label>Gym Division / Partner Gym</label>
                                     <select className="input" value={formData.gymId} onChange={(e) => setFormData({ ...formData, gymId: e.target.value })} required>
@@ -1024,8 +1097,8 @@ const Members = () => {
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            if (!formData.name || !formData.phone || !formData.planId) {
-                                                alert('Please fill in Member Name, Phone Number, and select a Subscription Plan first.');
+                                            if (!formData.name || !formData.phone || (!isH4Context && !formData.planId)) {
+                                                alert(isH4Context ? 'Please fill in Member Name and Phone Number first.' : 'Please fill in Member Name, Phone Number, and select a Subscription Plan first.');
                                                 return;
                                             }
                                             setWizardStep(prev => prev + 1);

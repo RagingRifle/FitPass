@@ -57,7 +57,7 @@ const AppHeader = () => {
                         }
 
                         const branches = Array.isArray(branchesRes.data) ? branchesRes.data : [];
-                        setGyms(branches);
+                        setGyms(branches.filter(branch => String(branch.gymId?._id || branch.gymId?.id || branch.gymId || '') === String(h4GymId)));
                     } else {
                         // Fetch FitPass partner gyms for FitPass Portal
                         const { data } = await API.get('/superadmin/gyms');
@@ -247,7 +247,6 @@ const AppHeader = () => {
                                             changeSelectedGym(val);
                                             changeSelectedBranch('');
                                         }
-                                        window.location.reload();
                                     }}
                                 >
                                     {activeDivision === 'h4' ? (

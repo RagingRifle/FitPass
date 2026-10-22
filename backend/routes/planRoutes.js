@@ -24,11 +24,11 @@ const updatePlanSchema = createPlanSchema.partial();
 
 router.route('/')
     .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'), tenantFilter, getPlans)
-    .post(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), validate({ body: createPlanSchema }), createPlan);
+    .post(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, validate({ body: createPlanSchema }), createPlan);
 
 router.route('/:id')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'), getPlanById)
-    .put(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), validate({ body: updatePlanSchema }), updatePlan)
-    .delete(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), deletePlan);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'), tenantFilter, getPlanById)
+    .put(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, validate({ body: updatePlanSchema }), updatePlan)
+    .delete(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, deletePlan);
 
 module.exports = router;

@@ -60,8 +60,15 @@ const Dashboard = () => {
             try {
                 if (user?.role === 'superadmin' || user?.role === 'fitpass_admin') {
                     if (activeDivision === 'h4') {
-                        const { data: branches } = await API.get('/branches');
-                        setGymList(Array.isArray(branches) ? branches : []);
+                        const [branchesRes, h4Res] = await Promise.all([
+                            API.get('/branches'),
+                            API.get('/superadmin/h4-gym').catch(() => ({ data: null }))
+                        ]);
+                        const h4GymId = h4Res.data?._id || h4Res.data?.id;
+                        const branches = Array.isArray(branchesRes.data) ? branchesRes.data : [];
+                        setGymList(h4GymId
+                            ? branches.filter(branch => String(branch.gymId?._id || branch.gymId?.id || branch.gymId || '') === String(h4GymId))
+                            : branches.filter(branch => ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(branch.gymId?._id || branch.gymId?.id || branch.gymId || ''))));
                     } else {
                         const { data } = await API.get('/superadmin/gyms');
                         setGymList(Array.isArray(data) ? data : []);
