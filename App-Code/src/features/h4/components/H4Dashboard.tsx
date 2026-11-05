@@ -59,7 +59,10 @@ function MemberHeroBanner() {
     : null;
 
   const visits = data?.attendanceCount ?? 0;
-  const lastPaid = data?.recentPayments?.[0]?.amount ?? (data?.member as any)?.paidAmount;
+  const lastPaidDate = data?.recentPayments?.[0]?.date;
+  const lastPaidLabel = lastPaidDate
+    ? new Date(lastPaidDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+    : '';
   const memberName = (data?.member as any)?.name;
   const firstName = memberName ? memberName.split(' ')[0] : null;
 
@@ -119,7 +122,7 @@ function MemberHeroBanner() {
           </View>
           <View style={styles.heroStatRule} />
           <View style={styles.heroStat}>
-            <Text style={styles.heroStatNum}>{lastPaid ? `}` : ''}</Text>
+            <Text style={styles.heroStatNum}>{lastPaidLabel}</Text>
             <Text style={styles.heroStatLabel}>Last Paid</Text>
           </View>
         </View>

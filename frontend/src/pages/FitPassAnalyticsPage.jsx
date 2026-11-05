@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import { 
   Users, CheckCircle, XCircle, Ticket, Activity, TrendingUp, Search, Calendar, MapPin, Loader, Zap, ChevronRight
 } from 'lucide-react';
@@ -152,7 +153,7 @@ const FitPassAnalyticsPage = () => {
             <input 
               type="text" 
               className="input" 
-              placeholder="Search member by name or phone..." 
+              placeholder="Search by member ID (MEM1001), name, or phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ flex: 1 }}
@@ -160,6 +161,7 @@ const FitPassAnalyticsPage = () => {
             <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               {searching ? <Loader className="spinner" size={14} /> : 'Search'}
             </button>
+            <ResetFiltersButton onClick={() => { setSearchQuery(''); setSearchResults([]); setSelectedMemberSummary(null); }} />
           </form>
 
           {searchResults.length > 0 && (

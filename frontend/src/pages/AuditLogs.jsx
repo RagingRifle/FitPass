@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import { LogIn, LogOut, UserPlus, UserCog, UserMinus, IndianRupee, Banknote, TrendingDown, ClipboardList, ClipboardEdit, ClipboardX, CalendarPlus, CalendarMinus, Target, Snowflake, Sun, Building, Settings, QrCode, ShieldAlert, Scale, ScanLine, MapPin, Search, Activity } from 'lucide-react';
 
 const ACTION_ICONS = {
@@ -183,6 +184,7 @@ const AuditLogs = () => {
                             <option value="Payment">Payment</option>
                             <option value="Attendance">Attendance</option>
                         </select>
+                        <ResetFiltersButton onClick={() => { setFilterAction(''); setFilterEntity(''); setPage(1); fetchLogs(1, '', ''); }} />
                     </div>
                 </div>
             )}
@@ -199,7 +201,7 @@ const AuditLogs = () => {
                         <div style={{ position: 'relative' }}>
                             {/* Timeline line */}
                             <div style={{ position: 'absolute', left: '19px', top: 0, bottom: 0, width: '2px', background: 'var(--border-color)' }} />
-                            {displayLogs.map((log, i) => {
+                            {displayLogs.map((log) => {
                                 const color = ACTION_COLORS[log.action] || '#6b7280';
                                 const icon = ACTION_ICONS[log.action] || ACTION_ICONS.OTHER;
 

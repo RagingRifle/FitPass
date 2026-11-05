@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import Modal from '../components/Modal';
+import MemberFilterSelect from '../components/MemberFilterSelect';
 import QRScanner from '../components/QRScanner';
 import { AuthContext } from '../context/AuthContext';
 import { Trash2, MapPin, Users, CheckCircle2, Clock, Calendar, Check, X } from 'lucide-react';
@@ -11,7 +12,6 @@ const Classes = () => {
     const { user } = useContext(AuthContext);
     const [classes, setClasses] = useState([]);
     const [branches, setBranches] = useState([]);
-    const [members, setMembers] = useState([]);
     const [selectedMemberId, setSelectedMemberId] = useState('');
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,15 +51,6 @@ const Classes = () => {
             setBranches(branchList);
         } catch (err) {
             console.warn('Could not fetch branches directly:', err);
-        }
-    };
-
-    const fetchMembers = async () => {
-        try {
-            const { data } = await API.get('/members?limit=1000&status=Active');
-            setMembers(data.members || []);
-        } catch (err) {
-            console.error('Error fetching members:', err);
         }
     };
 
@@ -122,7 +113,6 @@ const Classes = () => {
         try {
             const { data } = await API.get(`/classes/${gymClass._id}/bookings`);
             setBookingsModal(data);
-            fetchMembers();
         } catch {
             alert('Failed to fetch bookings');
         }
@@ -494,21 +484,15 @@ const Classes = () => {
                 {/* Add Member Form */}
                 <form onSubmit={handleAdminBook} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', alignItems: 'flex-end' }}>
                     <div className="input-group" style={{ flex: 1, marginBottom: 0 }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: '700' }}>Add Member to Roster</label>
-                        <select 
-                            className="input" 
-                            value={selectedMemberId} 
-                            onChange={e => setSelectedMemberId(e.target.value)}
+                        <MemberFilterSelect
+                            label="Add member to roster"
+                            status="Active"
+                            value={selectedMemberId}
+                            onChange={setSelectedMemberId}
+                            includeAll={false}
                             required
-                        >
-                            <option value="">-- Select Member --</option>
-                            {members
-                                .filter(m => !bookingsModal?.bookings?.some(b => (b.memberId?._id || b.memberId)?.toString() === m._id?.toString()))
-                                .map(m => (
-                                    <option key={m._id} value={m._id}>{m.name} ({m.phone})</option>
-                                ))
-                            }
-                        </select>
+                            excludeIds={(bookingsModal?.bookings || []).map(booking => booking.memberId?._id || booking.memberId)}
+                        />
                     </div>
                     <button type="submit" className="btn btn-secondary" style={{ height: '42px', padding: '0 1.25rem' }}>
                         Add Member

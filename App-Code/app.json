@@ -2,6 +2,7 @@
   "expo": {
     "name": "FitPrime",
     "slug": "App-Code",
+    "owner": "rifle117",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/fitprime-icon.png",
@@ -34,7 +35,10 @@
         "foregroundImage": "./assets/fitprime-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.marcos.gymcrm"
+      "package": "com.marcos.gymcrm",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/fitprime-icon.png"
@@ -42,7 +46,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ebc61878-7a24-4687-a721-a425d2cf7f13"
+        "projectId": "fbc94e3f-f808-4e0c-9377-55f749d6b645"
       }
     }
   }

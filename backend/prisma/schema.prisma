@@ -113,7 +113,7 @@ model Plan {
 
 model Member {
   id                    String   @id @default(uuid())
-  registrationNumber    String?
+  registrationNumber    String?  @unique
   name                  String
   phone                 String
   email                 String?
@@ -121,6 +121,7 @@ model Member {
   joinDate              DateTime @default(now())
   expiryDate            DateTime?
   status                String   @default("Active")
+  scheduledUnfreezeAt   DateTime?
   planPrice             Float    @default(0)
   paidAmount            Float    @default(0)
   gymId                 String
@@ -224,11 +225,18 @@ model Payment {
   gymId         String
   branchId      String?
   transactionId String?
+  saleType      String   @default("LEGACY")
+  source        String   @default("")
+  staffId       String?
+  staffName     String   @default("")
+  leadId        String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([gymId, date])
   @@index([memberId])
+  @@index([gymId, saleType, date])
+  @@index([staffId])
 }
 
 model Expense {
@@ -244,6 +252,18 @@ model Expense {
   updatedAt   DateTime @updatedAt
 
   @@index([gymId, date])
+  @@index([gymId, branchId, date])
+}
+
+model ExpenseCategory {
+  id        String   @id @default(uuid())
+  gymId     String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gymId, name])
+  @@index([gymId])
 }
 
 model GymClass {
@@ -409,6 +429,7 @@ model WorkoutTemplate {
 model WorkoutPlan {
   id           String   @id @default(uuid())
   memberId     String
+  memberIds    String?  // JSON array: one reusable plan may be assigned to many members
   trainerId    String?
   name         String
   startDate    DateTime?
@@ -422,6 +443,12 @@ model WorkoutPlan {
   @@index([gymId, createdAt(sort: Desc)])
   @@index([memberId])
   @@index([trainerId])
+}
+
+model IdSequence {
+  key       String   @id
+  value     Int
+  updatedAt DateTime @updatedAt
 }
 
 model DietPlan {
@@ -441,6 +468,58 @@ model DietPlan {
   @@index([gymId, createdAt(sort: Desc)])
   @@index([memberId])
   @@index([trainerId])
+}
+
+model NutritionLog {
+  id              String   @id @default(uuid())
+  memberId        String
+  planId          String?
+  trainerId       String?
+  recordedById    String?
+  planName        String   @default("")
+  mealCount       Int      @default(0)
+  completedMeals  Int      @default(0)
+  calories        Float    @default(0)
+  protein         Float    @default(0)
+  carbs           Float    @default(0)
+  fats            Float    @default(0)
+  waterCups       Int      @default(0)
+  notes           String   @default("")
+  loggedAt        DateTime @default(now())
+  gymId           String
+  branchId        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([gymId, loggedAt])
+  @@index([memberId, loggedAt])
+  @@index([trainerId, loggedAt])
+  @@index([planId])
+}
+
+model WorkoutLog {
+  id                  String   @id @default(uuid())
+  memberId            String
+  planId              String?
+  trainerId           String?
+  recordedById        String?
+  planName            String   @default("")
+  trainingDay         String   @default("")
+  completedExercises  Int      @default(0)
+  totalExercises      Int      @default(0)
+  exercises           String   @default("[]")
+  durationMinutes     Int?
+  notes               String   @default("")
+  loggedAt            DateTime @default(now())
+  gymId               String
+  branchId            String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([gymId, loggedAt])
+  @@index([memberId, loggedAt])
+  @@index([trainerId, loggedAt])
+  @@index([planId])
 }
 
 model DietTemplate {
@@ -518,6 +597,8 @@ model TrainerAttendance {
   checkInTime  DateTime  @default(now())
   checkOutTime DateTime?
   workingHours Float?
+  status       String    @default("Present")
+  leaveReason  String?
   gymId        String
   branchId     String?
   createdAt    DateTime  @default(now())

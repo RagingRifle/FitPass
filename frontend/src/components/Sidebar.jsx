@@ -54,6 +54,7 @@ const NAV_GROUPS = {
             label: 'Gym Ops & Finance',
             items: [
                 { name: 'Payments', path: '/payments', icon: IndianRupee },
+                { name: 'Sales', path: '/sales', icon: LineChart },
                 { name: 'Expenses', path: '/expenses', icon: IndianRupee },
                 { name: 'Pending Dues', path: '/dues', icon: Clock },
                 { name: 'Attendance', path: '/attendance', icon: UserCheck },
@@ -86,6 +87,7 @@ const NAV_GROUPS = {
             label: 'Finance',
             items: [
                 { name: 'Payments', path: '/payments', icon: IndianRupee },
+                { name: 'Sales', path: '/sales', icon: LineChart },
                 { name: 'Dues', path: '/dues', icon: Clock },
             ]
         }
@@ -194,7 +196,6 @@ const Sidebar = () => {
                         { name: 'Partner Gyms', path: '/superadmin/gyms', icon: Building2 },
                         { name: 'Fit-Prime Plans', path: '/superadmin/plans', icon: Package },
                         { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
-                        { name: 'Discovery Approvals', path: '/superadmin/discovery-approvals', icon: ShieldCheck },
                         { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
                         { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },
                     ]
@@ -232,6 +233,7 @@ const Sidebar = () => {
                         label: 'Gym Ops & Finance',
                         items: [
                             { name: `Payments${suffix}`, path: '/payments', icon: IndianRupee },
+                            { name: `Sales${suffix}`, path: '/sales', icon: LineChart },
                             { name: `Expenses${suffix}`, path: '/expenses', icon: IndianRupee },
                             { name: `Pending Dues${suffix}`, path: '/dues', icon: Clock },
                             { name: `Attendance${suffix}`, path: '/attendance', icon: UserCheck },
@@ -277,7 +279,6 @@ const Sidebar = () => {
                     { name: 'Partner Gyms', path: '/superadmin/gyms', icon: Building2 },
                     { name: 'Fit-Prime Plans', path: '/superadmin/plans', icon: Package },
                     { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
-                    { name: 'Discovery Approvals', path: '/superadmin/discovery-approvals', icon: ShieldCheck },
                     { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
                 ]
             },
@@ -312,6 +313,7 @@ const Sidebar = () => {
                 label: 'Gym Ops & Finance',
                 items: [
                     { name: `Payments${suffix}`, path: '/payments', icon: IndianRupee },
+                    { name: `Sales${suffix}`, path: '/sales', icon: LineChart },
                     { name: `Expenses${suffix}`, path: '/expenses', icon: IndianRupee },
                     { name: `Pending Dues${suffix}`, path: '/dues', icon: Clock },
                     { name: `Attendance${suffix}`, path: '/attendance', icon: UserCheck },

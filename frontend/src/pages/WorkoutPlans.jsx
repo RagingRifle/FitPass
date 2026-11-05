@@ -1,7 +1,10 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import MemberFilterSelect from '../components/MemberFilterSelect';
+import ResetFiltersButton from '../components/ResetFiltersButton';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { 
     Dumbbell, Calendar, User, Plus, Trash2, Edit3, Search, 
     CheckCircle2, FolderHeart, ArrowRight, PlayCircle, Award, Sparkles, CheckSquare, Square, X
@@ -22,7 +25,8 @@ const WorkoutPlans = () => {
 
     // Assigned Plan Form state
     const [showPlanModal, setShowPlanModal] = useState(false);
-    const [memberId, setMemberId] = useState('');
+    const [selectedMemberIds, setSelectedMemberIds] = useState([]);
+    const [assignmentMemberSearch, setAssignmentMemberSearch] = useState('');
     const [planName, setPlanName] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -30,6 +34,7 @@ const WorkoutPlans = () => {
         { day: 'Monday', name: '', sets: 3, reps: 10, weight: '', notes: '' }
     ]);
     const [editingPlanId, setEditingPlanId] = useState(null);
+    const [assignedTrainerId, setAssignedTrainerId] = useState('');
 
     // Template Form state
     const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -45,9 +50,25 @@ const WorkoutPlans = () => {
     const [completedExercises, setCompletedExercises] = useState({}); // { 'ex-index': boolean }
     const [workoutStreak, setWorkoutStreak] = useState(0);
     const [progressLogs, setProgressLogs] = useState([]);
+    const [progressFilters, setProgressFilters] = useState({ from: '', to: '', memberId: '', branchId: '', trainerId: '' });
+    const [branches, setBranches] = useState([]);
+    const [trainers, setTrainers] = useState([]);
+    const [progressLoading, setProgressLoading] = useState(false);
+    const [savingWorkout, setSavingWorkout] = useState(false);
 
     const isTrainerOrAdmin = ['admin', 'h4_admin', 'trainer', 'superadmin'].includes(user?.role);
     const isMember = user?.role === 'member';
+
+    const fetchWorkoutProgress = useCallback(async (filters = {}) => {
+        setProgressLoading(true);
+        try {
+            const { data } = await API.get('/workout-plans/logs', { params: { ...filters, timezoneOffset: new Date().getTimezoneOffset(), limit: 1000 } });
+            setProgressLogs(Array.isArray(data) ? data : []);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not load workout progress.');
+            setProgressLogs([]);
+        } finally { setProgressLoading(false); }
+    }, [toast]);
 
     useEffect(() => {
         if (isMember) {
@@ -59,11 +80,24 @@ const WorkoutPlans = () => {
         fetchData();
     }, [user]);
 
+    useEffect(() => {
+        if (isTrainerOrAdmin) {
+            API.get('/branches').then(({ data }) => setBranches(Array.isArray(data) ? data : [])).catch(() => setBranches([]));
+            API.get('/staff').then(({ data }) => setTrainers((Array.isArray(data) ? data : []).filter(person => person.role === 'trainer'))).catch(() => setTrainers([]));
+        }
+    }, [isTrainerOrAdmin]);
+
+    useEffect(() => {
+        if (!isTrainerOrAdmin || activeTab !== 'progress') return;
+        const timer = window.setTimeout(() => fetchWorkoutProgress(progressFilters), 250);
+        return () => window.clearTimeout(timer);
+    }, [isTrainerOrAdmin, activeTab, progressFilters, fetchWorkoutProgress]);
+
     const fetchData = async () => {
         setLoading(true);
         setError('');
         const requests = [API.get('/workout-plans'), API.get('/workout-templates')];
-        if (isTrainerOrAdmin) requests.push(API.get('/workout-plans/assignable-members', { params: { page: 1, limit: 100 } }));
+        if (isTrainerOrAdmin) requests.push(API.get('/members', { params: { page: 1, limit: 100 } }));
 
         const [plansResult, templatesResult, membersResult] = await Promise.allSettled(requests);
         if (plansResult.status === 'fulfilled') {
@@ -90,7 +124,7 @@ const WorkoutPlans = () => {
                 try {
                     const remainingPages = await Promise.all(
                         Array.from({ length: totalPages - 1 }, (_, index) =>
-                            API.get('/workout-plans/assignable-members', { params: { page: index + 2, limit: 100 } })
+                            API.get('/members', { params: { page: index + 2, limit: 100 } })
                         )
                     );
                     setMembers([
@@ -110,19 +144,21 @@ const WorkoutPlans = () => {
         setLoading(false);
     };
 
-    const fetchMemberStreakAndLogs = () => {
-        const savedStreak = localStorage.getItem(`streak_${user.id}`) || 3;
-        setWorkoutStreak(parseInt(savedStreak));
-        const savedLogs = localStorage.getItem(`logs_${user.id}`);
-        if (savedLogs) {
-            setProgressLogs(JSON.parse(savedLogs));
-        } else {
-            const defaults = [
-                { date: 'Yesterday', name: 'Hypertrophy Upper Body', exercises: 5 },
-                { date: '3 days ago', name: 'Leg Day Core Focus', exercises: 6 }
-            ];
-            setProgressLogs(defaults);
-            localStorage.setItem(`logs_${user.id}`, JSON.stringify(defaults));
+    const fetchMemberStreakAndLogs = async () => {
+        try {
+            const { data } = await API.get('/workout-plans/logs', { params: { from: shiftLocalDay(getLocalDayKey(), -90), to: getLocalDayKey(), timezoneOffset: new Date().getTimezoneOffset(), limit: 1000 } });
+            const logs = Array.isArray(data) ? data : [];
+            setProgressLogs(logs);
+            const loggedDays = new Set(logs.map(log => getLocalDayKey(new Date(log.loggedAt))));
+            let streak = 0;
+            const today = getLocalDayKey();
+            const startOffset = loggedDays.has(today) ? 0 : 1;
+            for (let offset = startOffset; loggedDays.has(shiftLocalDay(today, -offset)); offset += 1) streak += 1;
+            setWorkoutStreak(streak);
+        } catch (err) {
+            console.error('Could not load workout history:', err);
+            setProgressLogs([]);
+            setWorkoutStreak(0);
         }
     };
 
@@ -170,13 +206,15 @@ const WorkoutPlans = () => {
 
     const handlePlanSubmit = async (e) => {
         e.preventDefault();
-        if (!memberId || !planName) return;
+        if (!selectedMemberIds.length || !planName) return;
 
         const payload = {
-            memberId,
+            memberId: selectedMemberIds[0],
+            memberIds: selectedMemberIds,
             name: planName,
             startDate: startDate || null,
             endDate: endDate || null,
+            trainerId: user?.role === 'trainer' ? user.id : (assignedTrainerId || null),
             exercises
         };
 
@@ -200,16 +238,20 @@ const WorkoutPlans = () => {
 
     const handleEditPlan = (plan) => {
         setEditingPlanId(plan.id || plan._id);
-        const assignedMemberId = plan.memberId || plan.member?.id || plan.member?._id || '';
-        setMemberId(assignedMemberId);
-        if (plan.member && assignedMemberId) {
-            setMembers((current) => current.some((member) => String(member._id || member.id) === String(assignedMemberId))
-                ? current
-                : [{ ...plan.member, id: assignedMemberId }, ...current]);
-        }
+        const assignedMemberIds = Array.isArray(plan.memberIds) && plan.memberIds.length
+            ? plan.memberIds.map(String)
+            : [String(plan.memberId || plan.member?.id || plan.member?._id || '')].filter(Boolean);
+        setSelectedMemberIds(assignedMemberIds);
+        const assignedMembers = Array.isArray(plan.members) && plan.members.length ? plan.members : [plan.member].filter(Boolean);
+        setMembers(current => {
+            const map = new Map(current.map(member => [String(member.id || member._id), member]));
+            assignedMembers.forEach(member => map.set(String(member.id || member._id), member));
+            return [...map.values()];
+        });
         setPlanName(plan.name);
         setStartDate(plan.startDate ? plan.startDate.split('T')[0] : '');
         setEndDate(plan.endDate ? plan.endDate.split('T')[0] : '');
+        setAssignedTrainerId(plan.trainerId || plan.trainer?.id || plan.trainer?._id || '');
         setExercises(plan.exercises || []);
         setShowPlanModal(true);
     };
@@ -229,10 +271,12 @@ const WorkoutPlans = () => {
 
     const resetPlanForm = () => {
         setEditingPlanId(null);
-        setMemberId('');
+        setSelectedMemberIds([]);
+        setAssignmentMemberSearch('');
         setPlanName('');
         setStartDate('');
         setEndDate('');
+        setAssignedTrainerId('');
         setExercises([{ day: 'Monday', name: '', sets: 3, reps: 10, weight: '', notes: '' }]);
     };
 
@@ -295,7 +339,7 @@ const WorkoutPlans = () => {
 
     // --- MEMBER WORKOUT TRACKING ---
     const safePlans = Array.isArray(plans) ? plans : [];
-    const activeMemberPlan = safePlans.find(p => p.memberId === user?.memberId || isMember);
+    const activeMemberPlan = safePlans.find(p => (Array.isArray(p.memberIds) ? p.memberIds : [p.memberId]).map(String).includes(String(user?.memberId))) || (isMember ? safePlans[0] : null);
 
     const getExercisesForDay = () => {
         if (!activeMemberPlan || !activeMemberPlan.exercises) return [];
@@ -311,35 +355,57 @@ const WorkoutPlans = () => {
         toast.info(next ? 'Exercise completed! ' : 'Exercise unmarked ');
     };
 
-    const handleCompleteWorkout = () => {
+    const handleCompleteWorkout = async () => {
         const dayEx = getExercisesForDay();
-        const doneCount = dayEx.filter((_, i) => completedExercises[i]).length;
-        if (doneCount === 0) return;
-
-        const newLog = {
-            date: 'Today (' + new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ')',
-            name: `${activeMemberPlan.name} - ${selectedDay}`,
-            exercises: doneCount
-        };
-
-        const updatedLogs = [newLog, ...progressLogs.slice(0, 4)];
-        setProgressLogs(updatedLogs);
-        localStorage.setItem(`logs_${user.id}`, JSON.stringify(updatedLogs));
-
-        const nextStreak = workoutStreak + 1;
-        setWorkoutStreak(nextStreak);
-        localStorage.setItem(`streak_${user.id}`, nextStreak.toString());
-
-        setCompletedExercises({});
-        toast.success(' Awesome job! Today\'s training session has been logged to your streak profile.');
+        const completed = dayEx.filter((_, index) => completedExercises[index]);
+        if (!completed.length) return;
+        setSavingWorkout(true);
+        try {
+            await API.post('/workout-plans/log', {
+                planId: activeMemberPlan.id || activeMemberPlan._id,
+                planName: activeMemberPlan.name,
+                trainingDay: selectedDay,
+                exercises: completed,
+                totalExercises: dayEx.length,
+                loggedAt: new Date().toISOString()
+            });
+            setCompletedExercises({});
+            await fetchMemberStreakAndLogs();
+            toast.success('Training session saved to your progress history.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not save this training session.');
+        } finally { setSavingWorkout(false); }
     };
 
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    const filteredPlans = safePlans.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.member?.name && p.member.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredPlans = safePlans.filter(p => {
+        const query = searchQuery.toLocaleLowerCase();
+        const assignedMembers = Array.isArray(p.members) ? p.members : [p.member].filter(Boolean);
+        return p.name.toLocaleLowerCase().includes(query) || assignedMembers.some(member =>
+            [member.registrationNumber, member.name, member.phone, member.email].some(value => String(value || '').toLocaleLowerCase().includes(query))
+        );
+    });
+
+    const assignmentMemberOptions = useMemo(() => {
+        const query = assignmentMemberSearch.trim().toLocaleLowerCase();
+        if (!query) return members;
+        return members.filter(member => [member.registrationNumber, member.id, member._id, member.name, member.phone, member.email]
+            .some(value => String(value || '').toLocaleLowerCase().includes(query)));
+    }, [members, assignmentMemberSearch]);
+
+    const workoutTrendData = useMemo(() => {
+        const grouped = new Map();
+        progressLogs.forEach(log => {
+            const dateKey = getLocalDayKey(new Date(log.loggedAt));
+            const row = grouped.get(dateKey) || { date: new Date(log.loggedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), sessions: 0, exercises: 0, adherence: 0 };
+            row.sessions += 1;
+            row.exercises += Number(log.completedExercises) || 0;
+            row.adherence += log.totalExercises ? (Number(log.completedExercises) / Number(log.totalExercises)) * 100 : 0;
+            grouped.set(dateKey, row);
+        });
+        return [...grouped.values()].reverse().map(row => ({ ...row, adherence: Math.round(row.adherence / row.sessions) }));
+    }, [progressLogs]);
 
     return (
         <div className="fade-in">
@@ -387,6 +453,15 @@ const WorkoutPlans = () => {
                             onClick={() => setActiveTab('templates')}
                         >
                             Global Templates ({templates.length})
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={activeTab === 'progress'}
+                            className={`workout-tab ${activeTab === 'progress' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('progress')}
+                        >
+                            Member Progress
                         </button>
                     </>
                 )}
@@ -444,9 +519,11 @@ const WorkoutPlans = () => {
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                                     <div>
                                                         <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '0.05em' }}>
-                                                            {plan.member?.name ? `Member: ${plan.member.name}` : 'No Member Linked'}
+                                                            {plan.members?.length > 1 ? `${plan.members.length} assigned members` : (plan.member?.name ? `Member: ${plan.member.name}` : 'No Member Linked')}
                                                         </span>
+                                                        {(plan.members?.length ? plan.members : [plan.member].filter(Boolean)).map(member => <div key={member.id || member._id} style={{ fontSize: '.75rem', color: 'var(--text-secondary)', marginTop: 3 }}><strong style={{ color: 'var(--text-primary)' }}>{member.registrationNumber || member.displayId || 'Member ID pending'}</strong> · {member.name} · {member.phone || 'No phone'}</div>)}
                                                         <h3 style={{ marginTop: '0.25rem', marginBottom: '0.5rem', fontSize: '1.15rem' }}>{plan.name}</h3>
+                                                        <small style={{ color: 'var(--text-secondary)' }}>Assigned {new Date(plan.createdAt).toLocaleDateString()}</small>
                                                     </div>
                                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                         <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEditPlan(plan)}>
@@ -559,6 +636,24 @@ const WorkoutPlans = () => {
                         </div>
                     )}
 
+                    {activeTab === 'progress' && isTrainerOrAdmin && <div>
+                        <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginBottom: 16 }}>
+                            <label style={workoutFilterLabel}>From<input className="input" type="date" value={progressFilters.from} onChange={e => setProgressFilters({ ...progressFilters, from: e.target.value })} /></label>
+                            <label style={workoutFilterLabel}>To<input className="input" type="date" value={progressFilters.to} onChange={e => setProgressFilters({ ...progressFilters, to: e.target.value })} /></label>
+                            <MemberFilterSelect label="Member" value={progressFilters.memberId} onChange={memberId => setProgressFilters({ ...progressFilters, memberId })} style={{ minWidth: 230 }} />
+                            <label style={workoutFilterLabel}>Branch<select className="input" value={progressFilters.branchId} disabled={Boolean(user?.branchId)} onChange={e => setProgressFilters({ ...progressFilters, branchId: e.target.value })}><option value="">All branches</option>{branches.map(branch => <option key={branch._id || branch.id} value={branch._id || branch.id}>{branch.name}</option>)}</select></label>
+                            {user?.role !== 'trainer' && <label style={workoutFilterLabel}>Trainer<select className="input" value={progressFilters.trainerId} onChange={e => setProgressFilters({ ...progressFilters, trainerId: e.target.value })}><option value="">All trainers</option>{trainers.map(person => <option key={person._id || person.id} value={person._id || person.id}>{person.name}</option>)}</select></label>}
+                            <ResetFiltersButton onClick={() => setProgressFilters({ from: '', to: '', memberId: '', branchId: '', trainerId: '' })} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
+                            <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Training sessions</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length}</h2></div>
+                            <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Exercises completed</small><h2 style={{ margin: '4px 0' }}>{progressLogs.reduce((sum, log) => sum + Number(log.completedExercises || 0), 0)}</h2></div>
+                            <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Average session completion</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length ? `${Math.round(progressLogs.reduce((sum, log) => sum + (log.totalExercises ? log.completedExercises / log.totalExercises : 0), 0) / progressLogs.length * 100)}%` : '—'}</h2></div>
+                        </div>
+                        <div className="card" style={{ marginBottom: 16 }}><h3 style={{ marginTop: 0 }}>Training consistency by date</h3>{progressLoading ? <div className="spinner" /> : workoutTrendData.length ? <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={workoutTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Bar dataKey="sessions" name="Sessions" fill="#818cf8" radius={[4, 4, 0, 0]} /><Bar dataKey="exercises" name="Exercises completed" fill="#34d399" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>No workout logs match these filters.</p>}</div>
+                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}><table><thead><tr><th>Date</th><th>Member ID</th><th>Name</th><th>Phone</th><th>Workout</th><th>Day</th><th>Exercises</th><th>Recorded by</th><th>Branch</th></tr></thead><tbody>{progressLogs.map(log => <tr key={log.id}><td>{new Date(log.loggedAt).toLocaleDateString()}</td><td>{log.member?.displayId || log.memberId}</td><td>{log.member?.name || 'Member'}</td><td>{log.member?.phone || '—'}</td><td>{log.plan?.name || log.planName}</td><td>{log.trainingDay || '—'}</td><td>{log.completedExercises}/{log.totalExercises}</td><td>{log.recordedBy?.name || '—'}</td><td>{log.branch?.name || '—'}</td></tr>)}{!progressLoading && !progressLogs.length && <tr><td colSpan="9" style={{ textAlign: 'center', padding: 24 }}>No workout records for this date range.</td></tr>}</tbody></table></div>
+                    </div>}
+
                     {/* TAB Content: MEMBER WORKOUT TRACKER */}
                     {activeTab === 'my-workout' && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'start' }}>
@@ -656,9 +751,9 @@ const WorkoutPlans = () => {
                                                 className="btn btn-primary" 
                                                 style={{ width: '100%', marginTop: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                                                 onClick={handleCompleteWorkout}
-                                                disabled={getExercisesForDay().filter((_, i) => completedExercises[i]).length === 0}
+                                                disabled={savingWorkout || getExercisesForDay().filter((_, i) => completedExercises[i]).length === 0}
                                             >
-                                                <Award size={18} /> Log Today's Training session
+                                                <Award size={18} /> {savingWorkout ? 'Saving session…' : 'Log today’s training session'}
                                             </button>
                                         )}
                                     </div>
@@ -676,17 +771,22 @@ const WorkoutPlans = () => {
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0 }}>You are training consistently! Keep moving to unlock achievements.</p>
                                 </div>
 
+                                <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <h3 style={{ margin: '0 0 1rem', fontSize: '1rem' }}>Exercises completed · last 90 days</h3>
+                                    {workoutTrendData.length ? <div style={{ height: 200 }}><ResponsiveContainer width="100%" height="100%"><LineChart data={workoutTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Line type="monotone" dataKey="exercises" name="Exercises completed" stroke="#34d399" strokeWidth={3} /></LineChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>Log a workout to start your progress chart.</p>}
+                                </div>
+
                                 <div className="card" style={{ padding: '1.5rem' }}>
                                     <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1rem' }}>Workout Compliance History</h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {progressLogs.map((log, index) => (
                                             <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: index !== progressLogs.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: '0.75rem' }}>
                                                 <div>
-                                                    <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{log.name}</div>
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{log.date}</div>
+                                                    <div style={{ fontWeight: '700', fontSize: '0.85rem' }}>{log.planName} · {log.trainingDay || 'Training'}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{new Date(log.loggedAt).toLocaleDateString()}</div>
                                                 </div>
                                                 <div style={{ background: 'rgba(46, 125, 50, 0.1)', color: 'var(--success)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700' }}>
-                                                    {log.exercises} Exercises
+                                                    {log.completedExercises} Exercises
                                                 </div>
                                             </div>
                                         ))}
@@ -712,25 +812,42 @@ const WorkoutPlans = () => {
                         </div>
                         <form onSubmit={handlePlanSubmit}>
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Select Member</label>
-                                <select 
-                                    className="form-control" 
-                                    style={{ width: '100%' }}
-                                    value={memberId} 
-                                    onChange={(e) => setMemberId(e.target.value)}
-                                    required
-                                    disabled={!!editingPlanId}
-                                >
-                                    <option value="">Choose member...</option>
-                                    {members.map(m => (
-                                        <option key={m._id || m.id} value={m._id || m.id}>{m.name} ({m.phone || m.email || 'No contact details'})</option>
-                                    ))}
-                                </select>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Select members <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>· {selectedMemberIds.length} selected</span></label>
+                                <input
+                                    className="form-control"
+                                    type="search"
+                                    value={assignmentMemberSearch}
+                                    onChange={event => setAssignmentMemberSearch(event.target.value)}
+                                    placeholder="Search by member ID (MEM1001), name, phone, or email"
+                                    aria-label="Search members by ID, name, phone, or email"
+                                    style={{ width: '100%', marginBottom: '.5rem' }}
+                                />
+                                {selectedMemberIds.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', marginBottom: '.5rem' }} aria-label="Selected members">
+                                    {selectedMemberIds.map(id => {
+                                        const member = members.find(item => String(item.id || item._id) === id);
+                                        return <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: '.35rem', border: '1px solid var(--border)', background: 'var(--bg-secondary)', borderRadius: 999, padding: '.25rem .45rem .25rem .7rem', fontSize: '.78rem' }}>
+                                            {member ? `${member.registrationNumber || member.displayId || 'Member'} · ${member.name}` : 'Selected member'}
+                                            <button type="button" aria-label={`Remove ${member?.name || 'member'} from workout plan`} onClick={() => setSelectedMemberIds(current => current.filter(selectedId => selectedId !== id))} style={{ border: 0, background: 'transparent', cursor: 'pointer', lineHeight: 1, color: 'var(--text-secondary)' }}>×</button>
+                                        </span>;
+                                    })}
+                                </div>}
+                                <div role="group" aria-label="Choose members for this workout plan" style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface, #fff)' }}>
+                                    {assignmentMemberOptions.map(member => {
+                                        const id = String(member.id || member._id);
+                                        const checked = selectedMemberIds.includes(id);
+                                        return <label key={id} style={{ display: 'flex', alignItems: 'center', gap: '.65rem', padding: '.65rem .8rem', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={checked} onChange={() => setSelectedMemberIds(current => checked ? current.filter(selectedId => selectedId !== id) : [...current, id])} />
+                                            <span style={{ minWidth: 0 }}><strong>{member.registrationNumber || member.displayId || 'Member ID pending'}</strong> · {member.name} <span style={{ color: 'var(--text-secondary)' }}>({member.phone || member.email || 'No contact details'})</span></span>
+                                        </label>;
+                                    })}
+                                    {members.length > 0 && assignmentMemberOptions.length === 0 && <div style={{ padding: '.8rem', color: 'var(--text-secondary)' }}>No members match that ID, name, phone, or email.</div>}
+                                </div>
                                 {members.length === 0 && (
                                     <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
                                         No members found for this gym. Add a member before assigning a workout plan.
                                     </small>
                                 )}
+                                <small style={{ display: 'block', marginTop: '.5rem', color: 'var(--text-secondary)' }}>This plan will be added to every selected member. You can add or remove members when editing.</small>
                             </div>
 
                             {/* Load Template Quick Option */}
@@ -782,6 +899,7 @@ const WorkoutPlans = () => {
                                     />
                                 </div>
                             </div>
+                            {user?.role !== 'trainer' && <div className="form-group" style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Assigned trainer</label><select className="form-control" value={assignedTrainerId} onChange={e => setAssignedTrainerId(e.target.value)}><option value="">No specific trainer</option>{trainers.map(person => <option key={person._id || person.id} value={person._id || person.id}>{person.name}</option>)}</select></div>}
 
                             {/* Exercises schedule builder */}
                             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
@@ -846,7 +964,7 @@ const WorkoutPlans = () => {
 
                             <div className="workout-modal-actions">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowPlanModal(false)}>Cancel</button>
-                                <button type="submit" className="btn btn-primary">{editingPlanId ? 'Save changes' : 'Assign workout plan'}</button>
+                                <button type="submit" className="btn btn-primary" disabled={!selectedMemberIds.length || !planName.trim()}>{editingPlanId ? 'Save changes' : 'Assign workout plan'}</button>
                             </div>
                         </form>
                     </div>
@@ -958,5 +1076,11 @@ const WorkoutPlans = () => {
         </div>
     );
 };
+
+function getLocalDayKey(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function shiftLocalDay(day, offset) { const date = new Date(`${day}T00:00:00`); date.setDate(date.getDate() + offset); return getLocalDayKey(date); }
+const workoutFilterLabel = { display: 'grid', gap: 6, color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 };
 
 export default WorkoutPlans;

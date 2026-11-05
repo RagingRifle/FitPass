@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Target, User, Phone, Calendar, Tag, ChevronLeft, ChevronRight, RefreshCw, Info } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
 import API from '../services/api';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 
 // ─── Badge component ─────────────────────────────────────────────────────────
 const statusColors = {
@@ -39,7 +39,6 @@ const fmtDate = (ts) => {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 const FitPassPartnerLeads = () => {
-    const { user } = useContext(AuthContext);
 
     const [leads, setLeads]       = useState([]);
     const [total, setTotal]       = useState(0);
@@ -175,6 +174,7 @@ const FitPassPartnerLeads = () => {
                             {s}
                         </button>
                     ))}
+                    <ResetFiltersButton onClick={() => { setStatusFilter(''); setPage(1); }} />
                 </div>
             </div>
 

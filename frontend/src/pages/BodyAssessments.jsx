@@ -8,6 +8,8 @@ import {
     getMembers
 } from '../services/apiService';
 import Modal from '../components/Modal';
+import MemberFilterSelect from '../components/MemberFilterSelect';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend
@@ -21,8 +23,8 @@ const BodyAssessments = () => {
     const [members, setMembers] = useState([]);
     const [selectedMemberId, setSelectedMemberId] = useState('');
     const [assessments, setAssessments] = useState([]);
+    const [assessmentFilters, setAssessmentFilters] = useState({ from: '', to: '' });
     const [loading, setLoading] = useState(true);
-    const [showSamplePreview, setShowSamplePreview] = useState(false);
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,17 +49,17 @@ const BodyAssessments = () => {
 
     useEffect(() => {
         if (selectedMemberId) {
-            fetchAssessments(selectedMemberId);
+            fetchAssessments(selectedMemberId, assessmentFilters);
         } else {
             setAssessments([]);
             setLoading(false);
         }
-    }, [selectedMemberId]);
+    }, [selectedMemberId, assessmentFilters]);
 
     const fetchMembers = async () => {
         try {
             // Fetch first page/all members
-            const res = await getMembers('', 1, '');
+            const res = await getMembers('', 1, '', 100);
             const memberList = Array.isArray(res) ? res : (res?.members || res?.data || []);
             setMembers(memberList);
         } catch (error) {
@@ -66,10 +68,10 @@ const BodyAssessments = () => {
         }
     };
 
-    const fetchAssessments = async (memberId) => {
+    const fetchAssessments = async (memberId, filters = {}) => {
         setLoading(true);
         try {
-            const data = await getBodyAssessments(memberId);
+            const data = await getBodyAssessments(memberId, filters);
             const list = Array.isArray(data) ? data : (data?.data || []);
             // Sort assessments chronologically for charts (date ascending)
             const sorted = [...list].sort((a, b) => new Date(a.assessmentDate) - new Date(b.assessmentDate));
@@ -128,7 +130,7 @@ const BodyAssessments = () => {
             } else {
                 await createBodyAssessment(submissionData);
             }
-            fetchAssessments(selectedMemberId);
+            await fetchAssessments(selectedMemberId, assessmentFilters);
             setIsModalOpen(false);
         } catch (error) {
             alert(error.response?.data?.message || 'Error saving assessment');
@@ -139,7 +141,7 @@ const BodyAssessments = () => {
         if (window.confirm('Are you sure you want to delete this assessment record?')) {
             try {
                 await deleteBodyAssessment(id);
-                fetchAssessments(selectedMemberId);
+                fetchAssessments(selectedMemberId, assessmentFilters);
             } catch {
                 alert('Error deleting assessment');
             }
@@ -148,13 +150,8 @@ const BodyAssessments = () => {
 
     const safeAssessments = Array.isArray(assessments) ? assessments : [];
     const safeMembers = Array.isArray(members) ? members : [];
-    const sampleAssessments = [
-        { _id: 'sample-1', assessmentDate: new Date(Date.now() - 60 * 86400000).toISOString(), weight: 78.5, bmi: 24.8, bodyFat: 19.2, muscleMass: 62.1, bmr: 1750, inBodyScore: 72 },
-        { _id: 'sample-2', assessmentDate: new Date(Date.now() - 30 * 86400000).toISOString(), weight: 76.8, bmi: 24.3, bodyFat: 18.1, muscleMass: 62.6, bmr: 1738, inBodyScore: 76 },
-        { _id: 'sample-3', assessmentDate: new Date().toISOString(), weight: 75.6, bmi: 23.9, bodyFat: 17.4, muscleMass: 63.0, bmr: 1725, inBodyScore: 80 }
-    ];
-    const isSamplePreview = safeAssessments.length === 0 && showSamplePreview;
-    const displayedAssessments = isSamplePreview ? sampleAssessments : safeAssessments;
+    const selectedMember = safeMembers.find(member => String(member._id || member.id) === String(selectedMemberId));
+    const displayedAssessments = safeAssessments;
 
     // Calculate charts data
     const chartData = displayedAssessments.map(a => ({
@@ -203,22 +200,17 @@ const BodyAssessments = () => {
             {/* Member Selection for Staff */}
             {isStaff && (
                 <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
-                    <label style={{ display: 'block', fontWeight: '700', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Select Member to View/Record InBody History:</label>
-                    <select
-                        className="input"
-                        value={selectedMemberId}
-                        onChange={(e) => setSelectedMemberId(e.target.value)}
-                        style={{ maxWidth: '400px' }}
-                    >
-                        <option value="">-- Choose a Member --</option>
-                        {safeMembers.map(m => (
-                            <option key={m._id} value={m._id}>
-                                {m.name} ({m.phone})
-                            </option>
-                        ))}
-                    </select>
+                    <MemberFilterSelect label="Select member to view or record InBody history" value={selectedMemberId} onChange={setSelectedMemberId} includeAll={false} style={{ maxWidth: 520 }} />
+                    {selectedMember && <div style={{ color: 'var(--text-secondary)', fontSize: '.8rem', marginTop: 8 }}>Member ID: {selectedMember.registrationNumber || selectedMember._id || selectedMember.id} · {selectedMember.name} · {selectedMember.phone || 'No phone'}</div>}
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12, maxWidth: 520 }}>
+                        <label style={assessmentFilterLabel}>From<input className="input" type="date" value={assessmentFilters.from} onChange={e => setAssessmentFilters({ ...assessmentFilters, from: e.target.value })} /></label>
+                        <label style={assessmentFilterLabel}>To<input className="input" type="date" value={assessmentFilters.to} onChange={e => setAssessmentFilters({ ...assessmentFilters, to: e.target.value })} /></label>
+                        <ResetFiltersButton onClick={() => { setAssessmentFilters({ from: '', to: '' }); setSelectedMemberId(''); }} />
+                    </div>
                 </div>
             )}
+
+            {!isStaff && <div className="card" style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Member ID: {user?.registrationNumber || user?.memberId || '—'} · {user?.name || 'Member'} · {user?.phone || 'No phone'}</div>}
 
             {!selectedMemberId ? (
                 <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
@@ -296,16 +288,10 @@ const BodyAssessments = () => {
                             <Activity size={48} style={{ margin: '0 auto 1rem', color: 'var(--primary-color)', opacity: 0.5 }} />
                             <h3>No assessments logged yet</h3>
                             <p>A trainer or admin can record this member’s readings after an InBody assessment.</p>
-                            <button className="btn btn-secondary" onClick={() => setShowSamplePreview(true)}>Preview sample data</button>
+                            {isStaff && <button className="btn btn-primary" style={{ marginTop: '0.75rem' }} onClick={() => handleOpenModal()}>Record first assessment</button>}
                         </div>
                     ) : (
                         <div>
-                            {isSamplePreview && (
-                                <div role="status" style={{ background: '#fff6d8', border: '1px solid #e8c95c', color: '#4b3b00', borderRadius: '12px', padding: '0.9rem 1rem', marginBottom: '1rem' }}>
-                                    <strong>Sample preview only.</strong> These example readings are not stored in this member’s account.{' '}
-                                    <button className="btn btn-secondary" style={{ marginLeft: '0.75rem' }} onClick={() => setShowSamplePreview(false)}>Close preview</button>
-                                </div>
-                            )}
                             {/* Charts Visualization Row */}
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                                 {/* Weight & Muscle Mass Trend */}
@@ -359,7 +345,7 @@ const BodyAssessments = () => {
                                                 <th>Muscle Mass (kg)</th>
                                                 <th>BMR (kcal)</th>
                                                 <th>InBody Score</th>
-                                                {isStaff && !isSamplePreview && <th>Actions</th>}
+                                                {isStaff && <th>Actions</th>}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -382,7 +368,7 @@ const BodyAssessments = () => {
                                                     <td>{item.muscleMass} kg</td>
                                                     <td>{item.bmr} kcal</td>
                                                     <td>{item.inBodyScore || '—'}</td>
-                                                    {isStaff && !isSamplePreview && (
+                                                    {isStaff && (
                                                         <td>
                                                             <div style={{ display: 'flex', gap: '0.4rem' }}>
                                                                 <button
@@ -508,5 +494,7 @@ const BodyAssessments = () => {
         </div>
     );
 };
+
+const assessmentFilterLabel = { display: 'grid', gap: 6, color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600, flex: '1 1 180px' };
 
 export default BodyAssessments;

@@ -2,8 +2,19 @@ const cron = require('node-cron');
 const Member = require('../models/Member');
 const { sendEmail, sendWhatsApp } = require('./notificationService');
 const logger = require('../lib/logger');
+const { autoUnfreezeDueMembers } = require('../controllers/freezeController');
 
 const startCronJobs = () => {
+    // Scheduled membership pauses resume automatically at their chosen time.
+    cron.schedule('*/5 * * * *', async () => {
+        try {
+            const resumed = await autoUnfreezeDueMembers();
+            if (resumed) logger.info(`[MembershipFreeze] Automatically resumed ${resumed} scheduled pause(s).`);
+        } catch (error) {
+            logger.error({ err: error }, '[MembershipFreeze] Automatic resume job failed.');
+        }
+    });
+
     // Run every day at midnight (00:00)
     cron.schedule('0 0 * * *', async () => {
         logger.info('--- Running Daily Gym CRM Maintenance Job ---');

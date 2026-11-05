@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Plans = lazy(() => import('./pages/Plans'));
 const Members = lazy(() => import('./pages/Members'));
 const Payments = lazy(() => import('./pages/Payments'));
+const Sales = lazy(() => import('./pages/Sales'));
 const Attendance = lazy(() => import('./pages/Attendance'));
 const Expenses = lazy(() => import('./pages/Expenses'));
 const Dues = lazy(() => import('./pages/Dues'));
@@ -241,6 +242,12 @@ function App() {
             <Layout>
               <Analytics />
             </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/sales" element={
+          <ProtectedRoute roles={['admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin']}>
+            <Layout><Sales /></Layout>
           </ProtectedRoute>
         } />
 

@@ -150,7 +150,10 @@ const createMember = catchAsync(async (req, res, next) => {
 
         const numericPaid = Number(req.body.paidAmount) || 0;
 
+        const { allocateMemberCode } = require('../utils/idGenerator');
+        const memberCode = await allocateMemberCode();
         const member = await Member.create({
+            registrationNumber: memberCode,
             name,
             phone,
             email: email || null,
@@ -169,6 +172,12 @@ const createMember = catchAsync(async (req, res, next) => {
             // Create a User record for the member to allow login
             // Default password is password param or phone number
             const { password, paymentMethod = 'Cash' } = req.body;
+            const salesStaff = req.body.salesStaffId
+                ? await User.findOne({ _id: req.body.salesStaffId, gymId: targetGymId }).lean() || await User.findOne({ name: req.body.salesStaffId, gymId: targetGymId }).lean()
+                : null;
+            const leadRecord = req.body.leadId
+                ? await require('../models/Lead').findOne({ _id: req.body.leadId, gymId: targetGymId }).lean()
+                : null;
             await User.create({
                 name: member.name,
                 email: emailCheck,
@@ -181,17 +190,20 @@ const createMember = catchAsync(async (req, res, next) => {
             });
 
             // If an upfront payment was made during registration, record it in the payment ledger
-            if (numericPaid > 0) {
-                const Payment = require('../models/Payment');
-                await Payment.create({
-                    memberId: member._id,
-                    amount: numericPaid,
-                    method: paymentMethod,
-                    date: startDate,
-                    gymId: targetGymId,
-                    branchId: targetBranchId
-                });
-            }
+            const Payment = require('../models/Payment');
+            await Payment.create({
+                memberId: member._id,
+                amount: numericPaid,
+                method: paymentMethod,
+                date: startDate,
+                gymId: targetGymId,
+                branchId: targetBranchId,
+                saleType: 'NEW_MEMBER',
+                source: req.body.saleSource || leadRecord?.source || '',
+                staffId: salesStaff?._id || req.user.id || req.user._id || null,
+                staffName: salesStaff?.name || req.user.name || '',
+                leadId: leadRecord?._id || null
+            });
 
             await logAudit(
                 req,
@@ -247,7 +259,9 @@ const getMembers = catchAsync(async (req, res, next) => {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },
                 { phone: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } }
+                { email: { $regex: search, $options: 'i' } },
+                { registrationNumber: { $regex: search, $options: 'i' } },
+                { id: { $regex: search, $options: 'i' } }
             ];
         }
 
@@ -277,8 +291,8 @@ const getMembers = catchAsync(async (req, res, next) => {
             ...m,
             profileImageUrl: profileImages.get(String(m._id || m.id)) || null,
             branchName: m.branchId ? branchNames.get(String(m.branchId)) || null : null,
-            empid: getMemberCode(m, skip + idx),
-            displayId: getMemberCode(m, skip + idx)
+            empid: m.registrationNumber || getMemberCode(m, skip + idx),
+            displayId: m.registrationNumber || getMemberCode(m, skip + idx)
         }));
 
         res.json({
@@ -601,7 +615,7 @@ const getMemberAuditTrail = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const renewMember = catchAsync(async (req, res, next) => {
     try {
-        const { planId, paidAmount = 0, discount = 0, finalPrice, method = 'Cash' } = req.body;
+        const { planId, paidAmount = 0, discount = 0, finalPrice, method = 'Cash', salesType = 'RENEWAL', salesStaffId, saleSource = '' } = req.body;
         const member = await Member.findOne(await buildMemberQuery(req, req.params.id));
         if (!member) {
             return res.status(404).json({ success: false, message: 'Member not found' });
@@ -648,17 +662,22 @@ const renewMember = catchAsync(async (req, res, next) => {
         // When renewing/shifting plan, member's paidAmount for this active plan cycle tracks the amount paid towards netAgreedPrice
         member.paidAmount = numericPaid;
 
-        if (numericPaid > 0) {
-            const Payment = require('../models/Payment');
-            await Payment.create({
-                memberId: member._id,
-                amount: numericPaid,
-                method,
-                date: now,
-                gymId: member.gymId,
-                branchId: member.branchId || null
-            });
-        }
+        const Payment = require('../models/Payment');
+        const salesStaff = salesStaffId
+            ? await User.findOne({ _id: salesStaffId, gymId: member.gymId }).lean() || await User.findOne({ name: salesStaffId, gymId: member.gymId }).lean()
+            : null;
+        await Payment.create({
+            memberId: member._id,
+            amount: numericPaid,
+            method,
+            date: now,
+            gymId: member.gymId,
+            branchId: member.branchId || null,
+            saleType: salesType === 'UPGRADE' ? 'UPGRADE' : 'RENEWAL',
+            source: saleSource,
+            staffId: salesStaff?._id || req.user.id || req.user._id || null,
+            staffName: salesStaff?.name || req.user.name || ''
+        });
 
         await member.save();
         await logAudit(

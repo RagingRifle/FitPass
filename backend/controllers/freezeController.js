@@ -1,6 +1,39 @@
 const catchAsync = require('../utils/catchAsync');
-const AppError = require('../utils/appError');
 const Member = require('../models/Member');
+
+const resumeFrozenMember = async (member, resumeAt = new Date(), automatic = false) => {
+    const history = Array.isArray(member.freezeHistory) ? member.freezeHistory : [];
+    const openFreeze = [...history].reverse().find(record => !record.unfreezeDate);
+    if (!openFreeze) return null;
+
+    const unfreezeDate = new Date(resumeAt);
+    const freezeDate = new Date(openFreeze.freezeDate);
+    const frozenMs = Math.max(0, unfreezeDate.getTime() - freezeDate.getTime());
+    const daysAdded = Math.ceil(frozenMs / (1000 * 60 * 60 * 24));
+    const remainingMsAtFreeze = openFreeze.remainingMsAtFreeze !== null
+        && openFreeze.remainingMsAtFreeze !== undefined
+        && Number.isFinite(Number(openFreeze.remainingMsAtFreeze))
+        ? Number(openFreeze.remainingMsAtFreeze)
+        : null;
+
+    openFreeze.unfreezeDate = unfreezeDate;
+    openFreeze.daysAdded = daysAdded;
+    openFreeze.autoUnfrozen = automatic;
+
+    if (remainingMsAtFreeze !== null) {
+        member.expiryDate = new Date(unfreezeDate.getTime() + remainingMsAtFreeze);
+    } else if (member.expiryDate) {
+        // Backward compatibility for freezes created before remaining time was stored.
+        const expiry = new Date(member.expiryDate);
+        expiry.setDate(expiry.getDate() + daysAdded);
+        member.expiryDate = expiry;
+    }
+
+    member.scheduledUnfreezeAt = null;
+    member.status = member.expiryDate && new Date(member.expiryDate) <= unfreezeDate ? 'Expired' : 'Active';
+    await member.save();
+    return { daysAdded, newExpiryDate: member.expiryDate };
+};
 
 // @desc    Freeze a member's membership
 // @route   POST /api/members/:id/freeze
@@ -15,13 +48,26 @@ const freezeMember = catchAsync(async (req, res, next) => {
         if (!member) return res.status(404).json({ message: 'Member not found' });
         if (member.status === 'Frozen') return res.status(400).json({ message: 'Member is already frozen' });
 
-        const { reason } = req.body;
+        const { reason, mode = 'manual', scheduledUnfreezeAt } = req.body;
+        const shouldSchedule = mode === 'scheduled';
+        const scheduledDate = shouldSchedule && scheduledUnfreezeAt ? new Date(scheduledUnfreezeAt) : null;
+        if (shouldSchedule && (!scheduledDate || Number.isNaN(scheduledDate.getTime()) || scheduledDate <= new Date())) {
+            return res.status(400).json({ message: 'Choose an automatic resume time in the future.' });
+        }
 
+        const freezeDate = new Date();
         member.status = 'Frozen';
-        member.freezeHistory.push({ freezeDate: new Date(), reason: reason || '' });
+        member.scheduledUnfreezeAt = scheduledDate;
+        member.freezeHistory.push({
+            freezeDate,
+            reason: reason || '',
+            mode: shouldSchedule ? 'scheduled' : 'manual',
+            scheduledUnfreezeAt: scheduledDate,
+            remainingMsAtFreeze: member.expiryDate ? Math.max(0, new Date(member.expiryDate).getTime() - freezeDate.getTime()) : null
+        });
         await member.save();
 
-        res.json({ message: 'Member membership frozen successfully', member });
+        res.json({ message: shouldSchedule ? 'Membership paused with automatic resume scheduled.' : 'Membership paused until manually released.', member });
     } catch (error) { next(error); }
 });
 
@@ -38,31 +84,13 @@ const unfreezeMember = catchAsync(async (req, res, next) => {
         if (!member) return res.status(404).json({ message: 'Member not found' });
         if (member.status !== 'Frozen') return res.status(400).json({ message: 'Member is not frozen' });
 
-        // Find the latest open freeze record (no unfreezeDate)
-        const openFreeze = [...member.freezeHistory].reverse().find(f => !f.unfreezeDate);
-        if (!openFreeze) return res.status(400).json({ message: 'No active freeze record found' });
-
-        const unfreezeDate = new Date();
-        const freezeDate = new Date(openFreeze.freezeDate);
-        const frozenMs = unfreezeDate - freezeDate;
-        const daysAdded = Math.ceil(frozenMs / (1000 * 60 * 60 * 24));
-
-        // Close the freeze record
-        openFreeze.unfreezeDate = unfreezeDate;
-        openFreeze.daysAdded = daysAdded;
-
-        // Extend expiry date by number of days frozen
-        const currentExpiry = new Date(member.expiryDate);
-        currentExpiry.setDate(currentExpiry.getDate() + daysAdded);
-        member.expiryDate = currentExpiry;
-
-        member.status = 'Active';
-        await member.save();
+        const result = await resumeFrozenMember(member);
+        if (!result) return res.status(400).json({ message: 'No active freeze record found' });
 
         res.json({
-            message: `Member unfrozen. Expiry extended by ${daysAdded} day(s).`,
-            daysAdded,
-            newExpiryDate: member.expiryDate,
+            message: `Member unfrozen. Remaining membership time restored (${result.daysAdded} day(s) paused).`,
+            daysAdded: result.daysAdded,
+            newExpiryDate: result.newExpiryDate,
             member
         });
     } catch (error) { next(error); }
@@ -77,10 +105,20 @@ const getFreezeHistory = catchAsync(async (req, res, next) => {
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
         }
-        const member = await Member.findOne(query).select('name freezeHistory status');
+        const member = await Member.findOne(query).select('name freezeHistory status scheduledUnfreezeAt');
         if (!member) return res.status(404).json({ message: 'Member not found' });
         res.json({ name: member.name, status: member.status, freezeHistory: member.freezeHistory });
     } catch (error) { next(error); }
 });
 
-module.exports = { freezeMember, unfreezeMember, getFreezeHistory };
+const autoUnfreezeDueMembers = async (now = new Date()) => {
+    const dueMembers = await Member.find({ status: 'Frozen', scheduledUnfreezeAt: { $lte: now } });
+    let resumed = 0;
+    for (const member of dueMembers) {
+        const result = await resumeFrozenMember(member, now, true);
+        if (result) resumed += 1;
+    }
+    return resumed;
+};
+
+module.exports = { freezeMember, unfreezeMember, getFreezeHistory, autoUnfreezeDueMembers };

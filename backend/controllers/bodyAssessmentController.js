@@ -72,8 +72,23 @@ const getAssessments = catchAsync(async (req, res, next) => {
         // If member is calling, force show only their assessments
         if (req.user.role === 'member') {
             query.memberId = req.user.memberId;
+        } else if (req.user.role === 'trainer') {
+            query.trainerId = req.user.id;
         } else if (req.query.memberId) {
             query.memberId = req.query.memberId;
+        }
+
+        const timezoneOffset = Number(req.query.timezoneOffset) || 0;
+        const dateBoundary = (value, nextDay = false) => {
+            const [year, month, day] = String(value).split('-').map(Number);
+            const timestamp = Date.UTC(year, month - 1, day + (nextDay ? 1 : 0)) - timezoneOffset * 60_000;
+            return new Date(timestamp - (nextDay ? 1 : 0));
+        };
+        if (req.query.from || req.query.to) {
+            query.assessmentDate = {
+                ...(req.query.from ? { $gte: dateBoundary(req.query.from) } : {}),
+                ...(req.query.to ? { $lte: dateBoundary(req.query.to, true) } : {})
+            };
         }
 
         // Strict pagination parameters with hard cap at 100
@@ -93,7 +108,7 @@ const getAssessments = catchAsync(async (req, res, next) => {
         const trainerIds = [...new Set(assessments.map(a => a.trainerId).filter(Boolean))];
 
         const [members, trainers] = await Promise.all([
-            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id name phone email').lean() : [],
+            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id registrationNumber name phone email').lean() : [],
             trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
         ]);
 
@@ -105,7 +120,7 @@ const getAssessments = catchAsync(async (req, res, next) => {
             const t = a.trainerId ? trainerMap.get(a.trainerId.toString()) : null;
             return {
                 ...a,
-                member: m ? { id: m.id || m._id, name: m.name, phone: m.phone, email: m.email } : null,
+                member: m ? { id: m.id || m._id, displayId: m.registrationNumber || m.id || m._id, name: m.name, phone: m.phone, email: m.email } : null,
                 trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
             };
         });

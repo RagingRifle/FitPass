@@ -1,7 +1,10 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import MemberFilterSelect from '../components/MemberFilterSelect';
+import ResetFiltersButton from '../components/ResetFiltersButton';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { 
     Apple, Calendar, User, Plus, Trash2, Edit3, Search, 
     Flame, Cookie, Zap, Droplet, Sparkles, CheckCircle2, Circle, X
@@ -19,13 +22,18 @@ const DietPlans = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [memberSearch, setMemberSearch] = useState('');
     const [membersLoading, setMembersLoading] = useState(false);
-    const [memberDetailsLoading, setMemberDetailsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('plans');
     const [templateMode, setTemplateMode] = useState(false);
     const [editingTemplateId, setEditingTemplateId] = useState(null);
     const [templateName, setTemplateName] = useState('');
     const [templateDesc, setTemplateDesc] = useState('');
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [progressLogs, setProgressLogs] = useState([]);
+    const [progressLoading, setProgressLoading] = useState(false);
+    const [progressFilters, setProgressFilters] = useState({ from: '', to: '', memberId: '', branchId: '', trainerId: '' });
+    const [branches, setBranches] = useState([]);
+    const [trainers, setTrainers] = useState([]);
+    const [savingDailyLog, setSavingDailyLog] = useState(false);
 
     // Form fields
     const [memberId, setMemberId] = useState('');
@@ -39,31 +47,76 @@ const DietPlans = () => {
         { time: '08:00 AM', name: 'Breakfast', items: '', calories: 0, protein: 0, carbs: 0, fats: 0 }
     ]);
     const [editingId, setEditingId] = useState(null);
+    const [assignedTrainerId, setAssignedTrainerId] = useState('');
 
     // Member self-tracking states
     const [consumedMeals, setConsumedMeals] = useState({}); // { 'index': boolean }
     const [waterIntake, setWaterIntake] = useState(0); // in cups (250ml)
-    const [caloriesBurned, setCaloriesBurned] = useState(420); // standard daily baseline
 
     const isTrainerOrAdmin = ['admin', 'h4_admin', 'trainer', 'superadmin'].includes(user?.role);
     const isMember = user?.role === 'member';
+
+    const fetchNutritionLogs = useCallback(async (filters = {}) => {
+        setProgressLoading(true);
+        try {
+            const { data } = await API.get('/diet-plans/logs', { params: { ...filters, timezoneOffset: new Date().getTimezoneOffset(), limit: 1000 } });
+            setProgressLogs(Array.isArray(data) ? data : []);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not load nutrition progress.');
+            setProgressLogs([]);
+        } finally { setProgressLoading(false); }
+    }, [toast]);
 
     useEffect(() => {
         fetchPlans();
         if (isMember) {
             // Load saved self-tracking progress for the day
-            const savedWater = localStorage.getItem(`water_${user.id}`);
+            const dayKey = getLocalDayKey();
+            const savedWater = localStorage.getItem(`water_${user.id}_${dayKey}`);
             if (savedWater) setWaterIntake(parseInt(savedWater));
-            const savedConsumed = localStorage.getItem(`consumed_${user.id}`);
+            const savedConsumed = localStorage.getItem(`consumed_${user.id}_${dayKey}`);
             if (savedConsumed) setConsumedMeals(JSON.parse(savedConsumed));
+            fetchNutritionLogs({ from: shiftDay(getLocalDayKey(), -90), to: getLocalDayKey() });
         }
-    }, [isTrainerOrAdmin, user]);
+        if (isTrainerOrAdmin) {
+            API.get('/branches').then(({ data }) => setBranches(Array.isArray(data) ? data : [])).catch(() => setBranches([]));
+            API.get('/staff').then(({ data }) => setTrainers((Array.isArray(data) ? data : []).filter(person => person.role === 'trainer'))).catch(() => setTrainers([]));
+        }
+    }, [isTrainerOrAdmin, isMember, user, fetchNutritionLogs]);
 
     useEffect(() => {
         if (!isTrainerOrAdmin) return;
         const timer = window.setTimeout(() => fetchMembers(memberSearch), memberSearch ? 250 : 0);
         return () => window.clearTimeout(timer);
     }, [isTrainerOrAdmin, memberSearch]);
+
+    useEffect(() => {
+        if (isTrainerOrAdmin && activeTab === 'progress') fetchNutritionLogs(progressFilters);
+    }, [isTrainerOrAdmin, activeTab, progressFilters, fetchNutritionLogs]);
+
+    const handleSaveNutritionLog = async () => {
+        if (!activeMemberDiet) return;
+        setSavingDailyLog(true);
+        try {
+            const completedMeals = Object.values(consumedMeals).filter(Boolean).length;
+            await API.post('/diet-plans/log', {
+                planId: activeMemberDiet.id || activeMemberDiet._id,
+                planName: activeMemberDiet.name,
+                mealCount: activeMemberDiet.meals?.length || 0,
+                completedMeals,
+                calories: consumedMacros.calories,
+                protein: consumedMacros.protein,
+                carbs: consumedMacros.carbs,
+                fats: consumedMacros.fats,
+                waterCups: waterIntake,
+                loggedAt: new Date().toISOString()
+            });
+            await fetchNutritionLogs({ from: shiftDay(getLocalDayKey(), -90), to: getLocalDayKey() });
+            toast.success('Nutrition progress saved. Your coach can now see it.');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Could not save nutrition progress.');
+        } finally { setSavingDailyLog(false); }
+    };
 
     const fetchPlans = async () => {
         setLoading(true);
@@ -153,7 +206,8 @@ const DietPlans = () => {
             name: planName,
             startDate: startDate || null,
             endDate: endDate || null,
-            meals: payloadMeals()
+            meals: payloadMeals(),
+            trainerId: user?.role === 'trainer' ? user.id : (assignedTrainerId || null)
         };
 
         try {
@@ -198,18 +252,17 @@ const DietPlans = () => {
         setMembers((current) => [...new Map([...linkedMembers, ...current].map((member) => [String(member._id || member.id), member])).values()]);
         const knownMemberIds = new Set([...linkedMembers, ...members].map((member) => String(member._id || member.id)));
         const missingMemberIds = assignedMemberIds.filter((id) => !knownMemberIds.has(String(id)));
-        setMemberDetailsLoading(missingMemberIds.length > 0);
         if (missingMemberIds.length) {
             Promise.all(missingMemberIds.map((id) => API.get(`/members/${id}`).then(({ data }) => data).catch(() => null)))
                 .then((results) => {
                     const resolved = results.filter(Boolean).map((member) => ({ ...member, id: String(member.id || member._id) }));
                     setMembers((current) => [...new Map([...current, ...resolved].map((member) => [String(member._id || member.id), member])).values()]);
-                })
-                .finally(() => setMemberDetailsLoading(false));
+                });
         }
         setPlanName(plan.name);
         setStartDate(plan.startDate ? plan.startDate.split('T')[0] : '');
         setEndDate(plan.endDate ? plan.endDate.split('T')[0] : '');
+        setAssignedTrainerId(plan.trainerId || plan.trainer?.id || plan.trainer?._id || '');
         setMeals(plan.meals || [{ time: '08:00 AM', name: 'Breakfast', items: '', calories: 0, protein: 0, carbs: 0, fats: 0 }]);
         setShowModal(true);
     };
@@ -242,6 +295,7 @@ const DietPlans = () => {
         setPlanName('');
         setStartDate('');
         setEndDate('');
+        setAssignedTrainerId('');
         setMeals([{ time: '08:00 AM', name: 'Breakfast', items: '', calories: 0, protein: 0, carbs: 0, fats: 0 }]);
         setError('');
         setTemplateMode(false);
@@ -283,6 +337,19 @@ const DietPlans = () => {
         acc.fats += Number(curr.fats) || 0;
         return acc;
     }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+    const nutritionTrendData = useMemo(() => {
+        const grouped = new Map();
+        progressLogs.forEach(log => {
+            const key = new Date(log.loggedAt).toLocaleDateString();
+            const row = grouped.get(key) || { date: new Date(log.loggedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), adherence: 0, water: 0, count: 0 };
+            row.adherence += log.mealCount ? (Number(log.completedMeals) / Number(log.mealCount)) * 100 : 0;
+            row.water += Number(log.waterCups) || 0;
+            row.count += 1;
+            grouped.set(key, row);
+        });
+        return [...grouped.values()].reverse().map(row => ({ ...row, adherence: Math.round(row.adherence / row.count), water: Math.round(row.water / row.count) }));
+    }, [progressLogs]);
 
     const safePlans = Array.isArray(plans) ? plans : [];
     const normalizedMemberSearch = memberSearch.trim().toLowerCase();
@@ -351,14 +418,14 @@ const DietPlans = () => {
     const toggleMealConsumed = (index) => {
         const next = { ...consumedMeals, [index]: !consumedMeals[index] };
         setConsumedMeals(next);
-        localStorage.setItem(`consumed_${user.id}`, JSON.stringify(next));
+        localStorage.setItem(`consumed_${user.id}_${getLocalDayKey()}`, JSON.stringify(next));
         toast.info(next[index] ? 'Meal marked as consumed! ' : 'Meal unmarked ');
     };
 
     const changeWaterIntake = (amount) => {
         const next = Math.max(0, waterIntake + amount);
         setWaterIntake(next);
-        localStorage.setItem(`water_${user.id}`, next.toString());
+        localStorage.setItem(`water_${user.id}_${getLocalDayKey()}`, next.toString());
         if (amount > 0) {
             toast.success('Water intake logged! ');
         } else if (amount < 0) {
@@ -388,9 +455,11 @@ const DietPlans = () => {
                 )}
                 {isTrainerOrAdmin && activeTab === 'templates' && <button className="btn btn-primary" onClick={() => { resetForm(); setTemplateMode(true); setShowModal(true); }}><Plus size={18} /> Create Template</button>}
             </div>
+            {error && <div role="alert" className="alert alert-error" style={{ marginBottom: '1rem' }}>{error}</div>}
             {isTrainerOrAdmin && <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1.5rem' }}>
                 <button className={`btn ${activeTab === 'plans' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('plans')}>Assigned Plans ({plans.length})</button>
                 <button className={`btn ${activeTab === 'templates' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('templates')}>Diet Templates ({templates.length})</button>
+                <button className={`btn ${activeTab === 'progress' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setActiveTab('progress')}>Member Progress</button>
             </div>}
 
             {isMember ? (
@@ -516,6 +585,14 @@ const DietPlans = () => {
                                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => changeWaterIntake(1)}>+ 1 Cup</button>
                                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => changeWaterIntake(-1)} disabled={waterIntake === 0}>- 1 Cup</button>
                             </div>
+                            {activeMemberDiet && <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleSaveNutritionLog} disabled={savingDailyLog}>
+                                {savingDailyLog ? 'Saving progress…' : 'Save today’s nutrition progress'}
+                            </button>}
+                        </div>
+                        <div className="card" style={{ padding: '1.5rem' }}>
+                            <div style={{ fontSize: '.75rem', color: 'var(--text-secondary)' }}>YOUR NUTRITION HISTORY</div>
+                            <h3 style={{ margin: '4px 0 14px' }}>Meal consistency · last 90 days</h3>
+                            {nutritionTrendData.length ? <div style={{ height: 220 }}><ResponsiveContainer width="100%" height="100%"><LineChart data={nutritionTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis yAxisId="left" domain={[0, 100]} /><YAxis yAxisId="right" orientation="right" /><Tooltip /><Line yAxisId="left" type="monotone" dataKey="adherence" name="Meals completed (%)" stroke="#34d399" strokeWidth={2} /><Line yAxisId="right" type="monotone" dataKey="water" name="Water cups" stroke="#38bdf8" strokeWidth={2} /></LineChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>Save a daily nutrition log to start your progress chart.</p>}
                         </div>
                     </div>
                 </div>
@@ -528,6 +605,22 @@ const DietPlans = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}><div><h3>{template.name}</h3><p>{template.description}</p><small>{template.meals?.length || 0} meals</small></div><div style={{ display: 'flex', gap: '.4rem' }}><button className="btn btn-secondary" onClick={() => editTemplate(template)} aria-label="Edit template"><Edit3 size={15}/></button><button className="btn btn-secondary" onClick={() => deleteTemplate(template.id || template._id)} aria-label="Delete template"><Trash2 size={15}/></button></div></div>
                             <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => { resetForm(); setPlanName(template.name); setMeals(template.meals || []); setSelectedTemplateId(String(template.id || template._id)); setActiveTab('plans'); setShowModal(true); }}>Assign to member</button>
                         </div>)}
+                    </div> : activeTab === 'progress' ? <div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginBottom: 16 }} className="card">
+                            <label style={progressFilterLabel}>From<input className="input" type="date" value={progressFilters.from} onChange={e => setProgressFilters({ ...progressFilters, from: e.target.value })} /></label>
+                            <label style={progressFilterLabel}>To<input className="input" type="date" value={progressFilters.to} onChange={e => setProgressFilters({ ...progressFilters, to: e.target.value })} /></label>
+                            <MemberFilterSelect label="Member" value={progressFilters.memberId} onChange={memberId => setProgressFilters({ ...progressFilters, memberId })} style={{ minWidth: 230 }} />
+                            <label style={progressFilterLabel}>Branch<select className="input" value={progressFilters.branchId} disabled={Boolean(user?.branchId)} onChange={e => setProgressFilters({ ...progressFilters, branchId: e.target.value })}><option value="">All branches</option>{branches.map(branch => <option key={branch._id || branch.id} value={branch._id || branch.id}>{branch.name}</option>)}</select></label>
+                            {user?.role !== 'trainer' && <label style={progressFilterLabel}>Trainer<select className="input" value={progressFilters.trainerId} onChange={e => setProgressFilters({ ...progressFilters, trainerId: e.target.value })}><option value="">All trainers</option>{trainers.map(person => <option key={person._id || person.id} value={person._id || person.id}>{person.name}</option>)}</select></label>}
+                            <ResetFiltersButton onClick={() => setProgressFilters({ from: '', to: '', memberId: '', branchId: '', trainerId: '' })} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 16 }}>
+                            <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Nutrition logs</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length}</h2></div>
+                            <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Average meal adherence</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length ? `${Math.round(progressLogs.reduce((sum, log) => sum + (log.mealCount ? log.completedMeals / log.mealCount : 0), 0) / progressLogs.length * 100)}%` : '—'}</h2></div>
+                            <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Average daily water</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length ? `${(progressLogs.reduce((sum, log) => sum + Number(log.waterCups || 0), 0) / progressLogs.length).toFixed(1)} cups` : '—'}</h2></div>
+                        </div>
+                        <div className="card" style={{ marginBottom: 16 }}><h3 style={{ marginTop: 0 }}>Nutrition consistency by day</h3>{progressLoading ? <div className="spinner" /> : nutritionTrendData.length ? <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><LineChart data={nutritionTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis yAxisId="left" domain={[0, 100]} /><YAxis yAxisId="right" orientation="right" /><Tooltip /><Line yAxisId="left" type="monotone" dataKey="adherence" name="Meals completed (%)" stroke="#34d399" strokeWidth={3} /><Line yAxisId="right" type="monotone" dataKey="water" name="Water cups" stroke="#38bdf8" strokeWidth={2} /></LineChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>No nutrition logs match these filters.</p>}</div>
+                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}><table><thead><tr><th>Date</th><th>Member ID</th><th>Name</th><th>Phone</th><th>Diet plan</th><th>Meals</th><th>Calories</th><th>Protein</th><th>Water</th><th>Recorded by</th><th>Branch</th></tr></thead><tbody>{progressLogs.map(log => <tr key={log.id}><td>{new Date(log.loggedAt).toLocaleDateString()}</td><td>{log.member?.displayId || log.memberId}</td><td>{log.member?.name || 'Member'}</td><td>{log.member?.phone || '—'}</td><td>{log.plan?.name || log.planName}</td><td>{log.completedMeals}/{log.mealCount}</td><td>{log.calories} kcal</td><td>{log.protein} g</td><td>{log.waterCups} cups</td><td>{log.recordedBy?.name || '—'}</td><td>{log.branch?.name || '—'}</td></tr>)}{!progressLoading && !progressLogs.length && <tr><td colSpan="11" style={{ textAlign: 'center', padding: 24 }}>No nutrition history for this date range.</td></tr>}</tbody></table></div>
                     </div> : <>
                     <div className="diet-plan-search-row">
                         <div className="diet-search-field">
@@ -585,6 +678,11 @@ const DietPlans = () => {
                                                     </span>
                                                 </div>
                                             )}
+
+                                            {plan.members?.length > 0 && <div style={{ margin: '0 0 1rem', display: 'grid', gap: 5 }}>
+                                                {plan.members.slice(0, 4).map(member => <div key={member.id || member._id} style={{ fontSize: '.78rem', color: 'var(--text-secondary)' }}><strong style={{ color: 'var(--text-primary)' }}>{member.registrationNumber || member.displayId || member.id}</strong> · {member.name} · {member.phone || 'No phone'}</div>)}
+                                                {plan.members.length > 4 && <small style={{ color: 'var(--text-secondary)' }}>+{plan.members.length - 4} more members</small>}
+                                            </div>}
 
                                             <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '1rem', border: '1px solid var(--border)' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
@@ -742,6 +840,7 @@ const DietPlans = () => {
                                     />
                                 </div>
                             </div>
+                            {user?.role !== 'trainer' && <div className="form-group" style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Assigned trainer</label><select className="form-control" value={assignedTrainerId} onChange={e => setAssignedTrainerId(e.target.value)}><option value="">No specific trainer</option>{trainers.map(person => <option key={person._id || person.id} value={person._id || person.id}>{person.name}</option>)}</select></div>}
                             {templates.length > 0 && <div className="form-group" style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '.5rem', fontWeight: 600 }}>Load from template</label><select className="form-control" value={selectedTemplateId} onChange={(e) => loadTemplate(e.target.value)}><option value="">Choose a template...</option>{templates.map((template) => <option key={template.id || template._id} value={template.id || template._id}>{template.name}</option>)}</select></div>}
                             </>}
 
@@ -831,5 +930,11 @@ const DietPlans = () => {
         </div>
     );
 };
+
+function getLocalDayKey(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function shiftDay(day, offset) { const date = new Date(`${day}T00:00:00`); date.setDate(date.getDate() + offset); return getLocalDayKey(date); }
+const progressFilterLabel = { display: 'grid', gap: 6, color: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 };
 
 export default DietPlans;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import {
     getPayrolls,
     generatePayroll,
@@ -234,6 +235,7 @@ const PayrollPage = () => {
                         >
                             {[2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
+                        <ResetFiltersButton onClick={() => { setSelectedTrainerId(''); setFilterMonth(new Date().getMonth() + 1); setFilterYear(new Date().getFullYear()); }} />
                     </div>
 
                     {loading ? (

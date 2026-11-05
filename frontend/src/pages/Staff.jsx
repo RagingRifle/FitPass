@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { getStaff, createStaff, updateStaff, deleteStaff } from '../services/apiService';
 import Modal from '../components/Modal';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import { AuthContext } from '../context/AuthContext';
 import { Pencil, Trash2, Eye, EyeOff, ShieldCheck, Users, ToggleLeft, ToggleRight, Sparkles, Check, CheckSquare } from 'lucide-react';
 
@@ -207,6 +208,7 @@ const Staff = () => {
                             <option value="receptionist">Receptionist</option>
                             <option value="admin">Admin</option>
                         </select>
+                        <ResetFiltersButton onClick={() => { setSearch(''); setRoleFilter(''); }} />
                     </div>
 
                     {loading ? (

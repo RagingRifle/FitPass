@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import API from '../../services/api';
-import { AuthContext } from '../../context/AuthContext';
 import Modal from '../../components/Modal';
+import ResetFiltersButton from '../../components/ResetFiltersButton';
 import { QRCodeCanvas } from 'qrcode.react';
 import { 
     Building2, 
@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 
 function PartnerGyms() {
-    const { user } = useContext(AuthContext);
     const [gyms, setGyms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -265,6 +264,7 @@ function PartnerGyms() {
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
                         Showing {filteredGyms.length} of {gyms.length} location{gyms.length !== 1 ? 's' : ''}
                     </div>
+                    <ResetFiltersButton onClick={() => setSearchTerm('')} />
                     <div style={{ display: 'flex', gap: '4px' }}>
                         <button 
                             className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}

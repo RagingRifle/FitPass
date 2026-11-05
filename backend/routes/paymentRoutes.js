@@ -4,6 +4,7 @@ const {
     addPayment,
     getPayments,
     getMemberPayments,
+    getSalesReport,
     createRazorpayOrder,
     verifyRazorpayPayment
 } = require('../controllers/paymentController');
@@ -19,7 +20,8 @@ const addPaymentSchema = z.object({
     paymentMethod: z.string().optional(),
     date: z.string().optional(),
     paymentType: z.string().optional(),
-    remarks: z.string().optional()
+    remarks: z.string().optional(),
+    salesStaffId: z.string().optional()
 });
 
 router.route('/')
@@ -28,6 +30,7 @@ router.route('/')
 
 router.post('/razorpay/order', protect, createRazorpayOrder);
 router.post('/razorpay/verify', protect, verifyRazorpayPayment);
+router.get('/sales-report', protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getSalesReport);
 
 router.get('/member/:memberId', protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin'), getMemberPayments);
 

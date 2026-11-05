@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -40,10 +40,10 @@ export const ToastProvider = ({ children }) => {
 export const useToast = () => {
     const addToast = useContext(ToastContext);
     if (!addToast) throw new Error('useToast must be used inside ToastProvider');
-    return {
+    return useMemo(() => ({
         success: (msg, dur) => addToast(msg, 'success', dur),
         error: (msg, dur) => addToast(msg, 'error', dur),
         info: (msg, dur) => addToast(msg, 'info', dur),
         warning: (msg, dur) => addToast(msg, 'warning', dur),
-    };
+    }), [addToast]);
 };

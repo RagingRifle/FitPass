@@ -24,7 +24,7 @@ const checkInTrainer = catchAsync(async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Trainer not found' });
         }
 
-        // Check if already checked in today (start of day to end of day)
+        // Prevent overlapping shifts while allowing multiple completed shifts in one day.
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
@@ -33,10 +33,9 @@ const checkInTrainer = catchAsync(async (req, res, next) => {
         const existingQuery = {
             trainerId,
             gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
-            date: {
-                $gte: todayStart,
-                $lte: todayEnd
-            }
+            checkOutTime: null,
+            status: { $ne: 'Leave' },
+            date: { $gte: todayStart, $lte: todayEnd }
         };
         if (req.user.branchId) {
             existingQuery.branchId = req.user.branchId;
@@ -45,15 +44,22 @@ const checkInTrainer = catchAsync(async (req, res, next) => {
         const existing = await TrainerAttendance.findOne(existingQuery);
 
         if (existing) {
-            return res.status(400).json({ success: false, message: 'Trainer already checked in today' });
+            return res.status(400).json({ success: false, message: 'Check out of the active shift before starting another shift' });
         }
+
+        const leaveQuery = { ...existingQuery };
+        delete leaveQuery.checkOutTime;
+        delete leaveQuery.status;
+        const leaveRecord = await TrainerAttendance.findOne({ ...leaveQuery, status: 'Leave' });
+        if (leaveRecord) return res.status(400).json({ success: false, message: 'A leave marker exists for today. Ask an admin to remove it before checking in.' });
 
         const attendance = await TrainerAttendance.create({
             trainerId,
             date: new Date(),
             checkInTime: new Date(),
             gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
-            branchId: req.user.branchId || null
+            branchId: req.user.branchId || null,
+            status: 'Present'
         });
 
         res.status(201).json(attendance);
@@ -74,7 +80,8 @@ const checkOutTrainer = catchAsync(async (req, res, next) => {
         const query = {
             trainerId,
             gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
-            checkOutTime: null
+            checkOutTime: null,
+            status: { $ne: 'Leave' }
         };
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
@@ -113,9 +120,21 @@ const getTrainerAttendance = catchAsync(async (req, res, next) => {
             query.trainerId = req.query.trainerId;
         }
 
-        // Strict pagination parameters with hard cap at 100
+        if (req.query.branchId) query.branchId = req.query.branchId;
+        if (req.query.from || req.query.to) {
+            const timezoneOffset = Number(req.query.timezoneOffset) || 0;
+            const localDayStart = value => {
+                const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
+                return new Date(Date.UTC(year, month - 1, day) + timezoneOffset * 60_000);
+            };
+            query.date = {};
+            if (req.query.from) query.date.$gte = localDayStart(req.query.from);
+            if (req.query.to) query.date.$lte = new Date(localDayStart(req.query.to).getTime() + 86_400_000 - 1);
+        }
+
+        // Keep history bounded while supporting annual views with multiple shifts per day.
         const page = Math.max(parseInt(req.query.page) || 1, 1);
-        const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 1000);
         const skip = (page - 1) * limit;
 
         const total = await TrainerAttendance.countDocuments(query);
@@ -149,8 +168,38 @@ const getTrainerAttendance = catchAsync(async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
+// @desc    Mark a trainer as on leave for one calendar day
+// @route   POST /api/trainer-attendance/leave
+const markTrainerLeave = catchAsync(async (req, res, next) => {
+    const { trainerId, date, reason = '' } = req.body;
+    if (!trainerId || !date) return res.status(400).json({ success: false, message: 'Trainer and leave date are required' });
+
+    const timezoneOffset = Number(req.body.timezoneOffset) || 0;
+    const [year, month, day] = String(date).slice(0, 10).split('-').map(Number);
+    const leaveDate = new Date(Date.UTC(year, month - 1, day) + timezoneOffset * 60_000);
+    if (Number.isNaN(leaveDate.getTime())) return res.status(400).json({ success: false, message: 'Invalid leave date' });
+    const trainerQuery = { _id: trainerId, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+    const trainer = await User.findOne(trainerQuery);
+    if (!trainer || trainer.role !== 'trainer') return res.status(404).json({ success: false, message: 'Trainer not found in your branch' });
+
+    const dayStart = new Date(leaveDate);
+    const dayEnd = new Date(leaveDate.getTime() + 86_400_000 - 1);
+    const where = { trainerId, gymId: req.user.gymId, branchId: req.user.branchId || trainer.branchId || null, date: { $gte: dayStart, $lte: dayEnd } };
+    const existing = await TrainerAttendance.find(where);
+    if (existing.some(log => log.status !== 'Leave')) return res.status(409).json({ success: false, message: 'This trainer already has attendance shifts on that date.' });
+    if (existing.some(log => log.status === 'Leave')) return res.status(409).json({ success: false, message: 'Leave is already marked for that date.' });
+
+    const leave = await TrainerAttendance.create({
+        trainerId, date: dayStart, checkInTime: dayStart, checkOutTime: dayStart, workingHours: 0,
+        status: 'Leave', leaveReason: String(reason).trim() || null,
+        gymId: req.user.gymId, branchId: req.user.branchId || trainer.branchId || null
+    });
+    res.status(201).json({ success: true, data: leave });
+});
+
 module.exports = {
     checkInTrainer,
     checkOutTrainer,
-    getTrainerAttendance
+    getTrainerAttendance,
+    markTrainerLeave
 };

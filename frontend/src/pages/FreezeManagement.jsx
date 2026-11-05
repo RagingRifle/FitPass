@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
 import Modal from '../components/Modal';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 
 const FreezeManagement = () => {
     const [members, setMembers] = useState([]);
@@ -8,13 +9,18 @@ const FreezeManagement = () => {
     const [freezeModal, setFreezeModal] = useState(null); // { member }
     const [historyModal, setHistoryModal] = useState(null); // { name, history }
     const [reason, setReason] = useState('');
+    const [freezeMode, setFreezeMode] = useState('manual');
+    const [resumeAt, setResumeAt] = useState('');
     const [actionLoading, setActionLoading] = useState({});
     const [search, setSearch] = useState('');
 
     const fetchMembers = async () => {
         try {
-            const { data } = await API.get('/members');
-            setMembers(data.members || []);
+            const { data } = await API.get('/members', { params: { page: 1, limit: 1000 } });
+            const firstPage = Array.isArray(data) ? data : (data.members || data.data || []);
+            const pages = Math.min(Number(data?.pages) || 1, 10);
+            const remaining = pages > 1 ? await Promise.all(Array.from({ length: pages - 1 }, (_, index) => API.get('/members', { params: { page: index + 2, limit: 1000 } }))) : [];
+            setMembers([...firstPage, ...remaining.flatMap(result => Array.isArray(result.data) ? result.data : (result.data.members || result.data.data || []))]);
         } catch (err) {
             console.error('Error fetching members:', err);
         } finally { setLoading(false); }
@@ -26,9 +32,15 @@ const FreezeManagement = () => {
         if (!freezeModal) return;
         setActionLoading(prev => ({ ...prev, [freezeModal._id]: 'freezing' }));
         try {
-            await API.post(`/members/${freezeModal._id}/freeze`, { reason });
+            await API.post(`/members/${freezeModal._id}/freeze`, {
+                reason,
+                mode: freezeMode,
+                ...(freezeMode === 'scheduled' && resumeAt ? { scheduledUnfreezeAt: new Date(resumeAt).toISOString() } : {})
+            });
             setFreezeModal(null);
             setReason('');
+            setFreezeMode('manual');
+            setResumeAt('');
             fetchMembers();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to freeze');
@@ -40,7 +52,7 @@ const FreezeManagement = () => {
         setActionLoading(prev => ({ ...prev, [member._id]: 'unfreezing' }));
         try {
             const { data } = await API.post(`/members/${member._id}/unfreeze`);
-            alert(` ${member.name} unfrozen!\n Expiry extended by ${data.daysAdded} day(s).\n New expiry: ${new Date(data.newExpiryDate).toLocaleDateString()}`);
+            alert(` ${member.name} unfrozen!\n Paused for ${data.daysAdded} day(s).\n New expiry: ${data.newExpiryDate ? new Date(data.newExpiryDate).toLocaleDateString() : 'Not set'}`);
             fetchMembers();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to unfreeze');
@@ -57,12 +69,11 @@ const FreezeManagement = () => {
     };
 
     const filtered = members.filter(m =>
-        m.name.toLowerCase().includes(search.toLowerCase()) ||
-        m.phone.includes(search)
+        [m.registrationNumber, m.displayId, m.name, m.phone].some(value => String(value || '').toLowerCase().includes(search.trim().toLowerCase()))
     );
 
     const statusStyle = (status) => {
-        if (status === 'Frozen') return { background: 'var(--primary-muted)', color: 'var(--primary-color)' };
+            if (status === 'Frozen') return { background: '#F4C900', color: '#211B00' };
         if (status === 'Active') return { background: 'rgba(16,185,129,0.15)', color: '#10b981' };
         return { background: 'rgba(239,68,68,0.15)', color: '#ef4444' };
     };
@@ -80,18 +91,16 @@ const FreezeManagement = () => {
                 </div>
             </div>
 
-            <input
-                className="input"
-                style={{ marginBottom: '1.5rem', maxWidth: '350px' }}
-                placeholder=" Search by name or phone..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-            />
+            <div style={{ display: 'flex', gap: '.75rem', alignItems: 'end', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                <label style={{ display: 'grid', gap: 6, flex: '1 1 280px', maxWidth: 420 }}>Search member<input className="input" type="search" placeholder="Member ID (MEM1001), name, or phone" value={search} onChange={e => setSearch(e.target.value)} /></label>
+                <ResetFiltersButton onClick={() => setSearch('')} />
+            </div>
 
             <div className="card" style={{ padding: 0 }}>
                 <table>
                     <thead>
                         <tr>
+                            <th>Member ID</th>
                             <th>Member</th>
                             <th>Phone</th>
                             <th>Plan Expiry</th>
@@ -105,9 +114,10 @@ const FreezeManagement = () => {
                             const isFrozen = member.status === 'Frozen';
                             return (
                                 <tr key={member._id}>
+                                    <td>{member.registrationNumber || member.displayId || '—'}</td>
                                     <td style={{ fontWeight: '600' }}>{member.name}</td>
                                     <td>{member.phone}</td>
-                                    <td>{new Date(member.expiryDate).toLocaleDateString()}</td>
+                            <td>{isFrozen ? (member.scheduledUnfreezeAt ? `Resume ${new Date(member.scheduledUnfreezeAt).toLocaleString()}` : 'Paused until released') : (member.expiryDate ? new Date(member.expiryDate).toLocaleDateString() : '—')}</td>
                                     <td>
                                         <span style={{ ...statusStyle(member.status), padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.78rem', fontWeight: '700' }}>
                                             {member.status === 'Frozen' ? ' Frozen' : member.status}
@@ -126,10 +136,10 @@ const FreezeManagement = () => {
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => { setFreezeModal(member); setReason(''); }}
+                                                    onClick={() => { setFreezeModal(member); setReason(''); setFreezeMode('manual'); setResumeAt(''); }}
                                                     disabled={!!loading || member.status === 'Expired'}
                                                     className="btn"
-                                                    style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', background: 'var(--primary-muted)', color: 'var(--primary-color)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: '8px', opacity: member.status === 'Expired' ? 0.5 : 1 }}
+                                                    style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', background: '#F4C900', color: '#211B00', border: '1px solid #B18F00', borderRadius: '8px', fontWeight: 700, opacity: member.status === 'Expired' ? 0.5 : 1 }}
                                                 >
                                                     {loading === 'freezing' ? '...' : ' Freeze'}
                                                 </button>
@@ -151,15 +161,28 @@ const FreezeManagement = () => {
             </div>
 
             {/* Freeze Confirm Modal */}
-            <Modal isOpen={!!freezeModal} onClose={() => setFreezeModal(null)} title={` Freeze ${freezeModal?.name}'s Membership`}>
+            <Modal isOpen={!!freezeModal} onClose={() => setFreezeModal(null)} title={`Pause ${freezeModal?.name}'s Membership`}>
                 <div>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem', fontSize: '0.875rem' }}>
-                        The membership will be paused. When unfrozen, the expiry date will be extended by the number of frozen days.
+                        Choose a manual hold for payment or account issues, or schedule an automatic resume date for temporary leave.
                     </p>
+                    <div className="input-group">
+                        <label>Pause type</label>
+                        <select className="input" value={freezeMode} onChange={event => setFreezeMode(event.target.value)}>
+                            <option value="manual">Manual release (resume when I unfreeze)</option>
+                            <option value="scheduled">Automatic resume at a chosen time</option>
+                        </select>
+                    </div>
+                    {freezeMode === 'scheduled' && <div className="input-group">
+                        <label>Resume date and time</label>
+                        <input className="input" type="datetime-local" required value={resumeAt} onChange={event => setResumeAt(event.target.value)} min={new Date(Date.now() + 60000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} />
+                        <small style={{ color: 'var(--text-secondary)' }}>The membership resumes automatically, with remaining membership time restored.</small>
+                    </div>}
                     <div className="input-group">
                         <label>Reason (optional)</label>
                         <select className="input" value={reason} onChange={e => setReason(e.target.value)}>
                             <option value="">Select reason...</option>
+                            <option value="Payment pending">Payment pending</option>
                             <option value="Vacation"> Vacation</option>
                             <option value="Injury"> Injury</option>
                             <option value="Travel"> Travel</option>
@@ -169,7 +192,7 @@ const FreezeManagement = () => {
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                         <button onClick={() => setFreezeModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
-                        <button onClick={handleFreeze} className="btn btn-primary" style={{ flex: 1, background: 'var(--primary-color)' }}> Freeze Now</button>
+                        <button onClick={handleFreeze} disabled={freezeMode === 'scheduled' && !resumeAt} className="btn btn-primary" style={{ flex: 1, background: '#F4C900', color: '#211B00', border: '1px solid #B18F00', fontWeight: 800 }}>{freezeMode === 'scheduled' ? 'Pause & Schedule Resume' : 'Pause Until Released'}</button>
                     </div>
                 </div>
             </Modal>
@@ -178,12 +201,14 @@ const FreezeManagement = () => {
             <Modal isOpen={!!historyModal} onClose={() => setHistoryModal(null)} title={` Freeze History — ${historyModal?.name}`}>
                 {historyModal?.freezeHistory?.length > 0 ? (
                     <table>
-                        <thead><tr><th>Frozen On</th><th>Unfrozen On</th><th>Reason</th><th>Days Added</th></tr></thead>
+                    <thead><tr><th>Frozen On</th><th>Resume Type</th><th>Scheduled Resume</th><th>Unfrozen On</th><th>Reason</th><th>Days Paused</th></tr></thead>
                         <tbody>
                             {historyModal.freezeHistory.map((f, i) => (
                                 <tr key={i}>
                                     <td>{new Date(f.freezeDate).toLocaleDateString()}</td>
-                                    <td>{f.unfreezeDate ? new Date(f.unfreezeDate).toLocaleDateString() : <span style={{ color: 'var(--primary-color)' }}> Currently Frozen</span>}</td>
+                                    <td>{f.mode === 'scheduled' ? 'Automatic' : 'Manual'}</td>
+                                    <td>{f.scheduledUnfreezeAt ? new Date(f.scheduledUnfreezeAt).toLocaleString() : '—'}</td>
+                                    <td>{f.unfreezeDate ? `${new Date(f.unfreezeDate).toLocaleDateString()}${f.autoUnfrozen ? ' (automatic)' : ''}` : <span style={{ color: '#9a6b00' }}>Currently paused</span>}</td>
                                     <td>{f.reason || '—'}</td>
                                     <td>{f.daysAdded || (f.unfreezeDate ? '0' : '—')}</td>
                                 </tr>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
 import Modal from '../components/Modal';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import { MessageSquare, DollarSign, Send, CheckCircle } from 'lucide-react';
 
 const Dues = () => {
@@ -13,6 +14,7 @@ const Dues = () => {
         method: 'Cash',
         date: new Date().toISOString().split('T')[0]
     });
+    const [search, setSearch] = useState('');
 
     const fetchDues = async () => {
         try {
@@ -64,6 +66,7 @@ const Dues = () => {
     };
 
     const totalDueAmount = members.reduce((sum, m) => sum + Math.max(0, m.planPrice - m.paidAmount), 0);
+    const filteredMembers = members.filter(member => [member.registrationNumber, member.displayId, member.name, member.phone].some(value => String(value || '').toLowerCase().includes(search.trim().toLowerCase())));
 
     return (
         <div className="fade-in">
@@ -79,12 +82,17 @@ const Dues = () => {
             </div>
 
             <div className="glass" style={{ padding: '1.5rem', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', gap: '.75rem', alignItems: 'end', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                    <label style={{ display: 'grid', gap: 6, flex: '1 1 280px' }}>Search member<input className="input" type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Member ID (MEM1001), name, or phone" /></label>
+                    <ResetFiltersButton onClick={() => setSearch('')} />
+                </div>
                 {loading ? (
                     <div className="spinner"></div>
                 ) : (
                     <table className="table">
                         <thead>
                             <tr>
+                                <th>Member ID</th>
                                 <th>Member Name</th>
                                 <th>Phone</th>
                                 <th>Plan Price</th>
@@ -94,19 +102,20 @@ const Dues = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {members.length === 0 ? (
+                            {filteredMembers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+                                    <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                                         <CheckCircle size={32} style={{ color: '#2E7D32', marginBottom: 8, opacity: 0.8 }} />
                                         <div style={{ fontWeight: 700, fontSize: '1rem' }}>All dues settled!</div>
                                         <div style={{ fontSize: '0.8rem', marginTop: 4 }}>No outstanding payments found.</div>
                                     </td>
                                 </tr>
                             ) : (
-                                members.map((member) => {
+                                filteredMembers.map((member) => {
                                     const due = Math.max(0, member.planPrice - member.paidAmount);
                                     return (
                                         <tr key={member._id}>
+                                            <td>{member.registrationNumber || member.displayId || '—'}</td>
                                             <td style={{ fontWeight: '600' }}>{member.name}</td>
                                             <td>{member.phone}</td>
                                             <td>₹{(member.planPrice || 0).toLocaleString()}</td>

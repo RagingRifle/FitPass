@@ -103,9 +103,9 @@ export const deleteStaff = async (id) => {
     return data;
 };
 
-export const getBodyAssessments = async (memberId = '') => {
-    const url = memberId ? `/body-assessments?memberId=${memberId}` : '/body-assessments';
-    const { data } = await API.get(url);
+export const getBodyAssessments = async (memberId = '', filters = {}) => {
+    const params = { ...filters, ...(memberId ? { memberId } : {}), timezoneOffset: new Date().getTimezoneOffset(), limit: 100 };
+    const { data } = await API.get('/body-assessments', { params });
     return data;
 };
 
@@ -125,9 +125,14 @@ export const deleteBodyAssessment = async (id) => {
 };
 
 // Trainer Attendance
-export const getTrainerAttendance = async (trainerId = '') => {
-    const url = trainerId ? `/trainer-attendance?trainerId=${trainerId}` : '/trainer-attendance';
-    const { data } = await API.get(url);
+export const getTrainerAttendance = async (filters = {}) => {
+    const params = typeof filters === 'string' ? { trainerId: filters } : filters;
+    const { data } = await API.get('/trainer-attendance', { params });
+    return data;
+};
+
+export const markTrainerLeave = async (leaveData) => {
+    const { data } = await API.post('/trainer-attendance/leave', leaveData);
     return data;
 };
 

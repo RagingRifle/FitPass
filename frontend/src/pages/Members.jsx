@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getMembers, getPlans, createMember, updateMember, deleteMember, getMemberAuditTrail } from '../services/apiService';
 import Modal from '../components/Modal';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import { AuthContext } from '../context/AuthContext';
 import { QRCodeCanvas } from 'qrcode.react';
 import API from '../services/api';
@@ -26,7 +27,8 @@ const Members = () => {
     const [editingMember, setEditingMember] = useState(null);
     const [branches, setBranches] = useState([]);
     const [branchFilter, setBranchFilter] = useState('');
-    const [formData, setFormData] = useState({ name: '', phone: '', email: '', planId: '', joinDate: '', branchId: '', gymId: '', password: '', durationPreset: '30', durationDays: '30' });
+    const [formData, setFormData] = useState({ name: '', phone: '', email: '', planId: '', joinDate: '', branchId: '', gymId: '', password: '', durationPreset: '30', durationDays: '30', saleSource: '', salesStaffId: '' });
+    const [salesStaff, setSalesStaff] = useState([]);
     const [wizardStep, setWizardStep] = useState(1);
     const [questionnaire, setQuestionnaire] = useState({
         fitnessGoal: 'Fat Loss',
@@ -60,6 +62,10 @@ const Members = () => {
 
     // Read URL params from global search
     useEffect(() => {
+        API.get('/staff').then(({ data }) => setSalesStaff(Array.isArray(data) ? data : [])).catch(() => setSalesStaff([]));
+    }, []);
+
+    useEffect(() => {
         const params = new URLSearchParams(location.search);
         const searchParam = params.get('search');
         const highlightParam = params.get('highlight');
@@ -81,6 +87,8 @@ const Members = () => {
         const leadGymId = params.get('gymId') || '';
         const leadBranchId = params.get('branchId') || '';
         const leadInterestedPlan = params.get('interestedPlan') || '';
+        const leadSource = params.get('source') || '';
+        const leadAssignedTo = params.get('assignedTo') || '';
 
         setEditingMember(null);
         setFormData({
@@ -93,7 +101,9 @@ const Members = () => {
             gymId: leadGymId || '',
             password: '',
             durationPreset: '30',
-            durationDays: '30'
+            durationDays: '30',
+            saleSource: leadSource,
+            salesStaffId: leadAssignedTo
         });
         setConvertingLeadId(convertLeadId);
         setIsModalOpen(true);
@@ -127,7 +137,7 @@ const Members = () => {
 
     useEffect(() => {
         fetchData();
-    }, [page, statusFilter]);
+    }, [page, statusFilter, searchTerm]);
 
     useEffect(() => {
         // A branch or gym can have fewer pages than the previous scope.
@@ -144,7 +154,7 @@ const Members = () => {
         try {
             // Load the directory independently so a plans/branches request
             // failure cannot leave a valid members response hidden.
-            const membersData = await getMembers(statusFilter, page);
+            const membersData = await getMembers(statusFilter, page, searchTerm);
             if (requestId !== fetchRequestRef.current) return;
             setMembers(membersData.members || []);
             setPages(membersData.pages || 1);
@@ -258,7 +268,7 @@ const Members = () => {
                 await updateMember(editingMember._id, formData);
                 alert(` Member "${formData.name}" details updated successfully.`);
             } else {
-                const newMember = await createMember({ ...formData, questionnaire });
+                const newMember = await createMember({ ...formData, leadId: convertingLeadId || undefined, questionnaire });
                 if (convertingLeadId) {
                     try {
                         await API.put(`/leads/${convertingLeadId}`, {
@@ -310,14 +320,9 @@ const Members = () => {
     };
 
     const filteredMembers = members.filter(m => {
-        const matchSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.phone.includes(searchTerm);
         const matchBranch = !branchFilter || (m.branchId?._id || m.branchId || '') === branchFilter;
-        return matchSearch && matchBranch;
+        return matchBranch;
     });
-
-    const activeCount = members.filter(m => m.status === 'Active').length;
-    const expiredCount = members.filter(m => m.status === 'Expired').length;
-    const frozenCount = members.filter(m => m.status === 'Frozen').length;
 
     const handleDownloadCSV = async (exportFullRoster = false) => {
         setIsExporting(true);
@@ -502,9 +507,9 @@ const Members = () => {
                 <input
                     className="input"
                     style={{ flex: '1', minWidth: '200px' }}
-                    placeholder="Search by name or phone..."
+                    placeholder="Search by member ID (MEM1001), name, or phone..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => { setPage(1); setSearchTerm(e.target.value); }}
                 />
                 <select
                     className="input"
@@ -528,6 +533,7 @@ const Members = () => {
                         {branches.map(b => <option key={b._id} value={b._id}> {b.name}</option>)}
                     </select>
                 )}
+                <ResetFiltersButton onClick={() => { setSearchTerm(''); setStatusFilter(''); setBranchFilter(''); setPage(1); }} />
             </div>
 
             <div className="table-container">
@@ -610,7 +616,7 @@ const Members = () => {
                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
                                         <button className="btn" style={{ padding: '0.4rem', border: '1px solid var(--border-color)', color: '#10b981', background: 'rgba(16,185,129,0.1)' }} title="Renew Plan" onClick={() => {
                                             setRenewMemberData(member);
-                                            setRenewForm({ planId: member.planId?._id || member.planId || '', paidAmount: member.planId?.price || '', method: 'Cash' });
+                                            setRenewForm({ planId: member.planId?._id || member.planId || '', paidAmount: member.planId?.price || '', method: 'Cash', salesType: 'RENEWAL', salesStaffId: '', saleSource: '' });
                                         }}>
                                             <RefreshCw size={16} />
                                         </button>
@@ -856,6 +862,20 @@ const Members = () => {
                                             <option value="UPI">UPI</option>
                                             <option value="Card">Card</option>
                                             <option value="Bank Transfer">Bank Transfer</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Lead source</label>
+                                        <select className="input" value={formData.saleSource || ''} onChange={(e) => setFormData({ ...formData, saleSource: e.target.value })}>
+                                            <option value="">Direct / not from a lead</option>
+                                            {['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'].map(source => <option key={source} value={source}>{source}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Sale handled by</label>
+                                        <select className="input" value={formData.salesStaffId || ''} onChange={(e) => setFormData({ ...formData, salesStaffId: e.target.value })}>
+                                            <option value="">Current user ({user?.name || 'me'})</option>
+                                            {salesStaff.map(staff => <option key={staff._id || staff.id} value={staff._id || staff.id}>{staff.name}</option>)}
                                         </select>
                                     </div>
                                 </>
@@ -1507,6 +1527,27 @@ const Members = () => {
                         </div>
                     </div>
 
+                    <div className="input-group">
+                        <label>Transaction type</label>
+                        <select className="input" value={renewForm.salesType || 'RENEWAL'} onChange={(e) => setRenewForm({ ...renewForm, salesType: e.target.value })}>
+                            <option value="RENEWAL">Renewal</option>
+                            <option value="UPGRADE">Package upgrade</option>
+                        </select>
+                    </div>
+                    <div className="input-group">
+                        <label>Lead source (if applicable)</label>
+                        <select className="input" value={renewForm.saleSource || ''} onChange={(e) => setRenewForm({ ...renewForm, saleSource: e.target.value })}>
+                            <option value="">Existing member / direct</option>
+                            {['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'].map(source => <option key={source} value={source}>{source}</option>)}
+                        </select>
+                    </div>
+                    <div className="input-group">
+                        <label>Sale handled by</label>
+                        <select className="input" value={renewForm.salesStaffId || ''} onChange={(e) => setRenewForm({ ...renewForm, salesStaffId: e.target.value })}>
+                            <option value="">Current user ({user?.name || 'me'})</option>
+                            {salesStaff.map(staff => <option key={staff._id || staff.id} value={staff._id || staff.id}>{staff.name}</option>)}
+                        </select>
+                    </div>
                     <div className="input-group">
                         <label>Payment Method</label>
                         <select

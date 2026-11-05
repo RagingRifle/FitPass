@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import Modal from '../components/Modal';
+import ResetFiltersButton from '../components/ResetFiltersButton';
 import { Pencil, Trash2, UserPlus, X } from 'lucide-react';
 
 const STATUSES = ['New', 'Contacted', 'Interested', 'Converted', 'Lost'];
-const SOURCES = ['Walk-in', 'Instagram', 'Facebook', 'Referral', 'Google', 'WhatsApp', 'Other'];
+const SOURCES = ['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'];
 
 const STATUS_COLORS = {
     New: { bg: 'var(--primary-muted)', text: 'var(--primary-color)' },
@@ -30,6 +31,7 @@ const Leads = () => {
     const [search, setSearch] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [staff, setStaff] = useState([]);
 
     const fetchAll = async () => {
         try {
@@ -48,7 +50,10 @@ const Leads = () => {
         } finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchAll(); }, []);
+    useEffect(() => {
+        fetchAll();
+        API.get('/staff').then(({ data }) => setStaff(Array.isArray(data) ? data : [])).catch(() => setStaff([]));
+    }, []);
 
     const openCreate = () => { setEditLead(null); setFormData(emptyForm); setError(''); setIsModalOpen(true); };
     const openEdit = (lead) => {
@@ -102,7 +107,9 @@ const Leads = () => {
             email: lead.email || '',
             gymId: lead.gymId || '',
             branchId: lead.branchId || '',
-            interestedPlan: lead.interestedPlan || ''
+            interestedPlan: lead.interestedPlan || '',
+            source: lead.source || '',
+            assignedTo: lead.assignedTo || ''
         });
         navigate(`/members?${params.toString()}`);
     };
@@ -173,6 +180,7 @@ const Leads = () => {
                         Clear Filter <X size={14} />
                     </button>
                 )}
+                <ResetFiltersButton onClick={() => { setFilterStatus(''); setSearch(''); }} />
             </div>
 
             {/* Leads Table */}
@@ -183,6 +191,7 @@ const Leads = () => {
                             <th>Name</th>
                             <th>Phone</th>
                             <th>Source</th>
+                            <th>Assigned staff</th>
                             <th>Interested In</th>
                             <th>Follow-up</th>
                             <th>Status</th>
@@ -192,7 +201,7 @@ const Leads = () => {
                     <tbody>
                         {filtered.length === 0 ? (
                             <tr>
-                                <td colSpan={7}>
+                                <td colSpan={8}>
                                     <div className="empty-state">
                                         <div className="empty-state-icon"></div>
                                         <h3>No leads found</h3>
@@ -209,6 +218,7 @@ const Leads = () => {
                                     <td style={{ fontWeight: '600' }}>{lead.name}</td>
                                     <td>{lead.phone}</td>
                                     <td><span style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem' }}>{lead.source}</span></td>
+                                    <td>{staff.find(s => String(s._id || s.id) === String(lead.assignedTo))?.name || lead.assignedTo || '—'}</td>
                                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{lead.interestedPlan || '—'}</td>
                                     <td>
                                         {followUp ? (
@@ -273,6 +283,13 @@ const Leads = () => {
                             <label>Source</label>
                             <select className="input" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value })}>
                                 {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </div>
+                        <div className="input-group">
+                            <label>Assigned staff</label>
+                            <select className="input" value={formData.assignedTo} onChange={e => setFormData({ ...formData, assignedTo: e.target.value })}>
+                                <option value="">Unassigned</option>
+                                {staff.map(s => <option key={s._id || s.id} value={s._id || s.id}>{s.name}</option>)}
                             </select>
                         </div>
                     </div>

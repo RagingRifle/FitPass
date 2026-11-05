@@ -8,7 +8,7 @@ const { logAudit } = require('../utils/auditLogger');
 // @route   POST /api/payments
 // @access  Private/Admin
 const addPayment = catchAsync(async (req, res, next) => {
-    const { memberId, amount, method, paymentMethod, date } = req.body;
+    const { memberId, amount, method, paymentMethod, date, salesStaffId } = req.body;
     const actualMethod = method || paymentMethod || 'Cash';
 
     // Tenant isolation: allow superadmin/fitpass_admin to access all gyms; enforce gymId for branch admins
@@ -29,13 +29,20 @@ const addPayment = catchAsync(async (req, res, next) => {
     const targetGymId = member.gymId || req.user.gymId;
     const targetBranchId = req.user.branchId || member.branchId || null;
 
+    const User = require('../models/User');
+    const salesStaff = salesStaffId
+        ? await User.findOne({ _id: salesStaffId, gymId: targetGymId }).lean() || await User.findOne({ name: salesStaffId, gymId: targetGymId }).lean()
+        : null;
     const payment = await Payment.create({
         memberId,
         amount: Number(amount),
         method: actualMethod,
         date: date ? new Date(date) : new Date(),
         gymId: targetGymId,
-        branchId: targetBranchId
+        branchId: targetBranchId,
+        saleType: 'BALANCE_COLLECTION',
+        staffId: salesStaff?._id || req.user.id || req.user._id || null,
+        staffName: salesStaff?.name || req.user.name || ''
     });
 
     if (payment) {
@@ -49,6 +56,30 @@ const addPayment = catchAsync(async (req, res, next) => {
         res.status(400);
         throw new Error('Invalid payment data');
     }
+});
+
+// Filterable sales and collections ledger for the sales dashboard.
+const getSalesReport = catchAsync(async (req, res, next) => {
+    try {
+        const query = { ...req.tenantFilter };
+        const { from, to, branchId, staffId, memberId, saleType, source, method, timezoneOffset = 0 } = req.query;
+        const offsetMinutes = Number(timezoneOffset) || 0;
+        const localDayBoundary = (value, endOfDay = false) => {
+            const [year, month, day] = value.split('-').map(Number);
+            const boundary = Date.UTC(year, month - 1, day + (endOfDay ? 1 : 0)) - offsetMinutes * 60_000;
+            return new Date(boundary - (endOfDay ? 1 : 0));
+        };
+        if (from || to) query.date = { ...(from ? { $gte: localDayBoundary(from) } : {}), ...(to ? { $lte: localDayBoundary(to, true) } : {}) };
+        if (req.user.branchId) query.branchId = req.user.branchId;
+        else if (branchId) query.branchId = branchId;
+        if (staffId) query.staffId = staffId;
+        if (memberId) query.memberId = memberId;
+        if (saleType) query.saleType = saleType;
+        if (source) query.source = source;
+        if (method) query.method = method;
+        const records = await Payment.find(query).populate('memberId', 'name phone registrationNumber').sort({ date: -1 }).limit(10000).lean();
+        res.json(records);
+    } catch (error) { next(error); }
 });
 
 // @desc    Get all payments
@@ -142,7 +173,10 @@ const verifyRazorpayPayment = catchAsync(async (req, res, next) => {
             date: new Date(),
             transactionId: razorpayPaymentId || `pay_${Date.now()}`,
             gymId: member.gymId,
-            branchId: member.branchId || null
+            branchId: member.branchId || null,
+            saleType: 'BALANCE_COLLECTION',
+            source: 'Online',
+            staffName: 'Online payment'
         });
 
         member.paidAmount = (member.paidAmount || 0) + Number(amount);
@@ -158,6 +192,7 @@ module.exports = {
     addPayment,
     getPayments,
     getMemberPayments,
+    getSalesReport,
     createRazorpayOrder,
     verifyRazorpayPayment
 };

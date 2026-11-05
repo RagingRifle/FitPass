@@ -1,6 +1,6 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import API from '../../services/api';
-import { AuthContext } from '../../context/AuthContext';
+import ResetFiltersButton from '../../components/ResetFiltersButton';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/ui/Toast';
 import EmptyState from '../../components/ui/EmptyState';
@@ -33,7 +33,6 @@ import {
 
 function FitPassMembers() {
     const toast = useToast();
-    const { user } = useContext(AuthContext);
     const [members, setMembers] = useState([]);
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -142,7 +141,6 @@ function FitPassMembers() {
     // Calculate real summary statistics strictly from live database data
     const totalMembersCount = members.length;
     const activePassCount = members.filter(m => !m.isExpired && m.status === 'Active').length;
-    const expiredPassCount = members.filter(m => m.isExpired || m.status === 'Expired').length;
     const totalSessionsUsed = members.reduce((sum, m) => sum + (m.sessionsUsed || 0), 0);
     const totalSessionsRemaining = members.reduce((sum, m) => sum + (m.sessionsRemaining || 0), 0);
 
@@ -150,6 +148,8 @@ function FitPassMembers() {
         const matchesSearch = 
             m.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.phone?.includes(searchTerm) ||
+            m.registrationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.displayId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.plan?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -250,7 +250,7 @@ function FitPassMembers() {
                     <input 
                         className="input" 
                         type="text" 
-                        placeholder="Search by member name, phone, email, or plan..." 
+                        placeholder="Search by member ID, name, phone, email, or plan..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -273,6 +273,7 @@ function FitPassMembers() {
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
                         {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''}
                     </div>
+                    <ResetFiltersButton onClick={() => { setSearchTerm(''); setStatusFilter('Active'); }} />
                 </div>
             </div>
 

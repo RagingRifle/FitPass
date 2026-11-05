@@ -145,7 +145,9 @@ const seedOperationsData = async () => {
                 const expiryDate = new Date(joinDate);
                 expiryDate.setMonth(expiryDate.getMonth() + 3);
 
+                const { allocateMemberCode } = require('../../utils/idGenerator');
                 await Member.create({
+                    registrationNumber: await allocateMemberCode(),
                     name: dm.name,
                     phone: dm.phone,
                     email: `member${i + 1}@example.com`,

@@ -6,12 +6,13 @@ const {
     getPlans,
     getPlanById,
     updatePlan,
-    deletePlan,
-    logCompletedWorkout
+    deletePlan
 } = require('../controllers/workoutPlanController');
+const { createWorkoutLog, getWorkoutLogs } = require('../controllers/progressLogController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.post('/log', protect, logCompletedWorkout);
+router.get('/logs', protect, authorize('admin', 'h4_admin', 'trainer', 'member', 'superadmin'), getWorkoutLogs);
+router.post('/log', protect, authorize('admin', 'h4_admin', 'trainer', 'member', 'superadmin'), createWorkoutLog);
 
 router.route('/')
     .get(protect, authorize('admin', 'h4_admin', 'receptionist', 'trainer', 'member'), getPlans)
