@@ -119,6 +119,17 @@ const evaluateCheckInGates = (member) => {
 const attemptCheckIn = async (member, gym, branch = null) => {
   const now = new Date();
   const durationMinutes = gym.defaultSessionDurationMinutes || 120;
+  const coinSettings = await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null);
+  const coinsPerSession = coinSettings?.coinsPerSession || 10;
+  // One-time compatibility conversion for existing FitPass members when the
+  // new coin columns are introduced. The remaining session allotment survives.
+  if (!member.coinsMigrated && (member.sessionsRemaining || 0) > 0) {
+    const converted = await prisma.member.updateMany({ where: { id: member.id, coinsMigrated: false }, data: { fitpassCoins: (member.fitpassCoins || 0) + (member.sessionsRemaining || 0) * coinsPerSession, coinsMigrated: true } });
+    if (converted.count) { member.fitpassCoins = (member.fitpassCoins || 0) + (member.sessionsRemaining || 0) * coinsPerSession; member.coinsMigrated = true; }
+  } else if (!member.coinsMigrated) {
+    await prisma.member.updateMany({ where: { id: member.id, coinsMigrated: false }, data: { coinsMigrated: true } });
+    member.coinsMigrated = true;
+  }
   const sessionEndsAt = new Date(now.getTime() + durationMinutes * 60 * 1000);
   const cooldownEndsAt = new Date(sessionEndsAt.getTime() + COOLDOWN_MS);
 
@@ -131,6 +142,7 @@ const attemptCheckIn = async (member, gym, branch = null) => {
     where: {
       id: member.id,
       sessionsRemaining: { gte: 1 },
+      fitpassCoins: { gte: coinsPerSession },
       currentSessionEndsAt: null,
       OR: [
         { cooldownEndsAt: null },
@@ -139,6 +151,7 @@ const attemptCheckIn = async (member, gym, branch = null) => {
     },
     data: {
       sessionsRemaining: { decrement: 1 },
+      fitpassCoins: { decrement: coinsPerSession },
       lastCheckInAt: now,
       currentSessionEndsAt: sessionEndsAt,
       currentSessionGymId: gym.id,

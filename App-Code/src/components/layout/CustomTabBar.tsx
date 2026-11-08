@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   BadgeCheck,
   Building2,
@@ -8,21 +9,22 @@ import {
   Dumbbell,
   LayoutDashboard,
   LayoutGrid,
+  ShoppingCart,
   ScanLine,
   User,
 } from '@/components/ui/app-icons';
 
 interface CustomTabBarProps {
   state: any;
-  navigation: any;
   portalType: 'h4' | 'fitpass';
 }
 
 const H4_TABS = ['dashboard', 'attendance', 'workouts', 'more', 'profile'];
-const FITPASS_TABS = ['dashboard', 'gyms', 'scan', 'plans', 'profile'];
+const FITPASS_TABS = ['dashboard', 'gyms', 'scan', 'shop', 'packs', 'profile'];
 
-export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, portalType }) => {
+export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, portalType }) => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const isH4 = portalType === 'h4';
   const activeColor = '#FEDF1E';
   const inactiveColor = '#E8E2D6';
@@ -31,7 +33,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, p
     .map((name) => state.routes.find((route: any) => route.name === name))
     .filter(Boolean);
   const currentRouteName = state.routes[state.index]?.name;
-  const h4MoreRoutes = ['diets', 'payments', 'classes', 'pt-sessions', 'assessments', 'support'];
+  const h4MoreRoutes = ['diets', 'payments', 'classes', 'pt-sessions', 'assessments', 'support', 'shop'];
   const fitPassGymRoutes = ['gym/[id]'];
   const fitPassHomeRoutes = ['workouts', 'history', 'diets'];
   const selectedRouteName = isH4 && h4MoreRoutes.includes(currentRouteName)
@@ -48,8 +50,9 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, p
     if (routeName === 'workouts') return { label: 'Train', Icon: Dumbbell };
     if (routeName === 'more') return { label: 'More', Icon: LayoutGrid };
     if (routeName === 'gyms') return { label: 'Gyms', Icon: Building2 };
+    if (routeName === 'shop') return { label: 'Shop', Icon: ShoppingCart };
     if (routeName === 'scan') return { label: 'Scan', Icon: ScanLine };
-    if (routeName === 'plans') return { label: 'Plans', Icon: BadgeCheck };
+    if (routeName === 'packs') return { label: 'Packs', Icon: BadgeCheck };
     return { label: 'Profile', Icon: User };
   };
 
@@ -61,8 +64,8 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, navigation, p
           const { label, Icon } = getTab(route.name);
           const color = focused ? activeColor : inactiveColor;
           const onPress = () => {
-            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+            if (currentRouteName === route.name) return;
+            router.navigate(`${isH4 ? '/(h4)' : '/(fitpass)'}/${route.name}` as any);
           };
 
           return (

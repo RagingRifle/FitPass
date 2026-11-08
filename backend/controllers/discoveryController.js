@@ -3,6 +3,7 @@ const AppError = require('../utils/appError');
 const logger = require('../lib/logger');
 const prisma = require('../config/prisma');
 const { logAudit } = require('../utils/auditLogger');
+const { getEffectiveHours, isOpenAt } = require('../utils/gymSchedule');
 
 // Helper: Haversine distance calculation in kilometers
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -19,49 +20,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     return Math.round(distance * 10) / 10; // 1 decimal place
-}
-
-// Helper: Check if gym is open now based on openingTime, closingTime, workingDays
-function checkIfOpenNow(openingTime, closingTime, workingDays) {
-    try {
-        const now = new Date();
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const currentDay = days[now.getDay()];
-        
-        if (workingDays && Array.isArray(workingDays) && workingDays.length > 0) {
-            if (!workingDays.includes(currentDay)) {
-                return false;
-            }
-        }
-
-        const parseTimeString = (timeStr) => {
-            if (!timeStr) return null;
-            const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-            if (!match) return null;
-            let hours = parseInt(match[1], 10);
-            const minutes = parseInt(match[2], 10);
-            const period = match[3].toUpperCase();
-            if (period === 'PM' && hours < 12) hours += 12;
-            if (period === 'AM' && hours === 12) hours = 0;
-            return hours * 60 + minutes;
-        };
-
-        const openMinutes = parseTimeString(openingTime || "06:00 AM");
-        const closeMinutes = parseTimeString(closingTime || "10:00 PM");
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-        if (openMinutes !== null && closeMinutes !== null) {
-            if (openMinutes <= closeMinutes) {
-                return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
-            } else {
-                // Overnight gym (e.g. 8 PM to 4 AM)
-                return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
-            }
-        }
-        return true; // Default fallback open
-    } catch (e) {
-        return true;
-    }
 }
 
 // Helper: Ensure every registered Gym has an associated GymProfile
@@ -216,7 +174,7 @@ const getPublicGyms = catchAsync(async (req, res, next) => {
             ? calculateDistance(userLat, userLng, profile.latitude, profile.longitude)
             : null;
 
-        const isOpen = checkIfOpenNow(profile.openingTime, profile.closingTime, profile.workingDays);
+        const isOpen = isOpenAt(profile);
         const totalVisits = (checkInMap[gym.id] || 0) + (profile.viewCount || 0);
 
         return {
@@ -229,6 +187,7 @@ const getPublicGyms = catchAsync(async (req, res, next) => {
             discoveryProfile: {
                 ...profile,
                 isOpenNow: isOpen,
+                todayHours: getEffectiveHours(profile),
                 distanceKm: distance,
                 totalVisits: totalVisits
             }
@@ -368,7 +327,7 @@ const getPublicGymDetails = catchAsync(async (req, res, next) => {
         ? calculateDistance(userLat, userLng, profile.latitude, profile.longitude)
         : null;
 
-    const isOpen = checkIfOpenNow(profile.openingTime, profile.closingTime, profile.workingDays);
+    const isOpen = isOpenAt(profile);
 
     // Get real total check-ins count
     const totalCheckIns = await prisma.sessionCheckIn.count({
@@ -386,6 +345,7 @@ const getPublicGymDetails = catchAsync(async (req, res, next) => {
             discoveryProfile: {
                 ...profile,
                 isOpenNow: isOpen,
+                todayHours: getEffectiveHours(profile),
                 distanceKm: distance,
                 totalCheckIns: totalCheckIns
             },
@@ -477,6 +437,8 @@ const updateMyGymProfile = catchAsync(async (req, res, next) => {
     }
 
     const {
+        name,
+        defaultSessionDurationMinutes,
         shortDescription,
         description,
         coverImageUrl,
@@ -494,6 +456,9 @@ const updateMyGymProfile = catchAsync(async (req, res, next) => {
         openingTime,
         closingTime,
         workingDays,
+        timeZone,
+        weeklySchedule,
+        scheduleExceptions,
         hasParking,
         hasLockers,
         hasShowers,
@@ -522,12 +487,15 @@ const updateMyGymProfile = catchAsync(async (req, res, next) => {
         address,
         city,
         googleMapsUrl,
-        latitude: latitude ? parseFloat(latitude) : undefined,
-        longitude: longitude ? parseFloat(longitude) : undefined,
+        latitude: latitude === undefined ? undefined : (latitude === null || latitude === '' ? null : parseFloat(latitude)),
+        longitude: longitude === undefined ? undefined : (longitude === null || longitude === '' ? null : parseFloat(longitude)),
         landmarks: Array.isArray(landmarks) ? landmarks : undefined,
         openingTime,
         closingTime,
         workingDays: Array.isArray(workingDays) ? workingDays : undefined,
+        timeZone,
+        weeklySchedule: weeklySchedule && typeof weeklySchedule === 'object' ? weeklySchedule : undefined,
+        scheduleExceptions: Array.isArray(scheduleExceptions) ? scheduleExceptions : undefined,
         hasParking: hasParking !== undefined ? Boolean(hasParking) : undefined,
         hasLockers: hasLockers !== undefined ? Boolean(hasLockers) : undefined,
         hasShowers: hasShowers !== undefined ? Boolean(hasShowers) : undefined,
@@ -540,8 +508,9 @@ const updateMyGymProfile = catchAsync(async (req, res, next) => {
         instagram,
         facebook,
         youtube,
-        // Reset status to Pending Review on partner update unless SuperAdmin
-        status: isSuperAdmin ? (req.body.status || "Approved") : "Pending Review",
+        // Operating hours and contact details must take effect immediately.
+        // Keep an already-approved profile visible while the partner edits it.
+        status: isSuperAdmin ? (req.body.status || "Approved") : "Approved",
         rejectionReason: isSuperAdmin ? req.body.rejectionReason : ""
     };
 
@@ -554,13 +523,47 @@ const updateMyGymProfile = catchAsync(async (req, res, next) => {
         create: { gymId, ...updateData }
     });
 
-    await logAudit(req, 'GYM_PROFILE_UPDATED', 'GymProfile', profile.id, `Submitted profile updates for review`);
+    const gymData = {};
+    if (name !== undefined) gymData.name = String(name).trim();
+    if (address !== undefined) gymData.address = address;
+    if (contactNumber !== undefined) gymData.phone = contactNumber;
+    if (email !== undefined) gymData.email = email;
+    if (latitude !== undefined) gymData.latitude = latitude === null || latitude === '' ? null : Number(latitude);
+    if (longitude !== undefined) gymData.longitude = longitude === null || longitude === '' ? null : Number(longitude);
+    if (defaultSessionDurationMinutes !== undefined && Number.isInteger(Number(defaultSessionDurationMinutes)) && Number(defaultSessionDurationMinutes) >= 15) {
+        gymData.defaultSessionDurationMinutes = Number(defaultSessionDurationMinutes);
+    }
+    if (Object.keys(gymData).length) {
+        await prisma.gym.update({ where: { id: gymId }, data: gymData });
+    }
+
+    await logAudit(req, 'GYM_PROFILE_UPDATED', 'GymProfile', profile.id, `Updated gym Explore profile, contact details, or operating schedule`);
 
     res.status(200).json({
         success: true,
-        message: isSuperAdmin ? 'Profile updated successfully' : 'Profile changes submitted for FitPass Admin review',
+        message: 'Profile updated successfully',
         data: profile
     });
+});
+
+const uploadGymProfileImage = catchAsync(async (req, res, next) => {
+    const gymId = req.params.gymId || req.user.gymId;
+    const field = req.body.field;
+    if (!req.file?.path) return next(new AppError('Choose an image to upload.', 400));
+    if (!['coverImageUrl', 'logoUrl'].includes(field)) return next(new AppError('Image must be a cover or logo.', 400));
+    if (!gymId || gymId === 'SYSTEM') return next(new AppError('A partner gym must be selected.', 400));
+    if (req.user.role === 'admin' && String(req.user.gymId) !== String(gymId)) {
+        return next(new AppError('You can only edit your own gym profile.', 403));
+    }
+    const gym = await prisma.gym.findUnique({ where: { id: gymId } });
+    if (!gym) return next(new AppError('Gym not found.', 404));
+    const profile = await prisma.gymProfile.upsert({
+        where: { gymId },
+        create: { gymId, [field]: req.file.path },
+        update: { [field]: req.file.path },
+    });
+    await logAudit(req, 'GYM_PROFILE_IMAGE_UPDATED', 'GymProfile', profile.id, `Updated gym ${field === 'coverImageUrl' ? 'cover image' : 'logo'}`);
+    res.json({ success: true, field, url: req.file.path, data: profile });
 });
 
 // @desc    Get current gym's social posts
@@ -834,6 +837,7 @@ module.exports = {
     getPublicPostsFeed,
     getMyGymProfile,
     updateMyGymProfile,
+    uploadGymProfileImage,
     getMyGymPosts,
     createMyGymPost,
     updateMyGymPost,

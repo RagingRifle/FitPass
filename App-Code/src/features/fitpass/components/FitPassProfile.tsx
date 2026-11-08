@@ -127,21 +127,22 @@ export function FitPassProfile() {
             ) : null}
           </View>
 
-          {/* Sessions Stats Meter */}
+          {/* Coin and check-in balance */}
           <View style={styles.passGrid}>
             <View style={styles.passStat}>
-              <Text style={styles.passStatNum}>{session?.sessionsRemaining ?? 0}</Text>
-              <Text style={styles.passStatLabel}>SESSIONS LEFT</Text>
+              <Text style={styles.passStatNum}>{session?.fitpassCoins ?? 0}</Text>
+              <Text style={styles.passStatLabel}>FITCOINS</Text>
             </View>
             <View style={styles.passStatDivider} />
             <View style={styles.passStat}>
-              <Text style={styles.passStatPlan}>{session?.planName ?? 'No Active Plan'}</Text>
+              <Text style={styles.passStatPlan}>{session?.planName ?? 'No Active Pack'}</Text>
               <Text style={[
                 styles.passStatStatus,
                 session?.planStatus === 'Active' && styles.passStatStatusActive
               ]}>
-                {session?.planStatus === 'Active' ? 'Active Plan' : 'Inactive'}
+                {session?.planStatus === 'Active' ? 'Active Pack' : 'Inactive'}
               </Text>
+              {session?.displayCheckIns !== false && <Text style={styles.passStatStatus}>Up to {session?.sessionsRemaining ?? 0} check-ins</Text>}
             </View>
           </View>
         </View>

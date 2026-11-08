@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStats } from '../../services/apiService';
 import { AuthContext } from '../../context/AuthContext';
+import FitPassAdminDashboard from './FitPassAdminDashboard';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell, PieChart, Pie, Legend
@@ -59,12 +60,17 @@ const QUICK_ACTIONS = [
 
 function SuperAdminDashboard() {
     const navigate = useNavigate();
-    const { user } = useContext(AuthContext);
+    const { user, activeDivision } = useContext(AuthContext);
+    const showFitPassDashboard = user?.role === 'fitpass_admin' || (user?.role === 'superadmin' && activeDivision === 'fitpass');
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchLog, setSearchLog] = useState('');
 
     useEffect(() => {
+        if (showFitPassDashboard) {
+            setLoading(false);
+            return;
+        }
         const fetchDashboardData = async () => {
             try {
                 const statsData = await getStats();
@@ -76,7 +82,7 @@ function SuperAdminDashboard() {
             }
         };
         fetchDashboardData();
-    }, []);
+    }, [showFitPassDashboard]);
 
     const revenueTrendData = useMemo(() => {
         if (!stats?.revenueTrend) return [];
@@ -154,6 +160,8 @@ function SuperAdminDashboard() {
 
     const now = new Date();
     const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+
+    if (showFitPassDashboard) return <FitPassAdminDashboard />;
 
     // ─── Loading skeleton ───────────────────────────────────────────────────────
     if (loading) return (

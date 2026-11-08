@@ -1,12 +1,12 @@
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const logger = require('../lib/logger');
-const env = require('../config/env');
 const prisma = require('../config/prisma');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { expireIfDue } = require('../utils/sessionHelpers');
 const { H4_GYM_IDS } = require('../config/constants');
+const { dedupeMembers } = require('../utils/memberIdentity');
 
 const getMockPaymentSecret = () => process.env.JWT_SECRET || 'gym-crm-local-mock-payment';
 
@@ -41,9 +41,14 @@ const resolveMember = async (req) => {
     member = await prisma.member.findUnique({ where: { id: req.user.memberId } });
   }
   if (!member && req.user?.email) {
-    member = await prisma.member.findFirst({ where: { email: req.user.email } });
-    if (member && req.user?._id) {
-      await prisma.user.update({ where: { id: req.user._id }, data: { memberId: member.id, role: 'member' } }).catch(() => {});
+    const contactMatches = await prisma.member.findMany({
+      where: { email: { equals: req.user.email.trim(), mode: 'insensitive' } },
+      orderBy: { updatedAt: 'desc' },
+    });
+    member = dedupeMembers(contactMatches)[0] || null;
+    const userId = req.user?._id || req.user?.id;
+    if (member && userId) {
+      await prisma.user.update({ where: { id: userId }, data: { memberId: member.id, role: 'member' } }).catch(() => {});
     }
   }
   return member;
@@ -90,9 +95,13 @@ const getMyPlan = catchAsync(async (req, res, next) => {
   const isH4Member = authenticatedUserIsH4
     || H4_GYM_IDS.includes(member.gymId)
     || Boolean(homeGym?.name && homeGym.name.toLowerCase().includes('h4'));
+  const memberWithoutCoins = { ...member };
+  delete memberWithoutCoins.h4Coins;
+  delete memberWithoutCoins.fitpassCoins;
 
   res.json({
-    ...member,
+    ...memberWithoutCoins,
+    ...(!isH4Member ? { fitpassCoins: member.fitpassCoins ?? 0 } : {}),
     planId: plan || member.planId,
     isH4Member,
     homeGym: homeGym ? {
@@ -113,10 +122,17 @@ const getFitPrimePlans = catchAsync(async (req, res, next) => {
     return res.status(403).json({ message: 'FitPass subscription plans are available only to FitPass members.' });
   }
   const plans = await prisma.plan.findMany({
-    where: { gymId: 'SYSTEM', sessions: { gt: 0 } },
+    where: { gymId: 'SYSTEM' },
     orderBy: { price: 'asc' },
   });
-  res.json(plans);
+  const coinsPerSession = (await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null))?.coinsPerSession || 10;
+  res.json(plans.map(plan => ({
+    ...plan,
+    coinsPerSession,
+    coinAllowance: Number(plan.coinAllowance) > 0 ? plan.coinAllowance : (Number(plan.sessions) || 10) * coinsPerSession,
+    displayCoins: plan.displayCoins !== false,
+    displayCheckIns: plan.displayCheckIns !== false,
+  })));
 });
 
 // @desc    Get all active partner gyms
@@ -397,6 +413,7 @@ const getMyDigitalPass = catchAsync(async (req, res, next) => {
             branchId: member.branchId || null,
             sessionsRemaining: member.sessionsRemaining ?? 0,
             sessionsTotal: member.sessionsTotal ?? 0,
+            fitpassCoins: member.fitpassCoins ?? 0,
             planName: plan?.name || 'Active Membership'
         },
         memberId: member.id,
@@ -577,11 +594,11 @@ const verifyRazorpayPayment = catchAsync(async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
-// @desc    Create Razorpay Order for Plan Purchase
+// @desc    Create test order for FitPass pack purchase (no payment collected)
 // @route   POST /api/member-portal/purchase-plan/create-order
 // @access  Private/Member
 const purchasePlanOrder = catchAsync(async (req, res, next) => {
-    const { planId, gateway } = req.body;
+    const { planId } = req.body;
 
     const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
 
@@ -598,57 +615,27 @@ const purchasePlanOrder = catchAsync(async (req, res, next) => {
     const userIdString = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id).toString() : 'mockuser';
     const receiptId = `rcpt_plan_${userIdString.slice(-6)}_${Date.now()}`;
 
-    const hasRazorpayKeys = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET &&
-                      process.env.RAZORPAY_KEY_ID !== 'your_razorpay_key_id' &&
-                      process.env.RAZORPAY_KEY_ID !== 'null' && process.env.RAZORPAY_KEY_ID !== 'undefined' &&
-                      process.env.RAZORPAY_KEY_ID.trim() !== '';
-    if (gateway === 'razorpay' && !hasRazorpayKeys) {
-        return res.status(503).json({ message: 'Razorpay payments are not configured.' });
-    }
-    const useMockGateway = gateway === 'mock' || (!gateway && !hasRazorpayKeys);
-    if (useMockGateway && env.isProduction) {
-        logger.error('Mock FitPass payment requested in production; refusing to create a mock order.');
-        return res.status(503).json({ message: 'Demo payments are disabled in production.' });
-    }
-
-    if (useMockGateway) {
-        const orderId = `order_mock_${crypto.randomBytes(12).toString('hex')}`;
-        const expiresAt = Date.now() + 10 * 60 * 1000;
-        const mockToken = createMockOrderToken({ orderId, userId: userIdString, planId: plan.id, amount: amountInPaise, expiresAt });
-        return res.status(201).json({
-            id: orderId,
-            amount: amountInPaise,
-            currency: 'INR',
-            receipt: receiptId,
-            status: 'created',
-            is_mock: true,
-            gateway: 'mock',
-            mock_token: mockToken,
-            notes: { newPlanId: plan.id },
-        });
-    }
-
-    const instance = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
-
-    const options = {
+    const orderId = `order_mock_${crypto.randomBytes(12).toString('hex')}`;
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+    const mockToken = createMockOrderToken({ orderId, userId: userIdString, planId: plan.id, amount: amountInPaise, expiresAt });
+    return res.status(201).json({
+        id: orderId,
         amount: amountInPaise,
-        currency: "INR",
+        currency: 'INR',
         receipt: receiptId,
-        notes: { newPlanId: plan.id, memberId: member?.id || '', userId: userIdString },
-    };
-
-    const order = await instance.orders.create(options);
-    return res.status(201).json({ ...order, gateway: 'razorpay', key_id: process.env.RAZORPAY_KEY_ID });
+        status: 'created',
+        is_mock: true,
+        gateway: 'mock',
+        mock_token: mockToken,
+        notes: { newPlanId: plan.id },
+    });
 });
 
 // @desc    Verify Plan Purchase
 // @route   POST /api/member-portal/purchase-plan/verify
 // @access  Private/Member
 const purchasePlanVerify = catchAsync(async (req, res, next) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId, mock_token } = req.body;
+    const { test_order_id, planId, mock_token } = req.body;
     const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
     if (!plan || plan.gymId !== 'SYSTEM') {
         return res.status(404).json({ success: false, message: 'FitPass plan not found' });
@@ -660,41 +647,15 @@ const purchasePlanVerify = catchAsync(async (req, res, next) => {
         return res.status(403).json({ success: false, message: 'FitPass plans are only available to FitPass members.' });
     }
 
-    let isAuthentic = false;
-    let paymentMethod = 'Online (Mock Gateway)';
-    let transactionId = razorpay_payment_id;
-    if (razorpay_order_id?.startsWith('order_mock_')) {
-        const expectedAmount = Math.round(plan.price * 100);
-        isAuthentic = !env.isProduction && verifyMockOrderToken(mock_token, {
-            orderId: razorpay_order_id,
-            userId,
-            planId: plan.id,
-            amount: expectedAmount,
-        });
-        if (isAuthentic) transactionId = `mock_${razorpay_order_id}`;
-    } else if (razorpay_order_id && razorpay_payment_id && razorpay_signature && process.env.RAZORPAY_KEY_SECRET) {
-        const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-            .update(`${razorpay_order_id}|${razorpay_payment_id}`).digest();
-        let suppliedSignature;
-        try { suppliedSignature = Buffer.from(razorpay_signature, 'hex'); } catch { suppliedSignature = Buffer.alloc(0); }
-        isAuthentic = expectedSignature.length === suppliedSignature.length
-            && crypto.timingSafeEqual(expectedSignature, suppliedSignature);
-        if (isAuthentic) {
-            const gateway = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
-            const [order, payment] = await Promise.all([
-                gateway.orders.fetch(razorpay_order_id),
-                gateway.payments.fetch(razorpay_payment_id),
-            ]);
-            isAuthentic = order.amount === Math.round(plan.price * 100)
-                && order.currency === 'INR'
-                && order.notes?.newPlanId === plan.id
-                && (!order.notes?.userId || order.notes.userId === userId)
-                && payment.order_id === razorpay_order_id
-                && payment.amount === Math.round(plan.price * 100)
-                && payment.status === 'captured';
-        }
-        paymentMethod = 'Online (Razorpay)';
-    }
+    // Pack billing is in test mode: only server-signed test orders can activate a pack.
+    const isAuthentic = Boolean(test_order_id?.startsWith('order_mock_') && verifyMockOrderToken(mock_token, {
+        orderId: test_order_id,
+        userId,
+        planId: plan.id,
+        amount: Math.round(plan.price * 100),
+    }));
+    const transactionId = isAuthentic ? `mock_${test_order_id}` : null;
+    const paymentMethod = 'Test Purchase (No Payment)';
 
     if (!isAuthentic || !transactionId) {
         return res.status(400).json({ success: false, message: 'Payment verification failed' });
@@ -722,12 +683,16 @@ const purchasePlanVerify = catchAsync(async (req, res, next) => {
     else if (durationUnit.startsWith('hour')) nextExpiry.setHours(nextExpiry.getHours() + duration);
     else nextExpiry.setDate(nextExpiry.getDate() + duration);
 
-    const sessionsToCredit = plan.sessions || 10;
+    const coinSettings = await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null);
+    const coinsPerSession = coinSettings?.coinsPerSession || 10;
+    const sessionsToCredit = plan.sessions == null ? 10 : Math.max(0, Number(plan.sessions) || 0);
+    const coinsToCredit = Number(plan.coinAllowance) > 0 ? Number(plan.coinAllowance) : sessionsToCredit * coinsPerSession;
     const hasUnexpiredPass = Boolean(member?.expiryDate && new Date(member.expiryDate) > now);
     const previousTotal = hasUnexpiredPass ? (member.sessionsTotal || 0) : 0;
     const previousRemaining = hasUnexpiredPass ? (member.sessionsRemaining || 0) : 0;
     const updatedTotal = previousTotal + sessionsToCredit;
     const updatedRemaining = previousRemaining + sessionsToCredit;
+    const totalCoinsToCredit = coinsToCredit + (!member?.coinsMigrated && hasUnexpiredPass ? previousRemaining * coinsPerSession : 0);
 
     const updatedMember = await prisma.$transaction(async (tx) => {
         const savedMember = member
@@ -741,6 +706,8 @@ const purchasePlanVerify = catchAsync(async (req, res, next) => {
                     expiryDate: nextExpiry,
                     sessionsTotal: updatedTotal,
                     sessionsRemaining: updatedRemaining,
+                    fitpassCoins: { increment: totalCoinsToCredit },
+                    coinsMigrated: true,
                 },
             })
             : await tx.member.create({
@@ -758,6 +725,8 @@ const purchasePlanVerify = catchAsync(async (req, res, next) => {
                     branchId: req.user.branchId || null,
                     sessionsTotal: sessionsToCredit,
                     sessionsRemaining: sessionsToCredit,
+                    fitpassCoins: coinsToCredit,
+                    coinsMigrated: true,
                 },
             });
         await tx.payment.create({
@@ -829,6 +798,8 @@ const getDashboardData = catchAsync(async (req, res, next) => {
     }
 
     await expireIfDue(member);
+
+    const isH4Member = H4_GYM_IDS.includes(String(member.gymId)) || isH4Account(req);
 
     const memberId = member.id;
 
@@ -963,6 +934,9 @@ const getDashboardData = catchAsync(async (req, res, next) => {
         recentPayments: recentPayments,
         sessionStatus: {
             sessionsRemaining: member.sessionsRemaining || 0,
+            ...(!isH4Member ? { fitpassCoins: member.fitpassCoins || 0 } : {}),
+            displayCoins: !isH4Member && plan?.displayCoins !== false,
+            displayCheckIns: plan?.displayCheckIns !== false,
             sessionsTotal: member.sessionsTotal || 0,
             currentSessionEndsAt: member.currentSessionEndsAt ? member.currentSessionEndsAt.toISOString() : null,
             currentSessionGymId: member.currentSessionGymId,

@@ -20,7 +20,7 @@ const getPlanScope = (req) => {
 // @access  Private/Admin
 const createPlan = catchAsync(async (req, res, next) => {
     try {
-        const { name, duration, price } = req.body;
+        const { name, duration, price, sessions } = req.body;
 
         if (req.user.role === 'fitpass_admin') {
             return res.status(403).json({ success: false, message: 'FitPass session plans are managed from FitPass Plans.' });
@@ -42,6 +42,7 @@ const createPlan = catchAsync(async (req, res, next) => {
             name,
             duration: Number(duration),
             price: Number(price),
+            sessions: sessions ? Number(sessions) : null,
             gymId,
             branchId: req.user.branchId || (isH4Superadmin ? null : req.tenantFilter?.branchId || null)
         });
@@ -117,7 +118,7 @@ const getPlanById = catchAsync(async (req, res, next) => {
 const updatePlan = catchAsync(async (req, res, next) => {
     try {
         if ((!req.user.gymId || req.user.gymId === 'SYSTEM') && !(req.user.role === 'superadmin' && H4_GYM_IDS.includes(String(req.tenantFilter?.gymId || '')))) return res.status(404).json({ success: false, message: 'Gym membership plan not found. FitPass plans are managed in the FitPass plans section.' });
-        const { name, duration, price } = req.body;
+        const { name, duration, price, sessions } = req.body;
 
         const query = { _id: req.params.id, ...getPlanScope(req) };
         const plan = await Plan.findOne(query);
@@ -130,6 +131,7 @@ const updatePlan = catchAsync(async (req, res, next) => {
             if (price !== undefined && price !== '') {
                 plan.price = Number(price);
             }
+            if (sessions !== undefined) plan.sessions = sessions === '' || sessions == null ? null : Number(sessions);
 
             const updatedPlan = await plan.save();
             await logAudit(req, 'PLAN_UPDATED', 'Plan', plan._id, `Updated plan: ${updatedPlan.name}`, updatedPlan.name);

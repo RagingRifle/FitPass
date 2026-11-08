@@ -39,6 +39,7 @@ const BodyAssessments = lazy(() => import('./pages/BodyAssessments'));
 const TrainerAttendancePage = lazy(() => import('./pages/TrainerAttendancePage'));
 const PayrollPage = lazy(() => import('./pages/PayrollPage'));
 const FitPassAnalyticsPage = lazy(() => import('./pages/FitPassAnalyticsPage'));
+const FitPassOrders = lazy(() => import('./pages/superadmin/FitPassOrders'));
 const WorkoutPlans = lazy(() => import('./pages/WorkoutPlans'));
 const DietPlans = lazy(() => import('./pages/DietPlans'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -49,6 +50,8 @@ const DiscoveryApprovalQueue = lazy(() => import('./pages/superadmin/DiscoveryAp
 const FitPassGymExplore = lazy(() => import('./pages/FitPassGymExplore'));
 const FitPassLanding = lazy(() => import('./pages/FitPassLanding'));
 const StaffLogin = lazy(() => import('./pages/StaffLogin'));
+const Products = lazy(() => import('./pages/Products'));
+const Shopping = lazy(() => import('./pages/Shopping'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -99,6 +102,8 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/products" element={<ProtectedRoute roles={['admin', 'h4_admin', 'superadmin', 'fitpass_admin']}><Layout><Products /></Layout></ProtectedRoute>} />
+
         <Route path="/superadmin/fitpass-members" element={
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>
             <Layout>
@@ -119,6 +124,14 @@ function App() {
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>
             <Layout>
               <FitPassAnalyticsPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/superadmin/fitpass-orders" element={
+          <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>
+            <Layout>
+              <FitPassOrders />
             </Layout>
           </ProtectedRoute>
         } />
@@ -188,6 +201,8 @@ function App() {
             </Layout>
           </ProtectedRoute>
         } />
+
+        <Route path="/shopping" element={<ProtectedRoute roles={['member']}><Layout><Shopping /></Layout></ProtectedRoute>} />
 
         <Route path="/reports" element={
           <ProtectedRoute roles={['admin', 'h4_admin']}>

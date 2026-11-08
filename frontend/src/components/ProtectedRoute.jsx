@@ -20,6 +20,11 @@ const ProtectedRoute = ({ children, roles }) => {
     const isH4Gym = normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd';
     const isPartnerAdmin = user.role === 'partner' || (user.role === 'admin' && !isH4Gym);
 
+    const h4BranchPaths = ['/dashboard', '/members', '/leads', '/plans', '/classes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'];
+    if (user.role === 'h4_admin' && user.branchId && !h4BranchPaths.includes(window.location.pathname)) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     const partnerAllowedPaths = [
         '/partner/visit-log',
         '/partner/fitpass-leads',

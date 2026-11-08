@@ -26,7 +26,8 @@ const getBranches = catchAsync(async (req, res, next) => {
             query.gymId = req.user.gymId;
         }
 
-        const isHQAdmin = ['superadmin', 'h4_admin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role);
+        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
+            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
         if (!isHQAdmin && req.user.userBranchId) {
             query._id = req.user.userBranchId;
         }
@@ -50,7 +51,8 @@ const getBranches = catchAsync(async (req, res, next) => {
 
 const createBranch = catchAsync(async (req, res, next) => {
     try {
-        const isHQAdmin = ['superadmin', 'h4_admin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role);
+        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
+            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
         if (!isHQAdmin && req.user.userBranchId) {
             return res.status(403).json({ message: 'Branch administrators cannot create branches' });
         }
@@ -98,7 +100,8 @@ const createBranch = catchAsync(async (req, res, next) => {
 // @route   PUT /api/branches/:id
 const updateBranch = catchAsync(async (req, res, next) => {
     try {
-        const isHQAdmin = ['superadmin', 'h4_admin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role);
+        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
+            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
         if (!isHQAdmin && req.user.userBranchId) {
             return res.status(403).json({ message: 'Branch administrators cannot modify branches' });
         }
@@ -121,7 +124,8 @@ const updateBranch = catchAsync(async (req, res, next) => {
 // @route   DELETE /api/branches/:id
 const deleteBranch = catchAsync(async (req, res, next) => {
     try {
-        const isHQAdmin = ['superadmin', 'h4_admin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role);
+        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
+            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
         if (!isHQAdmin && req.user.userBranchId) {
             return res.status(403).json({ message: 'Branch administrators cannot delete branches' });
         }
@@ -140,7 +144,8 @@ const deleteBranch = catchAsync(async (req, res, next) => {
 // @route   GET /api/branches/:id/members
 const getBranchMembers = catchAsync(async (req, res, next) => {
     try {
-        const isHQAdmin = ['superadmin', 'h4_admin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role);
+        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
+            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
         if (!isHQAdmin && req.user.userBranchId && req.user.userBranchId !== req.params.id) {
             return res.status(403).json({ message: 'Access denied to this branch\'s members' });
         }

@@ -27,11 +27,11 @@ export function FitPassQRScan() {
 
   const confirmCheckIn = useCallback(async (payload: { gymId: string; branchId?: string; qrCode: string; gymName?: string }) => {
     const refreshedStatus = await refreshSessionStatus().catch(() => null);
-    const remaining = refreshedStatus?.data?.sessionsRemaining ?? sessionData?.sessionsRemaining ?? 0;
+    const coins = refreshedStatus?.data?.fitpassCoins ?? sessionData?.fitpassCoins ?? 0;
     setScanState('confirming');
     Alert.alert(
       'Confirm attendance',
-      `${payload.gymName || 'This gym'}\n\nYou have ${remaining} session${remaining === 1 ? '' : 's'} remaining. Confirm attendance?`,
+      `${payload.gymName || 'This gym'}\n\nYour balance is ${coins} FitCoins. Confirm one check-in?`,
       [
         { text: 'Cancel', style: 'cancel', onPress: () => setScanState('idle') },
         {
@@ -43,7 +43,7 @@ export function FitPassQRScan() {
               setScanState('done');
               Alert.alert(
                 'Attendance confirmed',
-                `${payload.gymName || 'Gym'} check-in is complete. You have ${result.sessionsRemaining ?? Math.max(remaining - 1, 0)} session${(result.sessionsRemaining ?? Math.max(remaining - 1, 0)) === 1 ? '' : 's'} remaining.`,
+                `${payload.gymName || 'Gym'} check-in is complete.`,
                 [{ text: 'Go to Dashboard', onPress: () => router.push(targetDashboard as any) }],
               );
             } catch (err: any) {
@@ -59,7 +59,7 @@ export function FitPassQRScan() {
         },
       ],
     );
-  }, [checkIn, refreshSessionStatus, router, sessionData?.sessionsRemaining, targetDashboard]);
+  }, [checkIn, refreshSessionStatus, router, sessionData?.fitpassCoins, targetDashboard]);
 
   const handleBarCodeScanned = useCallback(
     ({ data }: { data: string }) => {
@@ -121,7 +121,7 @@ export function FitPassQRScan() {
         </View>
         <Text style={styles.permTitle}>Camera Access Required</Text>
         <Text style={styles.permSubtitle}>
-          FitPass uses your camera to scan partner gym QR codes for attendance check-ins.
+          FitPass uses your camera to scan partner gym QR codes. Each confirmed check-in spends coins from your balance.
         </Text>
         <TouchableOpacity style={styles.grantBtn} onPress={requestPermission} activeOpacity={0.85}>
           <Text style={styles.grantBtnText}>Grant Camera Access</Text>
@@ -225,7 +225,7 @@ export function FitPassQRScan() {
 
         <View style={styles.creditPill}>
           <Activity size={12} color={theme.colors.primaryText} />
-          <Text style={styles.creditPillText}>{sessionData?.sessionsRemaining ?? 0} LEFT</Text>
+          <Text style={styles.creditPillText}>{sessionData?.fitpassCoins ?? 0} COINS</Text>
         </View>
       </View>
 
@@ -270,7 +270,7 @@ export function FitPassQRScan() {
             {scanState === 'idle' && 'Align gym counter QR code inside frame'}
             {scanState === 'scanning' && 'Reading FitPass QR code'}
             {scanState === 'confirming' && 'Confirm attendance in the popup'}
-            {scanState === 'processing' && 'Validating pass & deducting 1 session'}
+            {scanState === 'processing' && 'Validating pass & deducting coins'}
             {scanState === 'done' && ' Entry Authorized!'}
             {scanState === 'error' && ` ${errorMessage ?? 'Check-in failed'}`}
           </Text>

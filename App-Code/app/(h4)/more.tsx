@@ -8,11 +8,13 @@ import {
   Activity,
   LifeBuoy,
   UserCheck,
+  Package,
 } from '@/components/ui/app-icons';
 import { useRouter } from 'expo-router';
 import { theme } from '@/design-system/theme';
 
 const MORE_LINKS = [
+  { title: 'H4 merchandise', detail: 'Browse products and ask at the gym to buy', route: '/(h4)/shop', Icon: Package },
   { title: 'Nutrition', detail: 'Meals and daily targets', route: '/(h4)/diets', Icon: Apple },
   { title: 'Group classes', detail: 'Find your next session', route: '/(h4)/classes', Icon: CalendarCheck },
   { title: 'PT coaching', detail: 'Book time with a trainer', route: '/(h4)/pt-sessions', Icon: UserCheck },

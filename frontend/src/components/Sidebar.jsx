@@ -24,6 +24,7 @@ const NAV_GROUPS = {
             items: [
                 { name: 'Partner Gyms', path: '/superadmin/gyms', icon: Building2 },
                 { name: 'Fit-Prime Plans', path: '/superadmin/plans', icon: Package },
+                { name: 'Products & Coins', path: '/products', icon: Banknote },
                 { name: 'Members Directory', path: '/members', icon: Users },
             ]
         },
@@ -44,6 +45,7 @@ const NAV_GROUPS = {
                 { name: 'Members', path: '/members', icon: Users },
                 { name: 'Leads', path: '/leads', icon: Target },
                 { name: 'Plans', path: '/plans', icon: Package },
+                { name: 'Products & Coins', path: '/products', icon: Banknote },
                 { name: 'Classes', path: '/classes', icon: Dumbbell },
                 { name: 'Assessments', path: '/body-assessments', icon: LineChart },
                 { name: 'Staff', path: '/staff', icon: ShieldCheck },
@@ -111,6 +113,7 @@ const NAV_GROUPS = {
             label: 'My Portal',
             items: [
                 { name: 'Dashboard', path: '/member-dashboard', icon: Home },
+                { name: 'Shop', path: '/shopping', icon: Package },
                 { name: 'Explore Gyms', path: '/explore-gyms', icon: Compass },
                 { name: 'My InBody', path: '/body-assessments', icon: LineChart },
                 { name: 'Classes', path: '/member-classes', icon: Calendar },
@@ -195,6 +198,8 @@ const Sidebar = () => {
                     items: [
                         { name: 'Partner Gyms', path: '/superadmin/gyms', icon: Building2 },
                         { name: 'Fit-Prime Plans', path: '/superadmin/plans', icon: Package },
+                        { name: 'Products & Coins', path: '/products', icon: Banknote },
+                        { name: 'FitPass Orders', path: '/superadmin/fitpass-orders', icon: Receipt },
                         { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
                         { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
                         { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },
@@ -218,6 +223,7 @@ const Sidebar = () => {
                     { name: `Members${suffix}`, path: '/members', icon: Users },
                     { name: `Leads${suffix}`, path: '/leads', icon: Target },
                     { name: `Plans${suffix}`, path: '/plans', icon: Package },
+                            { name: 'Products & Coins', path: '/products', icon: Banknote },
                     { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
                     { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
                     { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
@@ -278,6 +284,8 @@ const Sidebar = () => {
                 items: [
                     { name: 'Partner Gyms', path: '/superadmin/gyms', icon: Building2 },
                     { name: 'Fit-Prime Plans', path: '/superadmin/plans', icon: Package },
+                    { name: 'Products & Coins', path: '/products', icon: Banknote },
+                    { name: 'FitPass Orders', path: '/superadmin/fitpass-orders', icon: Receipt },
                     { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
                     { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
                 ]
@@ -298,6 +306,7 @@ const Sidebar = () => {
             { name: `Members${suffix}`, path: '/members', icon: Users },
             { name: `Leads${suffix}`, path: '/leads', icon: Target },
             { name: `Plans${suffix}`, path: '/plans', icon: Package },
+            { name: 'Products & Coins', path: '/products', icon: Banknote },
             { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
             { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
             { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
@@ -346,9 +355,7 @@ const Sidebar = () => {
             groups = (NAV_GROUPS[role] || NAV_GROUPS.member).map(group => ({
                 ...group,
                 items: group.items.filter(item => {
-                    if (role === 'member' && isH4Gym && item.path === '/explore-gyms') {
-                        return false;
-                    }
+                    if (role === 'member' && isH4Gym && item.path === '/explore-gyms') return false;
                     return true;
                 })
             }));
@@ -358,7 +365,11 @@ const Sidebar = () => {
     if (user?.branchId && Array.isArray(groups)) {
         groups = groups.map(group => ({
             ...group,
-            items: group.items.filter(item => item.path !== '/branches')
+            items: group.items.filter(item => {
+                if (item.path === '/branches') return false;
+                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
+                return true;
+            })
         }));
     }
 

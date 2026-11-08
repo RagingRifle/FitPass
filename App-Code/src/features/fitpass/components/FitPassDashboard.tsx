@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
+  Animated,
   Text,
   StyleSheet,
   ScrollView,
@@ -12,7 +13,6 @@ import { useRouter } from 'expo-router';
 import {
   QrCode,
   Clock,
-  Building2,
   MapPin,
   Search,
   ChevronRight,
@@ -66,10 +66,20 @@ function Header({ onScanQR }: { onScanQR: () => void }) {
   );
 }
 
-// ─── Active Plan Card ────────────────────────────────────────────────────────
+// ─── Active Pack Card ────────────────────────────────────────────────────────
 function PassCard() {
   const { data, isLoading } = useSessionStatus();
   const router = useRouter();
+  const coinPulse = useMemo(() => new Animated.Value(0), []);
+
+  useEffect(() => {
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(coinPulse, { toValue: 1, duration: 850, useNativeDriver: true }),
+      Animated.timing(coinPulse, { toValue: 0, duration: 850, useNativeDriver: true }),
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [coinPulse]);
 
   if (isLoading) return <Skeleton style={styles.skeletonPassCard} />;
 
@@ -80,9 +90,16 @@ function PassCard() {
     !isLive && data?.cooldownEndsAt
       ? new Date(data.cooldownEndsAt) > new Date()
       : false;
-  const sessionsLeft = data?.sessionsRemaining ?? 0;
-  const sessionsTotal = data?.sessionsTotal ?? 0;
-  const progress = sessionsTotal > 0 ? sessionsLeft / sessionsTotal : 0;
+  const coinsLeft = Math.max(0, Number(data?.fitpassCoins) || 0);
+  const planSessionsLeft = Math.max(0, Number(data?.sessionsRemaining) || 0);
+  const coinSessions = Math.floor(coinsLeft / Math.max(1, Number(data?.coinsPerSession) || 10));
+  const availableCheckIns = data?.displayCoins === false
+    ? planSessionsLeft
+    : data?.displayCheckIns === false
+      ? coinSessions
+      : Math.min(coinSessions, planSessionsLeft);
+  const sessionLimit = data?.displayCheckIns === false ? coinSessions : Math.max(0, Number(data?.sessionsTotal) || 0);
+  const progress = sessionLimit > 0 ? availableCheckIns / sessionLimit : 0;
   const hasPlan = Boolean(data?.planName && data?.planStatus === 'Active');
 
   return (
@@ -99,7 +116,17 @@ function PassCard() {
             <ShieldCheck size={13} color={theme.colors.primaryText} />
             <Text style={styles.passLabel}>FITPASS NETWORK</Text>
           </View>
-          <Text style={styles.passName}>{data?.planName ?? 'No Active Plan'}</Text>
+          <View style={styles.coinHeading}>
+            <Animated.View style={[styles.coinArt, {
+              transform: [
+                { scale: coinPulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.07] }) },
+                { rotate: coinPulse.interpolate({ inputRange: [0, 1], outputRange: ['-5deg', '5deg'] }) },
+              ],
+            }]}>
+              <View style={styles.coinArtInner}><Text style={styles.coinArtLetter}>F</Text></View>
+            </Animated.View>
+            <View><Text style={styles.coinAmount}>{coinsLeft.toLocaleString('en-IN')}</Text><Text style={styles.coinAmountLabel}>FITCOINS AVAILABLE</Text></View>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -112,7 +139,7 @@ function PassCard() {
               borderColor: hasPlan ? 'rgba(76,175,80,0.3)' : 'rgba(254,223,30,0.3)',
             },
           ]}
-          onPress={() => router.push('/(fitpass)/plans')}
+          onPress={() => router.push('/(fitpass)/packs')}
           activeOpacity={0.8}
         >
           <BadgeCheck size={14} color={hasPlan ? theme.colors.success : theme.colors.primary} />
@@ -122,7 +149,7 @@ function PassCard() {
               { color: hasPlan ? '#4CAF50' : theme.colors.primary },
             ]}
           >
-            {hasPlan ? 'Active Pass' : 'Get Pass'}
+            {hasPlan ? 'Active Pack' : 'Get Pack'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -130,22 +157,22 @@ function PassCard() {
       {/* Meter */}
       <View style={styles.sessionsRow}>
         <View style={styles.sessionCircle}>
-          <Text style={styles.sessionsNum}>{sessionsLeft}</Text>
-          <Text style={styles.sessionsUnit}>LEFT</Text>
+          {data?.displayCheckIns !== false && <><Text style={styles.sessionsNum}>{availableCheckIns}</Text><Text style={styles.sessionsUnit}>VISITS</Text></>}
         </View>
 
         <View style={styles.sessionsMeter}>
           <View style={styles.meterBg}>
-            <View
+            {data?.displayCheckIns !== false && <View
               style={[
                 styles.meterFill,
                 { width: `${Math.min(100, progress * 100)}%` as any },
               ]}
-            />
+            />}
           </View>
-          <Text style={styles.meterLabel}>
-            {sessionsLeft} of {sessionsTotal} session credits remaining
-          </Text>
+          <View style={styles.balanceDetails}>
+            {data?.displayCoins !== false && <Text style={styles.meterLabel}>1 visit uses {Math.max(1, Number(data?.coinsPerSession) || 10)} FitCoins</Text>}
+            {data?.displayCheckIns !== false && <Text style={styles.meterLabel}>{planSessionsLeft} pack check-ins remaining · coins cover {coinSessions}</Text>}
+          </View>
           {data?.expiryDate && (
             <Text style={styles.expiryText}>
               Valid through{' '}
@@ -362,6 +389,7 @@ function AllPartnerGyms() {
 
 // ─── Root Dashboard ────────────────────────────────────────────────────────
 export function FitPassDashboard({ onScanQR }: { onScanQR: () => void }) {
+  const router = useRouter();
   return (
     <ScrollView
       style={styles.root}
@@ -370,6 +398,9 @@ export function FitPassDashboard({ onScanQR }: { onScanQR: () => void }) {
     >
       <Header onScanQR={onScanQR} />
       <PassCard />
+      <TouchableOpacity onPress={() => router.push('/(fitpass)/shop')} activeOpacity={0.85} style={{ backgroundColor: '#FEDF1E', padding: 16, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ color: '#171713', fontWeight: '900', fontSize: 16 }}>Shop with FitPass coins</Text><ChevronRight size={20} color="#171713" />
+      </TouchableOpacity>
       <PopularFitPassGyms />
       <AllPartnerGyms />
     </ScrollView>
@@ -477,6 +508,12 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginTop: 4,
   },
+  coinHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  coinArt: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#D99E27', borderWidth: 2, borderColor: '#F5D676', alignItems: 'center', justifyContent: 'center', shadowColor: '#B98513', shadowOpacity: 0.34, shadowRadius: 8, elevation: 4 },
+  coinArtInner: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#FFEBA6', alignItems: 'center', justifyContent: 'center' },
+  coinArtLetter: { color: '#FFF5CE', fontFamily: fontFamilies.header, fontWeight: '900', fontSize: 16 },
+  coinAmount: { fontFamily: fontFamilies.header, color: theme.colors.text, fontSize: 23, lineHeight: 26, fontWeight: '900' },
+  coinAmountLabel: { color: theme.colors.textMuted, fontSize: 8, lineHeight: 12, fontWeight: '900', letterSpacing: 1.05 },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -520,6 +557,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   sessionsMeter: { flex: 1, gap: 6 },
+  balanceDetails: { gap: 4 },
   meterBg: { height: 7, backgroundColor: theme.colors.border, borderRadius: 4, overflow: 'hidden' },
   meterFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
   meterLabel: {

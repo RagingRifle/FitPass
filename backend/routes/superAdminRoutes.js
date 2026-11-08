@@ -11,6 +11,7 @@ const {
     getFitPrimePlans,
     getOrCreateH4Gym,
     getDedicatedAdmins,
+    getAdminAccountScopes,
     createDedicatedAdmin,
     updateDedicatedAdmin,
     deleteDedicatedAdmin,
@@ -19,6 +20,8 @@ const {
     getFitPassOverview,
     adjustUserSessions,
     updateFitpassUserStatus,
+    getFitPassOrders,
+    updateFitPassOrderStatus,
 } = require('../controllers/superAdminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -48,6 +51,8 @@ router.route('/admins')
     .get(protect, authorize('superadmin'), getDedicatedAdmins)
     .post(protect, authorize('superadmin'), createDedicatedAdmin);
 
+router.get('/admin-scopes', protect, authorize('superadmin'), getAdminAccountScopes);
+
 router.route('/admins/:id')
     .put(protect, authorize('superadmin'), updateDedicatedAdmin)
     .delete(protect, authorize('superadmin'), deleteDedicatedAdmin);
@@ -67,5 +72,10 @@ router.post('/fitpass/users/:memberId/adjust-sessions',
 
 router.put('/fitpass/users/:memberId/status',
     protect, authorize('superadmin', 'fitpass_admin'), updateFitpassUserStatus);
+
+router.get('/fitpass/orders',
+    protect, authorize('superadmin', 'fitpass_admin'), getFitPassOrders);
+router.patch('/fitpass/orders/:orderId',
+    protect, authorize('superadmin', 'fitpass_admin'), updateFitPassOrderStatus);
 
 module.exports = router;

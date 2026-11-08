@@ -4,6 +4,10 @@
 export interface SessionStatus {
   sessionsRemaining: number;
   sessionsTotal: number;
+  fitpassCoins: number;
+  coinsPerSession?: number;
+  displayCoins?: boolean;
+  displayCheckIns?: boolean;
   currentSessionEndsAt: string | null;
   currentSessionGymId: string | null;
   cooldownEndsAt: string | null;
@@ -92,6 +96,10 @@ export interface GymDiscoveryProfile {
   openingTime?: string;
   closingTime?: string;
   workingDays?: string[];
+  timeZone?: string;
+  weeklySchedule?: Record<string, { closed?: boolean; open?: string; close?: string }>;
+  scheduleExceptions?: Array<{ date: string; closed: boolean; open?: string; close?: string; reason?: string }>;
+  todayHours?: { date: string; day?: string; closed: boolean; open?: string; close?: string; reason?: string; isException?: boolean };
   hasParking?: boolean;
   hasLockers?: boolean;
   hasShowers?: boolean;

@@ -12,7 +12,7 @@ const Plans = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
-    const [formData, setFormData] = useState({ name: '', duration: '30', durationPreset: '30', price: '' });
+    const [formData, setFormData] = useState({ name: '', duration: '30', durationPreset: '30', price: '', sessions: '' });
 
     useEffect(() => {
         fetchPlans();
@@ -36,10 +36,10 @@ const Plans = () => {
             setEditingPlan(plan);
             const duration = String(plan.duration ?? 30);
             const durationPreset = ['30', '60'].includes(duration) ? duration : 'custom';
-            setFormData({ name: plan.name, duration, durationPreset, price: plan.price });
+            setFormData({ name: plan.name, duration, durationPreset, price: plan.price, sessions: plan.sessions ?? '' });
         } else {
             setEditingPlan(null);
-            setFormData({ name: '', duration: '30', durationPreset: '30', price: '' });
+            setFormData({ name: '', duration: '30', durationPreset: '30', price: '', sessions: '' });
         }
         setIsModalOpen(true);
     };
@@ -51,7 +51,8 @@ const Plans = () => {
             const payload = {
                 name: formData.name,
                 duration: Number(formData.duration),
-                price: Number(formData.price)
+                price: Number(formData.price),
+                sessions: formData.sessions === '' ? undefined : Number(formData.sessions)
             };
             if (editingPlan) {
                 await updatePlan(planId, payload);
@@ -102,13 +103,14 @@ const Plans = () => {
                             <th>Plan Name</th>
                             <th>Duration (Days)</th>
                             <th>Price (₹)</th>
+                            <th>Check-ins</th>
                             {isAdmin && <th>Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
                         {safePlans.length === 0 ? (
                             <tr>
-                                <td colSpan={isAdmin ? 4 : 3}>
+                                <td colSpan={isAdmin ? 5 : 4}>
                                     <div className="empty-state">
                                         <div className="empty-state-icon"></div>
                                         <h3>No plans found</h3>
@@ -126,6 +128,7 @@ const Plans = () => {
                                         </td>
                                         <td>{plan.duration}</td>
                                         <td>{plan.price}</td>
+                                        <td>{plan.sessions || 'Unlimited'}</td>
                                         {isAdmin && (
                                             <td style={{ display: 'flex', gap: '0.5rem' }}>
                                                 <button className="btn" style={{ padding: '0.4rem', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }} onClick={() => handleOpenModal(plan)}>
@@ -189,6 +192,11 @@ const Plans = () => {
                         <div className="input-group">
                             <label>Price (₹)</label>
                             <input className="input" type="number" placeholder="e.g. 1000" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required />
+                        </div>
+                        <div className="input-group">
+                            <label>Included check-ins (optional)</label>
+                            <input className="input" type="number" min="1" placeholder="Leave blank for unlimited" value={formData.sessions} onChange={(e) => setFormData({ ...formData, sessions: e.target.value })} />
+                            <small>Members receive the configured coin amount for each included check-in.</small>
                         </div>
                     </div>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }}>{editingPlan ? 'Update Plan' : 'Create Plan'}</button>

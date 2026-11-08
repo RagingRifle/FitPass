@@ -4,6 +4,7 @@ import ResetFiltersButton from '../../components/ResetFiltersButton';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/ui/Toast';
 import EmptyState from '../../components/ui/EmptyState';
+import { dedupeMemberRecords } from '../../utils/memberIdentity';
 import { 
     Users, 
     User, 
@@ -63,7 +64,7 @@ function FitPassMembers() {
                 API.get('/superadmin/fitpass/members?pageSize=100'),
                 API.get('/superadmin/plans')
             ]);
-            setMembers(rosterRes.data?.data || []);
+            setMembers(dedupeMemberRecords(rosterRes.data?.data || []));
 
             let fetchedPlans = rosterRes.data?.plans || [];
             if (!fetchedPlans || fetchedPlans.length === 0) {
@@ -142,7 +143,7 @@ function FitPassMembers() {
     const totalMembersCount = members.length;
     const activePassCount = members.filter(m => !m.isExpired && m.status === 'Active').length;
     const totalSessionsUsed = members.reduce((sum, m) => sum + (m.sessionsUsed || 0), 0);
-    const totalSessionsRemaining = members.reduce((sum, m) => sum + (m.sessionsRemaining || 0), 0);
+    const totalFitPassCoins = members.reduce((sum, m) => sum + (m.fitpassCoins || 0), 0);
 
     const filteredMembers = members.filter(m => {
         const matchesSearch = 
@@ -169,7 +170,7 @@ function FitPassMembers() {
                     </div>
                     <div className="fitprime-header-text">
                         <h2>FitPass Members Directory</h2>
-                        <p>Complete subscriber registry tracking active memberships, session usage, and partner gym access logs.</p>
+                        <p>Manage FitPass members, coin balances, plan check-in limits, and partner gym access logs.</p>
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -228,7 +229,7 @@ function FitPassMembers() {
                     </div>
                     <div>
                         <div className="fitprime-stat-val">{totalSessionsUsed}</div>
-                        <div className="fitprime-stat-lbl">Sessions Completed</div>
+                        <div className="fitprime-stat-lbl">Check-ins Completed</div>
                     </div>
                 </div>
 
@@ -237,8 +238,8 @@ function FitPassMembers() {
                         <Layers size={22} />
                     </div>
                     <div>
-                        <div className="fitprime-stat-val">{totalSessionsRemaining}</div>
-                        <div className="fitprime-stat-lbl">Sessions Remaining</div>
+                        <div className="fitprime-stat-val">{totalFitPassCoins}</div>
+                        <div className="fitprime-stat-lbl">FitPass Coins in Member Accounts</div>
                     </div>
                 </div>
             </div>
@@ -321,7 +322,7 @@ function FitPassMembers() {
                                         <Ticket size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                                                {member.plan?.name || (hasSubscription ? 'FitPass Session Package' : 'No active subscription')}
+                                                {member.plan?.name || (hasSubscription ? 'FitPass Coin Package' : 'No active subscription')}
                                             </div>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                                 Price: ₹{member.plan?.price ? member.plan.price.toLocaleString('en-IN') : 'N/A'}
@@ -329,12 +330,12 @@ function FitPassMembers() {
                                         </div>
                                     </div>
 
-                                    {/* Session Balance Progress Meter */}
+                                    {/* Coin and check-in balance */}
                                     {hasSubscription && <div className="fitpass-session-meter-container">
                                         <div className="fitpass-session-meter-header">
-                                            <span>Session Balance</span>
+                                            <span>FitCoins balance</span>
                                             <strong style={{ color: 'var(--primary)' }}>
-                                                {remainingSess} of {totalSess} left
+                                                {member.fitpassCoins || 0} coins
                                             </strong>
                                         </div>
                                         <div className="fitpass-session-progress-bar">
@@ -344,8 +345,8 @@ function FitPassMembers() {
                                             ></div>
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-                                            <span>{usedSess} used</span>
-                                            <span>{remainingSess} remaining</span>
+                                            <span>{usedSess} check-ins used</span>
+                                            <span>up to {remainingSess} check-ins remain</span>
                                         </div>
                                     </div>}
 
@@ -408,7 +409,7 @@ function FitPassMembers() {
                                 style={{ borderRadius: '0', borderBottom: activeTab === 'sessions' ? '2px solid var(--primary)' : 'none', padding: '0.5rem 1rem' }}
                             >
                                 <History size={16} />
-                                Session Access Logs ({sessionLogs.length})
+                                Check-in Access Logs ({sessionLogs.length})
                             </button>
                         </div>
 
@@ -444,12 +445,12 @@ function FitPassMembers() {
                                             <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedMember.plan?.name || 'Global FitPass Tier'}</div>
                                         </div>
                                         <div>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Total Granted Sessions:</span>
-                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedMember.sessionsTotal || selectedMember.plan?.sessions || 0} sessions</div>
+                                            <span style={{ color: 'var(--text-secondary)' }}>FitCoins balance:</span>
+                                            <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedMember.fitpassCoins || 0} FitCoins</div>
                                         </div>
                                         <div>
-                                            <span style={{ color: 'var(--text-secondary)' }}>Remaining Sessions:</span>
-                                            <div style={{ fontWeight: 700, color: '#2E7D32' }}>{selectedMember.sessionsRemaining || 0} sessions left</div>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Check-ins remaining:</span>
+                                            <div style={{ fontWeight: 700, color: '#2E7D32' }}>Up to {selectedMember.sessionsRemaining || 0}</div>
                                         </div>
                                         <div>
                                             <span style={{ color: 'var(--text-secondary)' }}>Pass Expiry Date:</span>
@@ -498,12 +499,12 @@ function FitPassMembers() {
                                 {/* Session Access Logs Table */}
                                 <h4 style={{ fontSize: '0.95rem', marginBottom: '0.75rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <History size={16} style={{ color: 'var(--primary)' }} />
-                                    Session Check-in Attempt Log
+                                    Check-in Attempt Log
                                 </h4>
 
                                 {sessionLogs.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
-                                        No check-in session access logs recorded for this member yet.
+                                        No check-in access logs recorded for this member yet.
                                     </div>
                                 ) : (
                                     <div className="fitpass-log-table-wrapper">
@@ -513,7 +514,7 @@ function FitPassMembers() {
                                                     <th>Timestamp</th>
                                                     <th>FitPass Gym Partner</th>
                                                     <th>Access Result</th>
-                                                    <th>Remaining Sessions</th>
+                                                    <th>Check-ins Remaining</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

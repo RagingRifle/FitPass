@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 const {
     getPublicGyms,
     getPublicGymDetails,
     getPublicPostsFeed,
     getMyGymProfile,
     updateMyGymProfile,
+    uploadGymProfileImage,
     getMyGymPosts,
     createMyGymPost,
     updateMyGymPost,
@@ -25,6 +27,8 @@ router.get('/posts', getPublicPostsFeed);
 // Partner Gym Admin profile & post management
 router.get('/my-profile', protect, authorize('admin', 'superadmin', 'h4_admin'), getMyGymProfile);
 router.put('/my-profile', protect, authorize('admin', 'superadmin', 'h4_admin'), updateMyGymProfile);
+router.post('/my-profile/image', protect, authorize('admin', 'superadmin', 'h4_admin'), upload.single('image'), uploadGymProfileImage);
+router.post('/profiles/:gymId/image', protect, authorize('superadmin', 'fitpass_admin', 'admin'), upload.single('image'), uploadGymProfileImage);
 
 router.get('/my-posts', protect, authorize('admin', 'superadmin', 'h4_admin'), getMyGymPosts);
 router.post('/my-posts', protect, authorize('admin', 'superadmin', 'h4_admin'), createMyGymPost);

@@ -102,6 +102,10 @@ model Plan {
   // FitPrime (SYSTEM) plans grant a number of sessions instead of a time-based duration.
   // Null/0 for traditional plans; set only on FitPrime global plans.
   sessions       Int?
+  coinAllowance  Int      @default(0)
+  coinInputMode  String   @default("sessions")
+  displayCoins   Boolean  @default(true)
+  displayCheckIns Boolean @default(true)
   price          Float
   gymId          String
   branchId       String?
@@ -132,6 +136,11 @@ model Member {
   sessionsRemaining     Int      @default(0)
   // Original session count granted by the purchased FitPrime plan (reference/audit).
   sessionsTotal         Int      @default(0)
+  // Separate non-transferable balances. FitPass coins can fund partner check-ins
+  // and FitPass store items; H4 coins are only for H4 membership use.
+  fitpassCoins          Int      @default(0)
+  h4Coins               Int      @default(0)
+  coinsMigrated         Boolean  @default(false)
   // Timestamp of the last successful QR scan (drives analytics/history).
   lastCheckInAt         DateTime?
   // When the currently-active session auto-expires (startedAt + gym.defaultSessionDurationMinutes).
@@ -729,6 +738,9 @@ model GymProfile {
   openingTime           String   @default("06:00 AM")
   closingTime           String   @default("10:00 PM")
   workingDays           String[] @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+  timeZone              String   @default("Asia/Kolkata")
+  weeklySchedule        Json     @default("{}")
+  scheduleExceptions    Json     @default("[]")
   
   // Facilities & Badges (Booleans)
   hasParking            Boolean  @default(true)
@@ -792,6 +804,43 @@ model GymPost {
 
   @@index([gymId, status])
   @@index([createdAt(sort: Desc)])
+}
+
+model StoreProduct {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @default("")
+  priceCoins  Int
+  imageUrl    String   @default("")
+  division    String   @default("fitpass")
+  isActive    Boolean  @default(true)
+  stock       Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([division, isActive])
+}
+
+model StoreOrder {
+  id          String   @id @default(uuid())
+  memberId    String
+  productId   String
+  productName String
+  division    String
+  coinsSpent  Int
+  status      String   @default("RECEIVED")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([memberId, createdAt])
+  @@index([division, status, createdAt])
+}
+
+model CoinSettings {
+  id              String   @id @default(uuid())
+  division        String   @unique
+  coinsPerSession Int      @default(10)
+  updatedAt       DateTime @updatedAt
 }
 
 model GymProfileViewLog {

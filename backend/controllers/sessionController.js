@@ -16,6 +16,7 @@ const { H4_GYM_IDS } = require('../config/constants');
  */
 const { z } = require('zod');
 const prisma = require('../config/prisma');
+const { dedupeMembers } = require('../utils/memberIdentity');
 const Gym = require('../models/Gym');
 const Member = require('../models/Member');
 const { logAudit } = require('../utils/auditLogger');
@@ -23,14 +24,32 @@ const { expireIfDue, attemptCheckIn } = require('../utils/sessionHelpers');
 
 // Helper: load + lazily expire a member from the authed user's memberId or email fallback.
 const loadMemberForUser = async (req) => {
-  let member = null;
+  let linkedMember = null;
   if (req.user?.memberId) {
-    member = await prisma.member.findUnique({ where: { id: req.user.memberId } });
+    linkedMember = await prisma.member.findUnique({ where: { id: req.user.memberId } });
   }
-  if (!member && req.user?.email) {
-    member = await prisma.member.findFirst({ where: { email: req.user.email } });
-    if (member && req.user?._id) {
-      await prisma.user.update({ where: { id: req.user._id }, data: { memberId: member.id, role: 'member' } }).catch(() => {});
+  let member = linkedMember;
+  if (req.user?.email || req.user?.phone) {
+    const identityFilters = [];
+    if (req.user?.email) identityFilters.push({ email: { equals: req.user.email.trim(), mode: 'insensitive' } });
+    if (req.user?.phone) identityFilters.push({ phone: req.user.phone });
+    const matches = await prisma.member.findMany({
+      where: { OR: identityFilters },
+      orderBy: { updatedAt: 'desc' },
+    });
+    const uniqueMatches = dedupeMembers(matches);
+    const normalizedEmail = String(req.user.email || '').trim().toLowerCase();
+    const emailMatch = normalizedEmail
+      ? uniqueMatches.find(candidate => String(candidate.email || '').trim().toLowerCase() === normalizedEmail)
+      : null;
+    const normalizedPhone = String(req.user.phone || '').replace(/\D/g, '');
+    const phoneMatch = normalizedPhone
+      ? uniqueMatches.find(candidate => String(candidate.phone || '').replace(/\D/g, '') === normalizedPhone)
+      : null;
+    member = emailMatch || phoneMatch || linkedMember;
+    const userId = req.user?._id || req.user?.id;
+    if (member && userId && member.id !== req.user?.memberId) {
+      await prisma.user.update({ where: { id: userId }, data: { memberId: member.id } }).catch(() => {});
     }
   }
   return member ? await expireIfDue(member) : null;
@@ -191,21 +210,44 @@ const checkIn = catchAsync(async (req, res, next) => {
       };
       let attendance;
       let checkedInMember = member;
-      if (isSessionPlan) {
+      const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
+      if (isH4Member) {
+        // Attendance is limited to one check-in per local calendar day. The
+        // conditional lastCheckInAt update also protects against simultaneous scans.
         const result = await prisma.$transaction(async (tx) => {
-          const updatedMember = await tx.member.update({
-            where: { id: member.id },
+          const checkedIn = await tx.member.updateMany({
+            where: {
+              id: member.id,
+              ...(isSessionPlan ? { sessionsRemaining: { gte: 1 } } : {}),
+              OR: [{ lastCheckInAt: null }, { lastCheckInAt: { lt: today } }],
+            },
             data: {
-              sessionsRemaining: (member.sessionsRemaining || 0) - 1,
+              ...(isSessionPlan ? { sessionsRemaining: { decrement: 1 } } : {}),
               lastCheckInAt: now,
             },
           });
+          if (!checkedIn.count) {
+            const current = await tx.member.findUnique({ where: { id: member.id } });
+            if (current?.lastCheckInAt && new Date(current.lastCheckInAt) >= today) {
+              throw new AppError('Attendance already marked for today.', 409, 'ALREADY_CHECKED_IN');
+            }
+            if (isSessionPlan && (current?.sessionsRemaining || 0) <= 0) {
+              throw new AppError(`You have no sessions remaining out of ${current?.sessionsTotal || plan.sessions}. Please renew your plan.`, 402, 'NO_SESSIONS_REMAINING');
+            }
+            throw new AppError('Attendance already marked for today.', 409, 'ALREADY_CHECKED_IN');
+          }
+          const updatedMember = await tx.member.findUnique({ where: { id: member.id } });
           const createdAttendance = await tx.attendance.create({ data: attendanceData });
           return { member: updatedMember, attendance: createdAttendance };
         });
         checkedInMember = result.member;
         attendance = result.attendance;
       } else {
+        if (isSessionPlan) {
+          const consumed = await prisma.member.updateMany({ where: { id: member.id, sessionsRemaining: { gte: 1 } }, data: { sessionsRemaining: { decrement: 1 }, lastCheckInAt: now } });
+          if (!consumed.count) return res.status(402).json({ success: false, message: 'No sessions remaining. Please renew your plan.' });
+          checkedInMember = await prisma.member.findUnique({ where: { id: member.id } });
+        }
         attendance = await prisma.attendance.create({ data: attendanceData });
       }
 
@@ -214,7 +256,7 @@ const checkIn = catchAsync(async (req, res, next) => {
       return res.status(200).json({
         success: true,
         message: isSessionPlan
-          ? `Check-in successful. 1 session deducted. ${checkedInMember.sessionsRemaining} session(s) remaining.`
+          ? `Check-in successful. ${checkedInMember.sessionsRemaining} check-in(s) remaining.`
           : 'Check-in successful at home branch.',
         sessionsRemaining: checkedInMember.sessionsRemaining ?? 0,
         sessionsTotal: checkedInMember.sessionsTotal ?? member.sessionsTotal ?? 0,
@@ -374,8 +416,9 @@ const checkIn = catchAsync(async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Check-in successful. 1 session deducted.',
+      message: 'Check-in successful. Coins deducted from your FitPass balance.',
       sessionsRemaining: outcome.member.sessionsRemaining,
+      fitpassCoins: outcome.member.fitpassCoins,
       sessionStartsAt: outcome.sessionCheckIn.startedAt,
       sessionEndsAt: outcome.sessionEndsAt,
       cooldownEndsAt: outcome.cooldownEndsAt,
@@ -384,7 +427,7 @@ const checkIn = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     logger.error({ err: error }, 'Check-in error');
-    return res.status(500).json({ success: false, message: 'Check-in failed.' });
+    return res.status(error.statusCode || 500).json({ success: false, message: error.statusCode ? error.message : 'Check-in failed.' });
   }
 });
 
@@ -402,12 +445,16 @@ const getSessionStatus = catchAsync(async (req, res, next) => {
         success: true,
         sessionsRemaining: 0,
         sessionsTotal: 0,
+        fitpassCoins: 0,
         currentSessionEndsAt: null,
         currentSessionGymId: null,
         cooldownEndsAt: null,
         planName: null,
+        coinsPerSession: 10,
         expiryDate: null,
         planStatus: 'Inactive',
+        displayCoins: true,
+        displayCheckIns: true,
         lastCheckInAt: null,
       });
     }
@@ -418,24 +465,44 @@ const getSessionStatus = catchAsync(async (req, res, next) => {
     const membershipExpired = Boolean(member.expiryDate && new Date(member.expiryDate) <= now);
 
     let planName = null;
+    let activePlan = null;
     if (member.planId) {
-      const plan = await prisma.plan.findUnique({ where: { id: member.planId } }).catch(() => null);
-      if (plan) planName = plan.name;
+      activePlan = await prisma.plan.findUnique({ where: { id: member.planId } }).catch(() => null);
+      if (activePlan) planName = activePlan.name;
     }
     if (!planName && (member.sessionsRemaining || 0) > 0) {
       planName = 'FitPass Standard';
+    }
+    const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
+    const coinConfig = isH4Member ? null : await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null);
+    const coinsPerSession = coinConfig?.coinsPerSession || 10;
+    let fitpassCoinBalance = member.fitpassCoins ?? 0;
+    if (!isH4Member && !member.coinsMigrated) {
+      fitpassCoinBalance = (member.fitpassCoins || 0) + (member.sessionsRemaining || 0) * coinsPerSession;
+      member.fitpassCoins = fitpassCoinBalance;
+      member.coinsMigrated = true;
+      await prisma.member.updateMany({ where: { id: member.id, coinsMigrated: false }, data: { fitpassCoins: fitpassCoinBalance, coinsMigrated: true } });
+    } else if (!isH4Member && member.fitpassCoins == null) {
+      // Older FitPass rows may have the migration flag but no coin column value.
+      // Match the legacy balance shown by the admin roster and persist it once.
+      fitpassCoinBalance = (member.sessionsRemaining || 0) * coinsPerSession;
+      await prisma.member.update({ where: { id: member.id }, data: { fitpassCoins: fitpassCoinBalance, coinsMigrated: true } });
     }
 
     return res.json({
       success: true,
       sessionsRemaining: membershipExpired ? 0 : (member.sessionsRemaining || 0),
       sessionsTotal: member.sessionsTotal || (member.sessionsRemaining || 10),
+      fitpassCoins: isH4Member ? member.fitpassCoins || 0 : fitpassCoinBalance,
+      ...(!isH4Member ? { coinsPerSession } : {}),
       currentSessionEndsAt: active ? member.currentSessionEndsAt : null,
       currentSessionGymId: active ? member.currentSessionGymId : null,
       cooldownEndsAt: inCooldown ? member.cooldownEndsAt : null,
       planName,
+      displayCoins: activePlan?.displayCoins !== false,
+      displayCheckIns: activePlan?.displayCheckIns !== false,
       expiryDate: member.expiryDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      planStatus: membershipExpired ? 'Expired' : member.status === 'Active' && (member.sessionsRemaining || 0) > 0 ? 'Active' : 'Inactive',
+      planStatus: membershipExpired ? 'Expired' : member.status === 'Active' && (isH4Member || (member.sessionsRemaining || 0) > 0 || fitpassCoinBalance > 0) ? 'Active' : 'Inactive',
       lastCheckInAt: member.lastCheckInAt || null,
     });
   } catch (error) {
@@ -674,6 +741,17 @@ const getMemberFitPassSummary = catchAsync(async (req, res, next) => {
 const getFitPassAnalytics = catchAsync(async (req, res, next) => {
   try {
     const logsFilter = { accessStatus: 'Success' };
+    const { from, to, gymId } = req.query;
+    if (from || to) {
+      logsFilter.checkInTimestamp = {};
+      if (from && !Number.isNaN(Date.parse(from))) logsFilter.checkInTimestamp.gte = new Date(from);
+      if (to && !Number.isNaN(Date.parse(to))) {
+        const end = new Date(to);
+        end.setHours(23, 59, 59, 999);
+        logsFilter.checkInTimestamp.lte = end;
+      }
+    }
+    if (gymId) logsFilter.gymIdVisited = gymId;
     if (req.user.role === 'partner') {
       logsFilter.gymIdVisited = req.user.gymId;
     } else if (req.user.role === 'admin') {
@@ -714,6 +792,11 @@ const getFitPassAnalytics = catchAsync(async (req, res, next) => {
         }
       });
     }
+    if (isGlobal && (from || to || gymId)) {
+      const visitorIds = [...new Set(successfulVisits.map(v => v.memberId))];
+      fitPassMembers = fitPassMembers.filter(member => visitorIds.includes(member.id));
+    }
+    fitPassMembers = dedupeMembers(fitPassMembers);
 
     const totalFitPassMembers = fitPassMembers.length;
     const now = new Date();
@@ -728,6 +811,22 @@ const getFitPassAnalytics = catchAsync(async (req, res, next) => {
       remainingSessions += m.sessionsRemaining || 0;
     });
     const totalSessionsUsed = totalSessionsSold - remainingSessions;
+    const paymentFilter = { gymId: 'SYSTEM' };
+    if (from || to) {
+      paymentFilter.date = {};
+      if (from && !Number.isNaN(Date.parse(from))) paymentFilter.date.gte = new Date(from);
+      if (to && !Number.isNaN(Date.parse(to))) {
+        const end = new Date(to);
+        end.setHours(23, 59, 59, 999);
+        paymentFilter.date.lte = end;
+      }
+    }
+    const revenuePayments = await prisma.payment.findMany({ where: paymentFilter, select: { amount: true } });
+    const networkRevenue = revenuePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const fitpassCoinRate = (await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null))?.coinsPerSession || 10;
+    const periodCoinsUsed = successfulVisits.reduce((sum, visit) => sum + Number(visit.sessionsDeducted || 1) * fitpassCoinRate, 0);
+    const activeVisitMemberIds = new Set(successfulVisits.map(v => v.memberId));
+    const periodMemberCount = activeVisitMemberIds.size;
 
     // Most Visited Gyms
     const gymCounts = {};
@@ -759,8 +858,7 @@ const getFitPassAnalytics = catchAsync(async (req, res, next) => {
 
     const dailyCheckInsList = Object.entries(dailyCheckIns)
       .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-30);
+      .sort((a, b) => a.date.localeCompare(b.date));
 
     const monthlyCheckInsList = Object.entries(monthlyCheckIns)
       .map(([month, count]) => ({ month, count }))
@@ -789,6 +887,12 @@ const getFitPassAnalytics = catchAsync(async (req, res, next) => {
         dailyCheckIns: dailyCheckInsList,
         monthlyCheckIns: monthlyCheckInsList,
         avgVisitsPerMember: parseFloat(avgVisitsPerMember),
+        networkRevenue,
+        periodCheckIns: successfulVisits.length,
+        periodMembers: periodMemberCount,
+        periodCoinsUsed,
+        coinRatePerCheckIn: fitpassCoinRate,
+        availableGyms: [...new Map(successfulVisits.map(v => [v.gymIdVisited, { gymId: v.gymIdVisited, gymName: v.gymName }])).values()],
       },
     });
   } catch (error) {
@@ -824,8 +928,15 @@ const adminAdjustSessions = catchAsync(async (req, res, next) => {
 
     const before = member.sessionsRemaining || 0;
     const after = Math.max(0, before + delta);
-
-    await Member.findByIdAndUpdate(member._id, { sessionsRemaining: after });
+    const isH4 = H4_GYM_IDS.includes(String(member.gymId));
+    const update = { sessionsRemaining: after };
+    if (!isH4) {
+      const rate = (await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null))?.coinsPerSession || 10;
+      const legacyCoins = member.coinsMigrated ? 0 : before * rate;
+      update.fitpassCoins = Math.max(0, (member.fitpassCoins || 0) + legacyCoins + (after - before) * rate);
+      update.coinsMigrated = true;
+    }
+    await Member.findByIdAndUpdate(member._id, update);
 
     await logAudit(req, 'SESSION_ADJUSTED', 'Member', member._id,
       `Sessions ${before} -> ${after} (${delta >= 0 ? '+' : ''}${delta}). Reason: ${reason}`,

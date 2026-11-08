@@ -4,6 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_CLIENT } from '@/lib/api-client';
+import { useAuth } from '@/features/auth';
 import type {
   SessionStatus,
   CheckInHistoryItem,
@@ -40,16 +41,20 @@ export const useFitPassDashboard = () =>
     staleTime: 30_000,
   });
 
-export const useSessionStatus = () =>
-  useQuery<SessionStatus>({
-    queryKey: FITPASS_KEYS.sessionStatus,
+export const useSessionStatus = () => {
+  const userId = useAuth((state) => state.user?.id || state.user?._id || 'signed-out');
+  return useQuery<SessionStatus>({
+    queryKey: [...FITPASS_KEYS.sessionStatus, userId],
     queryFn: async () => {
       const { data } = await API_CLIENT.get('/member-portal/sessions/status');
       return data;
     },
-    staleTime: 15_000,
+    staleTime: 10_000,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
     refetchInterval: 30_000,
   });
+};
 
 export const useSessionHistory = (page = 1) =>
   useQuery<{ data: CheckInHistoryItem[]; total: number }>({
@@ -174,15 +179,12 @@ export const usePurchasePlan = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (planId: string) => {
-      // The mock gateway exercises the same signed order/verification path as Razorpay.
-      // Replace this adapter with the native Razorpay SDK when mobile checkout is enabled.
       const { data: order } = await API_CLIENT.post('/member-portal/purchase-plan/create-order', { planId, gateway: 'mock' });
       if (!order.is_mock || !order.mock_token) {
-        throw new Error('Mobile checkout is not configured for live payments yet.');
+        throw new Error('The test purchase could not be created. Please try again.');
       }
       const { data: verifyResult } = await API_CLIENT.post('/member-portal/purchase-plan/verify', {
-        razorpay_order_id: order.id,
-        razorpay_payment_id: `pay_test_${Date.now()}`,
+        test_order_id: order.id,
         mock_token: order.mock_token,
         planId,
       });

@@ -6,6 +6,7 @@ const Attendance = require('../models/Attendance');
 const Payment = require('../models/Payment');
 const Expense = require('../models/Expense');
 const prisma = require('../config/prisma');
+const { dedupeMembers } = require('../utils/memberIdentity');
 
 // @desc    Get dashboard statistics
 // @route   GET /api/dashboard/stats
@@ -30,8 +31,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
                 todaySessionsCount,
                 traditionalCheckins,
                 sessionCheckins,
-                totalMembers,
-                activeMembers,
+                membersForStats,
                 activeLiveSessionsRaw
             ] = await Promise.all([
                 Attendance.countDocuments({
@@ -54,8 +54,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
                     orderBy: { startedAt: 'desc' },
                     take: 30
                 }),
-                Member.countDocuments({ gymId: req.user.gymId }),
-                Member.countDocuments({ gymId: req.user.gymId, status: 'Active' }),
+                Member.find({ gymId: req.user.gymId }).select('name email phone status expiryDate createdAt updatedAt').lean(),
                 prisma.member.findMany({
                     where: {
                         currentSessionGymId: req.user.gymId,
@@ -65,6 +64,10 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
                     orderBy: { currentSessionEndsAt: 'asc' }
                 })
             ]);
+
+            const uniqueMembers = dedupeMembers(membersForStats);
+            const totalMembers = uniqueMembers.length;
+            const activeMembers = uniqueMembers.filter(member => member.status === 'Active' && (!member.expiryDate || new Date(member.expiryDate) > new Date())).length;
 
             // Fetch recent attendance history for this month (both traditional and FitPrime sessions)
             let recentCheckins = [];
@@ -141,11 +144,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
         const prismaWhere = { ...req.tenantFilter };
 
         const [
-            totalMembers,
-            activeMembers,
-            expiredMembers,
-            expiringSoonCount,
-            newMembersThisMonth,
+            membersForStats,
             todayAttendanceCount,
             todaySessionsCount,
             revenueData,
@@ -157,18 +156,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
             traditionalCheckins,
             sessionCheckins
         ] = await Promise.all([
-            Member.countDocuments(queryFilter),
-            Member.countDocuments({ ...queryFilter, status: 'Active' }),
-            Member.countDocuments({ ...queryFilter, status: 'Expired' }),
-            Member.countDocuments({
-                ...queryFilter,
-                status: 'Active',
-                expiryDate: { $gte: today, $lte: nextWeek }
-            }),
-            Member.countDocuments({
-                ...queryFilter,
-                createdAt: { $gte: startOfMonth }
-            }),
+            Member.find(queryFilter).select('name email phone status expiryDate createdAt updatedAt').lean(),
             Attendance.countDocuments({
                 ...queryFilter,
                 date: {
@@ -230,6 +218,14 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
                 take: 30
             })
         ]);
+
+        const uniqueMembers = dedupeMembers(membersForStats);
+        const activeNow = (member) => member.status === 'Active' && (!member.expiryDate || new Date(member.expiryDate) > new Date());
+        const totalMembers = uniqueMembers.length;
+        const activeMembers = uniqueMembers.filter(activeNow).length;
+        const expiredMembers = uniqueMembers.filter(member => member.status === 'Expired' || (member.expiryDate && new Date(member.expiryDate) <= new Date())).length;
+        const expiringSoonCount = uniqueMembers.filter(member => activeNow(member) && member.expiryDate && new Date(member.expiryDate) <= nextWeek).length;
+        const newMembersThisMonth = uniqueMembers.filter(member => new Date(member.createdAt || member.joinDate || 0) >= startOfMonth).length;
 
         const monthlyRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
         const monthlyExpenses = expenseData.length > 0 ? expenseData[0].total : 0;

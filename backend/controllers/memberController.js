@@ -7,6 +7,7 @@ const prisma = require('../config/prisma');
 const { jsonToCsv } = require('../utils/csvUtils');
 const { logAudit } = require('../utils/auditLogger');
 const { H4_GYM_IDS } = require('../config/constants');
+const { dedupeMembers } = require('../utils/memberIdentity');
 
 const migrateLegacyH4Plan = async (plan, targetGymId) => {
     if (!plan || plan.gymId !== 'SYSTEM' || Number(plan.sessions) > 0 || !(Number(plan.duration) > 0)) return false;
@@ -137,6 +138,16 @@ const createMember = catchAsync(async (req, res, next) => {
             return res.status(403).json({ success: false, message: 'This plan belongs to a different gym. Choose a plan from the member’s gym.' });
         }
 
+        const duplicateContactConditions = [];
+        if (email?.trim()) duplicateContactConditions.push({ email: { equals: email.trim(), mode: 'insensitive' } });
+        if (phone?.trim()) duplicateContactConditions.push({ phone: phone.trim() });
+        const existingMember = duplicateContactConditions.length
+            ? await prisma.member.findFirst({ where: { gymId: targetGymId, OR: duplicateContactConditions }, select: { id: true, name: true } })
+            : null;
+        if (existingMember) {
+            return res.status(409).json({ success: false, message: `${existingMember.name} already has a member record in this scope. Update that record instead of creating a duplicate.` });
+        }
+
         const targetBranchId = req.user.branchId || branchId || null;
         if (plan?.branchId && String(plan.branchId) !== String(targetBranchId || '')) {
             return res.status(403).json({ success: false, message: 'This plan is assigned to a different branch.' });
@@ -152,6 +163,9 @@ const createMember = catchAsync(async (req, res, next) => {
 
         const { allocateMemberCode } = require('../utils/idGenerator');
         const memberCode = await allocateMemberCode();
+        const isH4Member = H4_GYM_IDS.includes(String(targetGymId));
+        const assignedSessions = Number(plan?.sessions) || 0;
+        const coinConfig = assignedSessions > 0 && !isH4Member ? await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null) : null;
         const member = await Member.create({
             registrationNumber: memberCode,
             name,
@@ -163,7 +177,11 @@ const createMember = catchAsync(async (req, res, next) => {
             status,
             planPrice: netAgreedPrice,
             paidAmount: numericPaid,
-            ...(plan?.gymId === 'SYSTEM' ? { sessionsRemaining: Number(plan.sessions) || 0, sessionsTotal: Number(plan.sessions) || 0 } : {}),
+            ...(assignedSessions > 0 ? {
+                sessionsRemaining: assignedSessions,
+                sessionsTotal: assignedSessions,
+                ...(!isH4Member ? { fitpassCoins: assignedSessions * (coinConfig?.coinsPerSession || 10), coinsMigrated: true } : {}),
+            } : {}),
             gymId: targetGymId,
             branchId: targetBranchId
         });
@@ -250,7 +268,9 @@ const createMember = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const getMembers = catchAsync(async (req, res, next) => {
     try {
-        const { status, page = 1, limit = 10, search = '' } = req.query;
+        const { status, search = '' } = req.query;
+        const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
 
         const query = await buildMemberQuery(req);
 
@@ -265,15 +285,14 @@ const getMembers = catchAsync(async (req, res, next) => {
             ];
         }
 
-        const skip = (page - 1) * limit;
-
-        const total = await Member.countDocuments(query);
-        const members = await Member.find(query)
+        const allMatches = await Member.find(query)
             .populate('planId', 'name price')
             .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(Number(limit))
             .lean();
+        const uniqueMatches = dedupeMembers(allMatches);
+        const skip = (page - 1) * limit;
+        const total = uniqueMatches.length;
+        const members = uniqueMatches.slice(skip, skip + limit);
 
         const memberIds = members.map((member) => member._id || member.id);
         const linkedUsers = memberIds.length
@@ -654,8 +673,15 @@ const renewMember = catchAsync(async (req, res, next) => {
         member.planPrice = netAgreedPrice;
 
         if (plan.sessions) {
+            const priorSessions = member.sessionsRemaining || 0;
             member.sessionsRemaining = (member.sessionsRemaining || 0) + plan.sessions;
             member.sessionsTotal = (member.sessionsTotal || 0) + plan.sessions;
+            const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
+            if (!isH4Member) {
+                const coinConfig = await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null);
+                member.fitpassCoins = (member.fitpassCoins || 0) + (plan.sessions + (!member.coinsMigrated ? priorSessions : 0)) * (coinConfig?.coinsPerSession || 10);
+                member.coinsMigrated = true;
+            }
         }
 
         const numericPaid = Number(paidAmount) || 0;

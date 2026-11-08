@@ -117,6 +117,11 @@ function MemberHeroBanner() {
           </View>
           <View style={styles.heroStatRule} />
           <View style={styles.heroStat}>
+            <Text style={styles.heroStatNum}>{(data?.sessionStatus as any)?.sessionsRemaining ?? 0}</Text>
+            <Text style={styles.heroStatLabel}>Check-ins left</Text>
+          </View>
+          <View style={styles.heroStatRule} />
+          <View style={styles.heroStat}>
             <Text style={styles.heroStatNum}>{visits > 0 ? `${visits}d` : ''}</Text>
             <Text style={styles.heroStatLabel}>Streak</Text>
           </View>

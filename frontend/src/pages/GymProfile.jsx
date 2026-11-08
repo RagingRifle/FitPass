@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
+import GymDiscoveryFields from '../components/GymDiscoveryFields';
 import { 
     Building2, 
     ImagePlus, 
@@ -25,6 +26,7 @@ const GymProfile = () => {
     const { user } = useContext(AuthContext);
     const [gym, setGym] = useState(null);
     const [images, setImages] = useState([]);
+    const [discoveryProfile, setDiscoveryProfile] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -42,6 +44,8 @@ const GymProfile = () => {
         address: '',
         phone: '',
         email: '',
+        latitude: '',
+        longitude: '',
         defaultSessionDurationMinutes: 120
     });
 
@@ -49,6 +53,8 @@ const GymProfile = () => {
         try {
             setLoading(true);
             const { data } = await API.get('/gyms/partnered');
+            const profileResponse = await API.get('/discovery/my-profile').catch(() => null);
+            setDiscoveryProfile(profileResponse?.data?.data || {});
             const myGym = data.find(g => g.id === user?.gymId || g._id === user?.gymId);
             if (myGym) {
                 setGym(myGym);
@@ -58,6 +64,8 @@ const GymProfile = () => {
                     address: myGym.address || '',
                     phone: myGym.phone || '',
                     email: myGym.email || '',
+                    latitude: myGym.latitude ?? '',
+                    longitude: myGym.longitude ?? '',
                     defaultSessionDurationMinutes: myGym.defaultSessionDurationMinutes || 120
                 });
             }
@@ -81,8 +89,8 @@ const GymProfile = () => {
         const files = Array.from(e.target.files);
         if (!files.length) return;
 
-        if (images.length + files.length > 5) {
-            setError(`You can only have up to 5 images. You are trying to add ${files.length} to your existing ${images.length}.`);
+        if (images.length + files.length > 4) {
+            setError(`You can only have up to 4 gallery images. You are trying to add ${files.length} to your existing ${images.length}.`);
             return;
         }
 
@@ -142,15 +150,18 @@ const GymProfile = () => {
             const gymId = gym._id || gym.id;
             
             // Call API endpoint to update gym profile
-            const { data } = await API.put(`/superadmin/gyms/${gymId}`, {
+            const { data } = await API.put('/discovery/my-profile', {
                 name: editForm.name.trim(),
                 address: editForm.address.trim(),
-                phone: editForm.phone.trim(),
+                contactNumber: editForm.phone.trim(),
                 email: editForm.email.trim(),
-                defaultSessionDurationMinutes: Number(editForm.defaultSessionDurationMinutes)
+                defaultSessionDurationMinutes: Number(editForm.defaultSessionDurationMinutes),
+                latitude: editForm.latitude === '' ? null : Number(editForm.latitude),
+                longitude: editForm.longitude === '' ? null : Number(editForm.longitude),
             });
 
-            setGym(prev => ({ ...prev, ...data }));
+            setDiscoveryProfile(data.data || discoveryProfile);
+            setGym(prev => ({ ...prev, name: editForm.name.trim(), address: editForm.address.trim(), phone: editForm.phone.trim(), email: editForm.email.trim(), latitude: editForm.latitude === '' ? null : Number(editForm.latitude), longitude: editForm.longitude === '' ? null : Number(editForm.longitude), defaultSessionDurationMinutes: Number(editForm.defaultSessionDurationMinutes) }));
             setSuccess('Gym profile updated successfully!');
             setIsEditModalOpen(false);
             setTimeout(() => setSuccess(''), 3000);
@@ -321,12 +332,27 @@ const GymProfile = () => {
                 </div>
             </div>
 
+            <section className="card glass-card gym-profile-explore-editor">
+                <div className="gym-profile-section-heading"><div><h3>Member Explore profile</h3><p>Manage the details, images, amenities, and opening schedule members see.</p></div></div>
+                <GymDiscoveryFields profile={discoveryProfile} onChange={setDiscoveryProfile} gymId={gym._id || gym.id} />
+                <button className="btn btn-primary" disabled={saving} onClick={async () => {
+                    try {
+                        setSaving(true); setError('');
+                        const { data } = await API.put('/discovery/my-profile', discoveryProfile);
+                        setDiscoveryProfile(data.data || discoveryProfile);
+                        setSuccess('Explore profile and opening schedule saved.');
+                        setTimeout(() => setSuccess(''), 3000);
+                    } catch (err) { setError(err.response?.data?.message || 'Failed to save Explore profile.'); }
+                    finally { setSaving(false); }
+                }}><Save size={16} />{saving ? 'Saving…' : 'Save Explore profile'}</button>
+            </section>
+
             {/* Photo Gallery Card */}
             <div className="card glass-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Gallery Photos ({images.length}/5)</h3>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Upload up to 5 photos to showcase your facility to members.</p>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Gallery Photos ({images.length}/4)</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Upload up to 4 photos to showcase your facility to members.</p>
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -337,14 +363,14 @@ const GymProfile = () => {
                             accept="image/*" 
                             style={{ display: 'none' }}
                             onChange={handleUpload}
-                            disabled={uploading || images.length >= 5}
+                            disabled={uploading || images.length >= 4}
                         />
                         <label 
                             htmlFor="image-upload" 
                             className="btn btn-secondary" 
                             style={{ 
-                                cursor: images.length >= 5 ? 'not-allowed' : 'pointer', 
-                                opacity: images.length >= 5 ? 0.5 : 1,
+                                cursor: images.length >= 4 ? 'not-allowed' : 'pointer',
+                                opacity: images.length >= 4 ? 0.5 : 1,
                                 padding: '0.55rem 1rem',
                                 fontSize: '0.82rem'
                             }}
@@ -392,7 +418,7 @@ const GymProfile = () => {
                         <div className="empty-gallery">
                             <ImagePlus size={44} opacity={0.3} style={{ color: 'var(--primary)' }} />
                             <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>No photo uploads found</p>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Click &quot;Upload Photo&quot; to add up to 5 gym gallery photos.</span>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Click &quot;Upload Photo&quot; to add up to 4 gym gallery photos.</span>
                         </div>
                     )}
                 </div>
@@ -424,6 +450,11 @@ const GymProfile = () => {
                             value={editForm.address} 
                             onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} 
                         />
+                    </div>
+
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="input-group"><label>Latitude</label><input className="input" type="number" step="any" value={editForm.latitude} onChange={e => setEditForm({ ...editForm, latitude: e.target.value })} placeholder="e.g. 13.0827" /></div>
+                        <div className="input-group"><label>Longitude</label><input className="input" type="number" step="any" value={editForm.longitude} onChange={e => setEditForm({ ...editForm, longitude: e.target.value })} placeholder="e.g. 80.2707" /></div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

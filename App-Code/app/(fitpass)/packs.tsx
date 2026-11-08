@@ -19,7 +19,6 @@ import {
   LogOut,
   BadgeCheck,
   Flame,
-  Award,
   Activity,
 } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
@@ -32,8 +31,9 @@ import {
 } from '@/features/fitpass/api/fitpass.api';
 import { useAuth } from '@/features/auth';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_CLIENT } from '@/lib/api-client';
 
-export default function FitPassPlansScreen() {
+export default function FitPassPacksScreen() {
   const router = useRouter();
   const logout = useAuth((s) => s.logout);
   const { data: plans, isLoading } = useFitPassPlans();
@@ -43,20 +43,25 @@ export default function FitPassPlansScreen() {
 
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [coinsPerCheckIn, setCoinsPerCheckIn] = useState(10);
+
+  React.useEffect(() => {
+    API_CLIENT.get('/store/coin-settings?division=fitpass').then(({ data }) => setCoinsPerCheckIn(Number(data.coinsPerSession) || 10)).catch(() => {});
+  }, []);
 
   const handleOpenPayModal = (plan: any) => {
     setSelectedPlan(plan);
     setIsPayModalOpen(true);
   };
 
-  const handleConfirmTestPayment = async () => {
+  const handleConfirmPackPurchase = async () => {
     if (!selectedPlan) return;
     try {
       await purchaseMutation.mutateAsync(selectedPlan.id || selectedPlan._id);
       setIsPayModalOpen(false);
       Alert.alert(
-        'Pass renewed',
-        `Your ${selectedPlan.name} pass is active and ${selectedPlan.sessions} sessions were added to your account.`,
+        'Pack activated',
+        `Your ${selectedPlan.name} pack is active. ${selectedPlan.displayCoins !== false ? `${Number(selectedPlan.coinAllowance) || (Number(selectedPlan.sessions) || 10) * coinsPerCheckIn} FitCoins added. ` : ''}${selectedPlan.displayCheckIns !== false ? `Up to ${Number(selectedPlan.sessions) || 10} check-ins included.` : ''}`,
         [
           {
             text: 'Go to Dashboard',
@@ -66,8 +71,8 @@ export default function FitPassPlansScreen() {
       );
     } catch (err: any) {
       Alert.alert(
-        'Payment Error',
-        err?.response?.data?.message || err?.message || 'Could not process plan subscription.'
+        'Test purchase failed',
+        err?.description || err?.response?.data?.message || err?.message || 'Could not complete pack purchase.'
       );
     }
   };
@@ -82,8 +87,8 @@ export default function FitPassPlansScreen() {
       {/* Top Custom Header */}
       <View style={styles.header}>
           <View style={{ flex: 1 }}>
-          <Text style={styles.headerEyebrow}>FITPASS MEMBERSHIP</Text>
-          <Text style={styles.headerTitle}>Choose your next pass</Text>
+          <Text style={styles.headerEyebrow}>FITPASS PACKS</Text>
+          <Text style={styles.headerTitle}>Choose your next pack</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.7}>
           <LogOut size={16} color={theme.colors.error} />
@@ -91,7 +96,7 @@ export default function FitPassPlansScreen() {
       </View>
 
       <Text style={styles.headerSub}>
-        Renew your sessions anytime. One pass gives you access across the FitPass partner network.
+        Top up with a FitPass pack. Each pack adds FitCoins and partner gym check-ins to your account.
       </Text>
 
       {sessionStatus?.planName ? (
@@ -99,13 +104,13 @@ export default function FitPassPlansScreen() {
           <Activity size={16} color={theme.colors.primaryText} />
           <View style={{ flex: 1 }}>
             <Text style={styles.currentPassText}>
-              Current pass:{' '}
+              Current pack:{' '}
               <Text style={styles.currentPassName}>
                 {sessionStatus.planName}
               </Text>
             </Text>
             <Text style={styles.currentPassSub}>
-              {sessionStatus.sessionsRemaining} sessions available
+              {sessionStatus.displayCoins !== false ? `${sessionStatus.fitpassCoins ?? 0} FitCoins` : ''}{sessionStatus.displayCoins !== false && sessionStatus.displayCheckIns !== false ? ' · ' : ''}{sessionStatus.displayCheckIns !== false ? `up to ${sessionStatus.sessionsRemaining} check-ins` : ''}
               {sessionStatus.expiryDate ? ` | Expires ${new Date(sessionStatus.expiryDate).toLocaleDateString()}` : ''}
             </Text>
           </View>
@@ -118,7 +123,7 @@ export default function FitPassPlansScreen() {
         </View>
       ) : null}
 
-      {/* Plans List */}
+      {/* Packs List */}
       {isLoading ? (
         <View style={{ gap: 16 }}>
           {[1, 2, 3].map((i) => (
@@ -127,13 +132,18 @@ export default function FitPassPlansScreen() {
         </View>
       ) : !plans || plans.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>No membership plans available right now.</Text>
+          <Text style={styles.emptyText}>No FitPass packs are available right now.</Text>
         </View>
       ) : (
         plans.map((plan: any, index: number) => {
           const isCurrent = sessionStatus?.planName === plan.name;
           const isPopular = index === 1 || plan.name.toLowerCase().includes('pro') || plan.name.toLowerCase().includes('unlimited');
-          const costPerSession = Math.round(plan.price / (plan.sessions || 1));
+          const checkInAllowance = plan.sessions == null ? 10 : Number(plan.sessions);
+          const coinAllowance = Number(plan.coinAllowance) > 0 ? Number(plan.coinAllowance) : checkInAllowance * coinsPerCheckIn;
+          const allowanceLabel = [
+            plan.displayCoins !== false ? `${coinAllowance} FitCoins` : '',
+            plan.displayCheckIns !== false ? `up to ${checkInAllowance} check-ins` : '',
+          ].filter(Boolean).join(' · ');
 
           return (
             <View
@@ -154,7 +164,7 @@ export default function FitPassPlansScreen() {
               {isCurrent && (
                 <View style={styles.activeTag}>
                   <BadgeCheck size={12} color="#fff" />
-                  <Text style={styles.activeTagText}>CURRENT PLAN</Text>
+                  <Text style={styles.activeTagText}>CURRENT PACK</Text>
                 </View>
               )}
 
@@ -162,7 +172,7 @@ export default function FitPassPlansScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.planName}>{plan.name}</Text>
                   <Text style={styles.planSub}>
-                    {plan.sessions} sessions | {plan.duration || 30} {plan.durationUnit || 'days'}
+                    {plan.displayCheckIns !== false ? `Up to ${checkInAllowance} check-ins` : `${plan.duration || 30} ${plan.durationUnit || 'days'}`}
                   </Text>
                 </View>
                 <View style={styles.priceWrap}>
@@ -174,7 +184,7 @@ export default function FitPassPlansScreen() {
               <View style={styles.valueBar}>
                 <Activity size={14} color={theme.colors.primaryText} />
                 <Text style={styles.valueText}>
-                  INR {costPerSession} per session | Save up to 50% vs single drop-ins
+                  {allowanceLabel}
                 </Text>
               </View>
 
@@ -203,7 +213,7 @@ export default function FitPassPlansScreen() {
               >
                 <CreditCard size={16} color="#fff" />
                 <Text style={styles.buyBtnText}>
-                  {isCurrent ? 'Renew this pass' : `Choose pass | INR ${plan.price}`}
+                  {isCurrent ? 'Renew this pack' : `Choose pack · INR ${plan.price}`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -211,15 +221,15 @@ export default function FitPassPlansScreen() {
         })
       )}
 
-      {/* Checkout mode stays explicit until the native Razorpay adapter is enabled. */}
+      {/* The API verifies each simulated purchase before activating the pack. */}
       <View style={styles.reassuranceBox}>
         <ShieldCheck size={18} color={theme.colors.primaryText} />
         <Text style={styles.reassuranceText}>
-          Demo checkout | No real payment is collected
+          Test purchase · no payment is collected
         </Text>
       </View>
 
-      {/* Demo checkout uses the same order and verification API as Razorpay later. */}
+      {/* Test orders are signed by the server before a pack is activated. */}
       <Modal
         visible={isPayModalOpen}
         animationType="slide"
@@ -229,9 +239,9 @@ export default function FitPassPlansScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.payModalCard}>
             <View style={styles.payModalHeader}>
-              <View style={styles.razorpayBrandRow}>
+              <View style={styles.testPurchaseRow}>
                 <ShieldCheck size={20} color={theme.colors.primaryText} />
-                <Text style={styles.razorpayTitle}>FitPass demo checkout</Text>
+                <Text style={styles.testPurchaseTitle}>FitPass test purchase</Text>
               </View>
               <TouchableOpacity onPress={() => setIsPayModalOpen(false)}>
                 <X size={22} color={theme.colors.text} />
@@ -240,13 +250,13 @@ export default function FitPassPlansScreen() {
 
             {selectedPlan && (
               <View style={styles.payOrderSummary}>
-                <Text style={styles.summaryLabel}>ORDER SUMMARY</Text>
+                <Text style={styles.summaryLabel}>PACK SUMMARY</Text>
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryItemName}>{selectedPlan.name}</Text>
                   <Text style={styles.summaryItemPrice}>INR {selectedPlan.price}</Text>
                 </View>
                 <Text style={styles.summaryDetail}>
-                  Adds {selectedPlan.sessions} sessions to your pass. Renewing early extends your current expiry date.
+                  {selectedPlan.displayCoins !== false ? `${Number(selectedPlan.coinAllowance) || (Number(selectedPlan.sessions) || 10) * coinsPerCheckIn} FitCoins added. ` : ''}{selectedPlan.displayCheckIns !== false ? `Up to ${Number(selectedPlan.sessions) || 10} check-ins. ` : ''}Renewing early extends your current expiry date.
                 </Text>
               </View>
             )}
@@ -254,7 +264,7 @@ export default function FitPassPlansScreen() {
             <View style={styles.testModeNotice}>
               <Lock size={14} color={theme.colors.primaryText} />
               <Text style={styles.testModeText}>
-                This is a simulated payment. No card or bank details are needed and no money is charged.
+                This is a simulated purchase. Your pack and FitCoins will be added, and no money is charged.
               </Text>
             </View>
 
@@ -263,7 +273,7 @@ export default function FitPassPlansScreen() {
                 styles.confirmPayBtn,
                 purchaseMutation.isPending && { opacity: 0.7 },
               ]}
-              onPress={handleConfirmTestPayment}
+              onPress={handleConfirmPackPurchase}
               disabled={purchaseMutation.isPending}
               activeOpacity={0.85}
             >
@@ -271,9 +281,9 @@ export default function FitPassPlansScreen() {
                 <ActivityIndicator size="small" color="#171713" />
               ) : (
                 <>
-                  <CreditCard size={18} color="#171713" />
-                  <Text style={styles.confirmPayText}>
-                    Confirm demo payment | INR {selectedPlan?.price}
+                  <CheckCircle2 size={18} color="#171713" />
+                    <Text style={styles.confirmPayText}>
+                    Confirm test purchase · INR {selectedPlan?.price}
                   </Text>
                 </>
               )}
@@ -585,8 +595,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  razorpayBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  razorpayTitle: {
+  testPurchaseRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  testPurchaseTitle: {
     fontFamily: fontFamilies.header,
     fontSize: 18,
     fontWeight: '800',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../../services/api';
 import Modal from '../../components/Modal';
+import GymDiscoveryFields from '../../components/GymDiscoveryFields';
 import ResetFiltersButton from '../../components/ResetFiltersButton';
 import { QRCodeCanvas } from 'qrcode.react';
 import { 
@@ -50,6 +51,9 @@ function PartnerGyms() {
     const [adminName, setAdminName] = useState('');
     const [adminEmail, setAdminEmail] = useState('');
     const [adminPassword, setAdminPassword] = useState('');
+    const [createPhone, setCreatePhone] = useState('');
+    const [createEmail, setCreateEmail] = useState('');
+    const [createProfile, setCreateProfile] = useState({});
 
     useEffect(() => {
         fetchGyms();
@@ -78,16 +82,19 @@ function PartnerGyms() {
             await API.post('/superadmin/gyms', {
                 gymName: gymName.trim(), 
                 gymAddress: gymAddress.trim(),
+                phone: createPhone.trim(),
+                email: createEmail.trim(),
                 latitude: latitude ? Number(latitude) : undefined,
                 longitude: longitude ? Number(longitude) : undefined,
                 defaultSessionDurationMinutes: Number(sessionHours) * 60 || 120,
+                profile: createProfile,
                 adminName: adminName.trim(), 
                 adminEmail: adminEmail.trim(), 
                 adminPassword: adminPassword.trim()
             });
 
             setSuccessMsg(`Partner gym "${gymName}" created successfully with admin account!`);
-            setGymName(''); setGymAddress(''); setLatitude(''); setLongitude(''); setSessionHours(2);
+            setGymName(''); setGymAddress(''); setLatitude(''); setLongitude(''); setSessionHours(2); setCreatePhone(''); setCreateEmail(''); setCreateProfile({});
             setAdminName(''); setAdminEmail(''); setAdminPassword('');
             setIsCreateModalOpen(false);
             fetchGyms();
@@ -137,8 +144,11 @@ function PartnerGyms() {
             await API.put(`/superadmin/gyms/${editingGym._id}`, {
                 name: editingGym.name.trim(),
                 address: editingGym.address.trim(),
+                phone: editingGym.phone || '',
+                email: editingGym.email || '',
                 latitude: editingGym.latitude !== undefined && editingGym.latitude !== null ? Number(editingGym.latitude) : null,
                 longitude: editingGym.longitude !== undefined && editingGym.longitude !== null ? Number(editingGym.longitude) : null,
+                profile: editingGym.isBranch ? undefined : (editingGym.profile || editingGym.discoveryProfile || {}),
             });
             setSuccessMsg(`Gym details updated!`);
             setEditingGym(null);
@@ -383,7 +393,7 @@ function PartnerGyms() {
                                     <button 
                                         className="btn btn-secondary" 
                                         style={{ flex: 1 }}
-                                        onClick={() => setEditingGym({ ...gym })}
+                                        onClick={() => setEditingGym({ ...gym, profile: gym.discoveryProfile || {} })}
                                     >
                                         <Pencil size={15} />
                                         Edit
@@ -475,7 +485,7 @@ function PartnerGyms() {
                                                     <button 
                                                         className="btn btn-secondary" 
                                                         style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }} 
-                                                        onClick={() => setEditingGym({ ...gym })}
+                                                        onClick={() => setEditingGym({ ...gym, profile: gym.discoveryProfile || {} })}
                                                     >
                                                         <Pencil size={14} />
                                                     </button>
@@ -528,6 +538,11 @@ function PartnerGyms() {
                         />
                     </div>
 
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="input-group"><label>Public phone</label><input className="input" type="tel" value={createPhone} onChange={e => setCreatePhone(e.target.value)} /></div>
+                        <div className="input-group"><label>Public email</label><input className="input" type="email" value={createEmail} onChange={e => setCreateEmail(e.target.value)} /></div>
+                    </div>
+
                     <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                         <div className="input-group">
                             <label>Latitude</label>
@@ -568,6 +583,12 @@ function PartnerGyms() {
                             <option value="5">5 Hours</option>
                             <option value="6">6 Hours</option>
                         </select>
+                    </div>
+
+                    <div className="partner-gym-profile-fields">
+                        <h4>Member Explore profile</h4>
+                        <p>Add the public details members see when they open this gym in Explore.</p>
+                        <GymDiscoveryFields profile={createProfile} onChange={setCreateProfile} showContactFields={false} />
                     </div>
 
                     <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
@@ -664,6 +685,10 @@ function PartnerGyms() {
                                 required 
                             />
                         </div>
+                        <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className="input-group"><label>Public phone</label><input className="input" type="tel" value={editingGym.phone || ''} onChange={e => setEditingGym({ ...editingGym, phone: e.target.value })} /></div>
+                            <div className="input-group"><label>Public email</label><input className="input" type="email" value={editingGym.email || ''} onChange={e => setEditingGym({ ...editingGym, email: e.target.value })} /></div>
+                        </div>
                         <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                             <div className="input-group">
                                 <label>Latitude</label>
@@ -688,6 +713,11 @@ function PartnerGyms() {
                                 />
                             </div>
                         </div>
+                        {!editingGym.isBranch && <div className="partner-gym-profile-fields">
+                            <h4>Member Explore profile</h4>
+                            <p>These details appear on the member-facing gym profile.</p>
+                            <GymDiscoveryFields profile={editingGym.profile || {}} onChange={profile => setEditingGym({ ...editingGym, profile })} gymId={editingGym._id || editingGym.id} showContactFields={false} />
+                        </div>}
                         <div style={{ display: 'flex', gap: '12px', marginTop: '1.5rem' }}>
                             <button 
                                 type="button" 

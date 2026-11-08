@@ -111,6 +111,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/v1/auth', require('./routes/authRoutes'));
 app.use('/api/v1/plans', require('./routes/planRoutes'));
+app.use('/api/v1/store', require('./routes/storeRoutes'));
 app.use('/api/v1/members', require('./routes/memberRoutes'));
 app.use('/api/v1/members/:id', require('./routes/freezeRoutes'));
 app.use('/api/v1/payments', require('./routes/paymentRoutes'));

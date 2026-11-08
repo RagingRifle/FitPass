@@ -3,12 +3,48 @@ const AppError = require('../utils/appError');
 const logger = require('../lib/logger');
 const { z } = require('zod');
 const prisma = require('../config/prisma');
+
+const getFitPassCoinsPerCheckIn = async () => {
+    // CoinSettings was added after some deployed Prisma clients were generated.
+    // Use the default rate until that client is regenerated instead of failing
+    // admin requests when the model delegate is absent.
+    if (typeof prisma.coinSettings?.findUnique !== 'function') return 10;
+    const settings = await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null);
+    return Number(settings?.coinsPerSession) || 10;
+};
 const User = require('../models/User');
 const Gym = require('../models/Gym');
+const Branch = require('../models/Branch');
 const Plan = require('../models/Plan');
 const generateToken = require('../utils/generateToken');
 const { logAudit } = require('../utils/auditLogger');
 const { DEFAULT_SESSION_DURATION_MINUTES, H4_GYM_IDS } = require('../config/constants');
+const { dedupeMembers } = require('../utils/memberIdentity');
+
+const gymProfileInputSchema = z.object({
+    shortDescription: z.string().max(300).optional(),
+    description: z.string().max(5000).optional(),
+    coverImageUrl: z.string().max(2000).optional(),
+    logoUrl: z.string().max(2000).optional(),
+    ownerName: z.string().max(120).optional(),
+    contactNumber: z.string().max(40).optional(),
+    email: z.string().email().or(z.literal('')).optional(),
+    website: z.string().max(300).optional(),
+    city: z.string().max(120).optional(),
+    googleMapsUrl: z.string().max(2000).optional(),
+    address: z.string().max(300).optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
+    landmarks: z.array(z.string().max(160)).max(30).optional(),
+    openingTime: z.string().max(20).optional(),
+    closingTime: z.string().max(20).optional(),
+    workingDays: z.array(z.string()).max(7).optional(),
+    timeZone: z.string().max(80).optional(),
+    weeklySchedule: z.record(z.string(), z.object({ closed: z.boolean().optional(), open: z.string().optional(), close: z.string().optional() })).optional(),
+    scheduleExceptions: z.array(z.object({ date: z.string(), closed: z.boolean(), open: z.string().optional(), close: z.string().optional(), reason: z.string().max(300).optional() })).max(100).optional(),
+    amenities: z.array(z.string().max(100)).max(50).optional(),
+    equipments: z.array(z.string().max(100)).max(50).optional(),
+}).partial();
 
 // --- zod schemas (validation lives at the controller boundary; routes apply
 //     them via the shared validate middleware where convenient, but for the
@@ -16,13 +52,16 @@ const { DEFAULT_SESSION_DURATION_MINUTES, H4_GYM_IDS } = require('../config/cons
 const createGymSchema = z.object({
     gymName: z.string().min(1, 'Gym name is required').max(120),
     gymAddress: z.string().max(300).optional(),
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
+    phone: z.string().max(40).optional(),
+    email: z.string().email().or(z.literal('')).optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
     // Per-gym default session duration for FitPrime check-ins (minutes).
     defaultSessionDurationMinutes: z.number().int().min(15).max(600).optional(),
     adminName: z.string().min(1, 'Admin name is required').max(120),
     adminEmail: z.string().email('A valid admin email is required'),
     adminPassword: z.string().min(6, 'Admin password must be at least 6 characters'),
+    profile: gymProfileInputSchema.optional(),
 });
 
 const updateGymSchema = z.object({
@@ -31,17 +70,29 @@ const updateGymSchema = z.object({
     phone: z.string().max(40).optional(),
     email: z.string().email().or(z.literal('')).optional(),
     status: z.enum(['Active', 'Inactive']).optional(),
-    latitude: z.number().optional(),
-    longitude: z.number().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
     defaultSessionDurationMinutes: z.number().int().min(15).max(600).optional(),
     adminPassword: z.string().min(6, 'Admin password must be at least 6 characters').optional(),
+    profile: gymProfileInputSchema.optional(),
 });
 
-const fitPrimePlanSchema = z.object({
+const fitPrimePlanBaseSchema = z.object({
     name: z.string().min(1, 'Plan name is required').max(120),
-    sessions: z.number().int().positive('Sessions must be a positive whole number'),
+    sessions: z.number().int().nonnegative().optional(),
+    coinAllowance: z.number().int().positive().optional(),
+    coinInputMode: z.enum(['sessions', 'coins']).default('sessions'),
+    displayCoins: z.boolean().default(true),
+    displayCheckIns: z.boolean().default(true),
     price: z.number().nonnegative('Price must be zero or positive'),
 });
+const fitPrimePlanSchema = fitPrimePlanBaseSchema
+    .refine((value) => value.coinInputMode === 'coins' ? value.coinAllowance !== undefined : value.sessions !== undefined && value.sessions > 0, {
+        message: 'Enter a positive value for the selected FitCoins or check-in mode.',
+    })
+    .refine((value) => value.displayCoins || value.displayCheckIns, {
+        message: 'At least one plan allowance value must be displayed.',
+    });
 
 // @desc    Create a partner gym and admin user
 // @route   POST /api/superadmin/gyms
@@ -52,7 +103,7 @@ const createPartnerGym = catchAsync(async (req, res, next) => {
         res.status(400);
         throw new Error(parsed.error.issues[0].message);
     }
-    const { gymName, gymAddress, latitude, longitude, defaultSessionDurationMinutes, adminName, adminEmail, adminPassword } = parsed.data;
+    const { gymName, gymAddress, phone, email, latitude, longitude, defaultSessionDurationMinutes, adminName, adminEmail, adminPassword, profile = {} } = parsed.data;
 
     if (gymName && (gymName.toLowerCase() === 'h4' || gymName.toLowerCase().includes('h4'))) {
         res.status(400);
@@ -69,9 +120,40 @@ const createPartnerGym = catchAsync(async (req, res, next) => {
     const gym = await Gym.create({
         name: gymName,
         address: gymAddress || '',
+        phone: phone || '',
+        email: email || '',
         latitude: latitude !== undefined ? latitude : null,
         longitude: longitude !== undefined ? longitude : null,
         defaultSessionDurationMinutes: defaultSessionDurationMinutes || DEFAULT_SESSION_DURATION_MINUTES,
+    });
+
+    await prisma.gymProfile.upsert({
+        where: { gymId: gym._id },
+        update: {},
+        create: {
+            gymId: gym._id,
+            shortDescription: profile.shortDescription || '',
+            description: profile.description || '',
+            coverImageUrl: profile.coverImageUrl || '',
+            logoUrl: profile.logoUrl || '',
+            contactNumber: profile.contactNumber || phone || '',
+            email: profile.email || email || '',
+            address: gymAddress || '',
+            city: profile.city || '',
+            googleMapsUrl: profile.googleMapsUrl || '',
+            latitude: latitude ?? null,
+            longitude: longitude ?? null,
+            openingTime: profile.openingTime || '06:00 AM',
+            closingTime: profile.closingTime || '10:00 PM',
+            workingDays: profile.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            timeZone: profile.timeZone || 'Asia/Kolkata',
+            weeklySchedule: profile.weeklySchedule || {},
+            scheduleExceptions: profile.scheduleExceptions || [],
+            amenities: profile.amenities || [],
+            equipments: profile.equipments || [],
+            status: 'Approved',
+            isVerified: true,
+        },
     });
 
     const user = await User.create({
@@ -79,7 +161,7 @@ const createPartnerGym = catchAsync(async (req, res, next) => {
         email: normalizedEmail,
         password: adminPassword,
         gymId: gym._id,
-        role: 'admin'
+        role: 'partner'
     });
 
     if (user) {
@@ -161,8 +243,25 @@ const updatePartnerGym = catchAsync(async (req, res, next) => {
     }
     await gym.save();
 
+    if (updates.profile) {
+        const profileData = { ...updates.profile, status: 'Approved', isVerified: true };
+        if (updates.profile.address !== undefined) profileData.address = updates.profile.address;
+        if (updates.latitude !== undefined) profileData.latitude = updates.latitude;
+        else if (updates.profile.latitude !== undefined) { profileData.latitude = updates.profile.latitude; gym.latitude = updates.profile.latitude; }
+        if (updates.longitude !== undefined) profileData.longitude = updates.longitude;
+        else if (updates.profile.longitude !== undefined) { profileData.longitude = updates.profile.longitude; gym.longitude = updates.profile.longitude; }
+        if (updates.phone !== undefined) profileData.contactNumber = updates.phone;
+        if (updates.email !== undefined) profileData.email = updates.email;
+        await gym.save();
+        await prisma.gymProfile.upsert({
+            where: { gymId: gym._id },
+            create: { gymId: gym._id, ...profileData },
+            update: profileData,
+        });
+    }
+
     if (updates.adminPassword) {
-        const adminUser = await User.findOne({ gymId: gym._id, role: 'admin' });
+        const adminUser = await User.findOne({ gymId: gym._id, role: { $in: ['admin', 'partner'] } });
         if (adminUser) {
             adminUser.password = updates.adminPassword;
             await adminUser.save();
@@ -191,12 +290,16 @@ const getPartnerGyms = catchAsync(async (req, res, next) => {
     const allGyms = await Gym.find({}).lean();
     // Exclude H4 gyms from partner list
     const gyms = allGyms.filter(g => !g.name || !g.name.toLowerCase().includes('h4'));
-    const users = await User.find({ role: 'admin' });
+    const users = await User.find({ role: { $in: ['admin', 'partner'] } });
 
+    const gymIds = gyms.map(gym => gym._id || gym.id).filter(Boolean);
+    const profiles = gymIds.length ? await prisma.gymProfile.findMany({ where: { gymId: { in: gymIds } } }) : [];
+    const profileByGymId = new Map(profiles.map(profile => [profile.gymId, profile]));
     const gymsWithAdmins = gyms.map(gym => {
         const admins = users.filter(u => u.gymId?.toString() === gym._id?.toString() || u.gymId === gym._id);
         return {
             ...gym,
+            discoveryProfile: profileByGymId.get(gym._id || gym.id) || null,
             admins: admins.map(a => ({ _id: a._id, name: a.name, email: a.email }))
         };
     });
@@ -278,7 +381,7 @@ const deletePartnerGym = catchAsync(async (req, res, next) => {
         logger.warn({ err: e }, 'Non-critical cleanup error during gym delete');
     }
 
-    await User.deleteMany({ gymId: gym._id, role: 'admin' });
+    await User.deleteMany({ gymId: gym._id, role: { $in: ['admin', 'partner'] } });
     await gym.deleteOne();
     await logAudit(req, 'GYM_DELETED', 'Gym', gym._id, `Super admin deleted partner gym: ${gym.name}`, gym.name);
     res.json({ message: 'Gym and associated admins removed' });
@@ -293,11 +396,18 @@ const createFitPrimePlan = catchAsync(async (req, res, next) => {
         res.status(400);
         throw new Error(parsed.error.issues[0].message);
     }
-    const { name, sessions, price } = parsed.data;
+    const { name, sessions, coinAllowance, coinInputMode, displayCoins, displayCheckIns, price } = parsed.data;
+    const coinsPerCheckIn = await getFitPassCoinsPerCheckIn();
+    const resolvedSessions = coinInputMode === 'coins' ? Math.floor(coinAllowance / coinsPerCheckIn) : sessions;
+    const resolvedCoins = coinInputMode === 'coins' ? coinAllowance : sessions * coinsPerCheckIn;
 
     const plan = await Plan.create({
         name,
-        sessions,
+        sessions: resolvedSessions,
+        coinAllowance: resolvedCoins,
+        coinInputMode,
+        displayCoins,
+        displayCheckIns,
         price,
         // Legacy duration fields are nulled for SYSTEM plans; sessions are the
         // source of truth for FitPrime plans.
@@ -306,7 +416,7 @@ const createFitPrimePlan = catchAsync(async (req, res, next) => {
         gymId: 'SYSTEM'
     });
 
-    await logAudit(req, 'PLAN_CREATED', 'Plan', plan._id, `Super admin created FitPrime plan: ${name} (${sessions} sessions)`, name);
+    await logAudit(req, 'PLAN_CREATED', 'Plan', plan._id, `Super admin created FitPrime plan: ${name} (${resolvedCoins} FitCoins, up to ${resolvedSessions} check-ins)`, name);
 
     res.status(201).json(plan);
 });
@@ -321,18 +431,29 @@ const updateFitPrimePlan = catchAsync(async (req, res, next) => {
         throw new Error('Plan not found');
     }
 
-    const parsed = fitPrimePlanSchema.partial().safeParse(req.body);
+    const parsed = fitPrimePlanBaseSchema.partial().safeParse(req.body);
     if (!parsed.success) {
         res.status(400);
         throw new Error(parsed.error.issues[0].message);
     }
-    const { name, sessions, price } = parsed.data;
+    const { name, sessions, coinAllowance, coinInputMode, displayCoins, displayCheckIns, price } = parsed.data;
     if (name !== undefined) plan.name = name;
-    if (sessions !== undefined) plan.sessions = sessions;
+    if (coinInputMode !== undefined) plan.coinInputMode = coinInputMode;
+    const resolvedMode = coinInputMode || plan.coinInputMode || 'sessions';
+    const coinsPerCheckIn = await getFitPassCoinsPerCheckIn();
+    if (resolvedMode === 'coins' && coinAllowance !== undefined) {
+        plan.coinAllowance = coinAllowance;
+        plan.sessions = Math.floor(coinAllowance / coinsPerCheckIn);
+    } else if (resolvedMode === 'sessions' && sessions !== undefined) {
+        plan.sessions = sessions;
+        plan.coinAllowance = sessions * coinsPerCheckIn;
+    }
+    if (displayCoins !== undefined) plan.displayCoins = displayCoins;
+    if (displayCheckIns !== undefined) plan.displayCheckIns = displayCheckIns;
     if (price !== undefined) plan.price = price;
     await plan.save();
 
-    await logAudit(req, 'PLAN_UPDATED', 'Plan', plan._id, `Updated FitPrime plan: ${plan.name} (${plan.sessions} sessions)`, plan.name);
+    await logAudit(req, 'PLAN_UPDATED', 'Plan', plan._id, `Updated FitPrime plan: ${plan.name} (${plan.coinAllowance} FitCoins, up to ${plan.sessions} check-ins)`, plan.name);
 
     res.json(plan);
 });
@@ -355,8 +476,10 @@ const deleteFitPrimePlan = catchAsync(async (req, res, next) => {
 // @route   GET /api/superadmin/plans
 // @access  Private (Super Admin)
 const getFitPrimePlans = catchAsync(async (req, res, next) => {
-    const plans = await Plan.find({ gymId: 'SYSTEM', sessions: { $gt: 0 } });
-    res.json(plans);
+    // Keep this lookup compatible with an older generated Prisma client during
+    // deployment; newer FitCoins fields are filtered after the SYSTEM lookup.
+    const plans = await Plan.find({ gymId: 'SYSTEM' });
+    res.json(plans.filter(plan => Number(plan.sessions) > 0 || Number(plan.coinAllowance) > 0));
 });
 
 // --- dedicated admin management ---
@@ -364,7 +487,9 @@ const createAdminSchema = z.object({
     name: z.string().min(1, 'Name is required').max(120),
     email: z.string().email('A valid email is required'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
-    role: z.enum(['fitpass_admin', 'h4_admin']),
+    role: z.enum(['fitpass_admin', 'h4_admin', 'h4_branch_admin', 'fitpass_partner']),
+    gymId: z.string().optional(),
+    branchId: z.string().optional(),
 });
 
 const updateAdminSchema = z.object({
@@ -377,8 +502,37 @@ const updateAdminSchema = z.object({
 // @route   GET /api/superadmin/admins
 // @access  Private (Super Admin)
 const getDedicatedAdmins = catchAsync(async (req, res, next) => {
-    const admins = await User.find({ role: { $in: ['fitpass_admin', 'h4_admin'] } }).select('-password').lean();
-    res.json(admins);
+    const [accounts, gyms, branches] = await Promise.all([
+        User.find({ role: { $in: ['fitpass_admin', 'h4_admin', 'partner', 'admin'] } }).select('-password').lean(),
+        Gym.find({}).select('id name').lean(),
+        Branch.find({}).select('id name gymId').lean(),
+    ]);
+    const gymById = new Map(gyms.map(gym => [String(gym.id || gym._id), gym]));
+    const branchById = new Map(branches.map(branch => [String(branch.id || branch._id), branch]));
+    const result = accounts.filter(account => {
+        if (['fitpass_admin', 'h4_admin', 'partner'].includes(account.role)) return true;
+        return account.role === 'admin' && gymById.has(String(account.gymId));
+    }).map(account => {
+        const gym = gymById.get(String(account.gymId));
+        const branch = branchById.get(String(account.branchId));
+        const roleScope = account.role === 'fitpass_admin' ? 'fitpass_admin'
+            : gym?.name.toLowerCase().includes('h4') && account.branchId ? 'h4_branch_admin'
+                : gym?.name.toLowerCase().includes('h4') || account.role === 'h4_admin' ? 'h4_admin' : 'fitpass_partner';
+        return { ...account, roleScope, gymName: gym?.name || (account.role === 'h4_admin' ? 'H4' : ''), branchName: branch?.name || '' };
+    });
+    res.json(result);
+});
+
+const getAdminAccountScopes = catchAsync(async (req, res) => {
+    const [gyms, branches] = await Promise.all([
+        Gym.find({}).select('id name').lean(),
+        Branch.find({}).select('id name gymId').lean(),
+    ]);
+    res.json({
+        h4Gym: gyms.find(gym => gym.name.toLowerCase() === 'h4') || null,
+        fitpassGyms: gyms.filter(gym => gym.name.toLowerCase() !== 'h4'),
+        branches: branches.map(branch => ({ ...branch, id: branch.id || branch._id })),
+    });
 });
 
 // @desc    Create a dedicated admin account
@@ -390,7 +544,7 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
         res.status(400);
         throw new Error(parsed.error.issues[0].message);
     }
-    const { name, email, password, role } = parsed.data;
+    const { name, email, password, role, gymId: requestedGymId, branchId } = parsed.data;
 
     const normalizedEmail = email.trim().toLowerCase();
     const userExists = await User.findOne({ email: normalizedEmail });
@@ -399,18 +553,38 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
         throw new Error('User already exists');
     }
 
+    let actualRole = role;
     let gymId = 'SYSTEM';
-    if (role === 'h4_admin') {
+    let actualBranchId = null;
+    if (role === 'h4_admin' || role === 'h4_branch_admin') {
         const h4Gym = await Gym.findOne({ name: 'H4' });
         gymId = h4Gym ? h4Gym._id : H4_GYM_IDS[0];
+        if (role === 'h4_branch_admin') {
+            const branch = branchId ? await Branch.findOne({ _id: branchId, gymId: String(gymId) }) : null;
+            if (!branch) {
+                res.status(400);
+                throw new Error('Select a valid H4 branch for this account.');
+            }
+            actualRole = 'h4_admin';
+            actualBranchId = branch._id || branch.id;
+        }
+    } else if (role === 'fitpass_partner') {
+        const gym = requestedGymId ? await Gym.findById(requestedGymId) : null;
+        if (!gym || gym.name.toLowerCase() === 'h4') {
+            res.status(400);
+            throw new Error('Select a valid FitPass partner gym.');
+        }
+        gymId = gym._id || gym.id;
+        actualRole = 'partner';
     }
 
     const admin = await User.create({
         name,
         email: normalizedEmail,
         password,
-        role,
+        role: actualRole,
         gymId,
+        branchId: actualBranchId,
         isVerified: true,
     });
 
@@ -421,7 +595,9 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
             name: admin.name,
             email: admin.email,
             role: admin.role,
+            roleScope: role,
             gymId: admin.gymId,
+            branchId: admin.branchId,
         });
     } else {
         res.status(400);
@@ -439,7 +615,7 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
         throw new Error(parsed.error.issues[0].message);
     }
 
-    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin'] } });
+    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin', 'partner', 'admin'] } });
     if (!admin) {
         res.status(404);
         throw new Error('Admin not found');
@@ -469,7 +645,7 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
 // @route   DELETE /api/superadmin/admins/:id
 // @access  Private (Super Admin)
 const deleteDedicatedAdmin = catchAsync(async (req, res, next) => {
-    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin'] } });
+    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin', 'partner', 'admin'] } });
     if (!admin) {
         res.status(404);
         throw new Error('Admin not found');
@@ -536,10 +712,11 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
 
     // Get all SYSTEM plan IDs
     const fitPassPlans = await prisma.plan.findMany({
-        where: { gymId: 'SYSTEM', sessions: { gt: 0 } },
+        where: { gymId: 'SYSTEM' },
         select: { id: true, name: true, sessions: true, price: true },
     });
     const fitPassPlanIds = fitPassPlans.map(p => p.id);
+    const coinsPerCheckIn = await getFitPassCoinsPerCheckIn();
 
     const h4Gym = await prisma.gym.findFirst({ where: { name: 'H4' } });
     const h4GymId = h4Gym ? h4Gym.id : H4_GYM_IDS[0];
@@ -552,9 +729,9 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
             where: { gymId: { notIn: excludedH4GymIds } },
             orderBy: { createdAt: 'desc' },
             select: {
-                id: true, name: true, phone: true, email: true, status: true,
+                id: true, name: true, phone: true, email: true, registrationNumber: true, status: true,
                 planId: true, joinDate: true, expiryDate: true, sessionsTotal: true,
-                sessionsRemaining: true, lastCheckInAt: true, gymId: true,
+                sessionsRemaining: true, fitpassCoins: true, lastCheckInAt: true, gymId: true,
             },
         }),
         prisma.user.findMany({
@@ -580,6 +757,7 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
         const expired = subscribed && (member.status === 'Expired' || new Date(member.expiryDate) <= now);
         return {
             id: member?.id || account.id,
+            memberId: member?.id || account.memberId || null,
             userId: account.id,
             name: member?.name || account.name,
             phone: member?.phone || account.phone,
@@ -590,6 +768,7 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
             expiryDate: member?.expiryDate || null,
             sessionsTotal: member?.sessionsTotal || 0,
             sessionsRemaining: member?.sessionsRemaining || 0,
+            fitpassCoins: member?.fitpassCoins ?? ((member?.sessionsRemaining || 0) * coinsPerCheckIn),
             sessionsUsed: member ? Math.max(0, (member.sessionsTotal || 0) - (member.sessionsRemaining || 0)) : 0,
             lastCheckInAt: member?.lastCheckInAt || null,
             gymId: member?.gymId || account.gymId,
@@ -599,16 +778,21 @@ const getFitPassMemberRoster = catchAsync(async (req, res, next) => {
     });
     members.filter(m => planMap[m.planId] && !matchedMemberIds.has(m.id)).forEach(member => {
         const expired = member.status === 'Expired' || new Date(member.expiryDate) <= now;
-        roster.push({ ...member, sessionsUsed: Math.max(0, (member.sessionsTotal || 0) - (member.sessionsRemaining || 0)), plan: planMap[member.planId], isExpired: expired, status: expired ? 'Expired' : 'Active' });
+        roster.push({ ...member, fitpassCoins: member.fitpassCoins ?? ((member.sessionsRemaining || 0) * coinsPerCheckIn), sessionsUsed: Math.max(0, (member.sessionsTotal || 0) - (member.sessionsRemaining || 0)), plan: planMap[member.planId], isExpired: expired, status: expired ? 'Expired' : 'Active' });
     });
 
-    let filtered = roster;
+    // A member can have multiple linked user records (or a legacy account and a
+    // new account with the same contact details). Keep one directory row per
+    // actual subscriber while retaining the member ID used for detail lookups.
+    const uniqueRoster = dedupeMembers(roster);
+
+    let filtered = uniqueRoster;
     if (req.query.status === 'Active') filtered = filtered.filter(m => m.status === 'Active');
     else if (req.query.status === 'Expired') filtered = filtered.filter(m => m.status === 'Expired');
     else if (req.query.status === 'No Subscription') filtered = filtered.filter(m => m.status === 'No Subscription');
     if (req.query.search) {
         const search = req.query.search.toLowerCase();
-        filtered = filtered.filter(m => [m.name, m.phone, m.email, m.plan?.name].some(v => String(v || '').toLowerCase().includes(search)));
+        filtered = filtered.filter(m => [m.id, m.registrationNumber, m.name, m.phone, m.email, m.plan?.name].some(v => String(v || '').toLowerCase().includes(search)));
     }
     const total = filtered.length;
     const pageMembers = filtered.slice(skip, skip + pageSize);
@@ -644,9 +828,10 @@ const getFitPassOverview = catchAsync(async (req, res, next) => {
             joinDate: true, lastCheckInAt: true,
         },
     });
+    const uniqueMembers = dedupeMembers(allMembers);
 
-    const active = allMembers.filter(m => m.status === 'Active' && new Date(m.expiryDate) > now);
-    const expired = allMembers.filter(m => m.status !== 'Active' || new Date(m.expiryDate) <= now);
+    const active = uniqueMembers.filter(m => m.status === 'Active' && new Date(m.expiryDate) > now);
+    const expired = uniqueMembers.filter(m => m.status !== 'Active' || new Date(m.expiryDate) <= now);
 
     // Sessions aggregates
     let totalSessionsSold = 0;
@@ -654,7 +839,7 @@ const getFitPassOverview = catchAsync(async (req, res, next) => {
     let totalRevenue = 0;
     let totalPaid = 0;
 
-    allMembers.forEach(m => {
+    uniqueMembers.forEach(m => {
         totalSessionsSold += m.sessionsTotal || 0;
         totalSessionsRemaining += m.sessionsRemaining || 0;
         totalRevenue += m.planPrice || 0;
@@ -709,7 +894,7 @@ const getFitPassOverview = catchAsync(async (req, res, next) => {
 
     // Plan popularity
     const planPopularity = fitPassPlans.map(plan => {
-        const planMembers = allMembers.filter(m => m.planId === plan.id);
+        const planMembers = uniqueMembers.filter(m => m.planId === plan.id);
         const planRevenue = planMembers.reduce((s, m) => s + (m.paidAmount || 0), 0);
         return {
             planId: plan.id,
@@ -744,7 +929,7 @@ const getFitPassOverview = catchAsync(async (req, res, next) => {
     res.json({
         success: true,
         overview: {
-            totalMembers: allMembers.length,
+            totalMembers: uniqueMembers.length,
             activeMembers: active.length,
             expiredMembers: expired.length,
             totalSessionsSold,
@@ -788,16 +973,21 @@ const adjustUserSessions = catchAsync(async (req, res, next) => {
 
     const newSessions = Math.max(0, (member.sessionsRemaining || 0) + Number(delta));
     const newTotal = Number(delta) > 0 ? (member.sessionsTotal || 0) + Number(delta) : (member.sessionsTotal || 0);
+    const rate = await getFitPassCoinsPerCheckIn();
+    const effectiveDelta = newSessions - (member.sessionsRemaining || 0);
+    const legacyCoins = member.coinsMigrated ? 0 : (member.sessionsRemaining || 0) * rate;
 
     const updated = await prisma.member.update({
         where: { id: memberId },
         data: {
             sessionsRemaining: newSessions,
             sessionsTotal: newTotal,
+            fitpassCoins: Math.max(0, (member.fitpassCoins || 0) + legacyCoins + effectiveDelta * rate),
+            coinsMigrated: true,
         },
     });
 
-    await logAudit(req, 'FITPASS_SESSIONS_ADJUSTED', 'Member', memberId, `Super admin adjusted sessions by ${delta} (Reason: ${reason || 'Admin adjustment'}). New balance: ${newSessions}`, member.name);
+    await logAudit(req, 'FITPASS_SESSIONS_ADJUSTED', 'Member', memberId, `Super admin adjusted sessions by ${delta} (Reason: ${reason || 'Admin adjustment'}). New balance: ${newSessions} sessions, ${updated.fitpassCoins} FitPass coins`, member.name);
 
     res.json({
         success: true,
@@ -844,6 +1034,35 @@ const updateFitpassUserStatus = catchAsync(async (req, res, next) => {
     });
 });
 
+const getFitPassOrders = catchAsync(async (req, res) => {
+    const status = String(req.query.status || '').toUpperCase();
+    const allowedStatuses = ['RECEIVED', 'SHIPPED', 'DELIVERED'];
+    const orders = await prisma.storeOrder.findMany({
+        where: { division: 'fitpass', ...(allowedStatuses.includes(status) ? { status } : {}) },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+    });
+    const memberIds = [...new Set(orders.map(order => order.memberId))];
+    const members = memberIds.length ? await prisma.member.findMany({
+        where: { id: { in: memberIds } },
+        select: { id: true, name: true, email: true, phone: true },
+    }) : [];
+    const memberById = new Map(members.map(member => [member.id, member]));
+    res.json(orders.map(order => ({ ...order, member: memberById.get(order.memberId) || null })));
+});
+
+const updateFitPassOrderStatus = catchAsync(async (req, res) => {
+    const status = String(req.body.status || '').toUpperCase();
+    if (!['RECEIVED', 'SHIPPED', 'DELIVERED'].includes(status)) {
+        return res.status(400).json({ message: 'Choose received, shipped, or delivered.' });
+    }
+    const order = await prisma.storeOrder.findFirst({ where: { id: req.params.orderId, division: 'fitpass' } });
+    if (!order) return res.status(404).json({ message: 'FitPass order not found.' });
+    const updated = await prisma.storeOrder.update({ where: { id: order.id }, data: { status } });
+    await logAudit(req, 'FITPASS_ORDER_STATUS_UPDATED', 'StoreOrder', updated.id, `Order ${updated.productName} status changed from ${order.status} to ${status}.`, updated.productName);
+    res.json(updated);
+});
+
 module.exports = {
     createPartnerGym,
     updatePartnerGym,
@@ -855,6 +1074,7 @@ module.exports = {
     getFitPrimePlans,
     getOrCreateH4Gym,
     getDedicatedAdmins,
+    getAdminAccountScopes,
     createDedicatedAdmin,
     updateDedicatedAdmin,
     deleteDedicatedAdmin,
@@ -863,4 +1083,6 @@ module.exports = {
     getFitPassOverview,
     adjustUserSessions,
     updateFitpassUserStatus,
+    getFitPassOrders,
+    updateFitPassOrderStatus,
 };

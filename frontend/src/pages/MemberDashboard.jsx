@@ -277,7 +277,7 @@ const MemberDashboard = () => {
                     mock_token: order.mock_token,
                     planId,
                 });
-                toast.success('Pass renewed. Your sessions and expiry have been updated.');
+                toast.success('Pass renewed. Your coin balance and expiry have been updated.');
                 setRenewalModalOpen(false);
                 setSelectedRenewalPlan(null);
                 await fetchMemberData();
@@ -376,9 +376,9 @@ const MemberDashboard = () => {
                 <div className="member-pass-summary">
                     <div className="member-pass-summary-top"><span>{isFitPrimeMember ? 'FITPASS PASS' : isH4Member ? 'H4 MEMBERSHIP' : 'MEMBERSHIP PASS'}</span><span className={`member-active-pill ${isFitPrimeMember && sessionStatus?.planStatus !== 'Active' ? 'is-renewal-due' : ''}`}><i />{isFitPrimeMember ? (sessionStatus?.planStatus || 'No pass') : (plan?.status || 'No plan')}</span></div>
                     <strong>{plan?.planId?.name || 'Choose your next plan'}</strong>
-                    <div className="member-pass-meta">{isFitPrimeMember ? `${sessionsRemaining} sessions remaining` : plan?.expiryDate ? `Valid until ${new Date(plan.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Your training journey starts here'}</div>
+                    <div className="member-pass-meta">{isFitPrimeMember ? `${sessionStatus?.fitpassCoins ?? 0} FitPass coins · ${sessionsRemaining} check-ins available` : plan?.expiryDate ? `Valid until ${new Date(plan.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Your training journey starts here'}</div>
                     <div className="member-pass-progress"><span style={{ width: `${progressPercent}%` }} /></div>
-                    <div className="member-pass-progress-label"><span>{isFitPrimeMember ? 'SESSION BALANCE' : 'MEMBERSHIP STATUS'}</span><span>{isFitPrimeMember ? `${sessionsRemaining} left` : daysLeft > 0 ? `${daysLeft} days left` : 'Check plan'}</span></div>
+                    <div className="member-pass-progress-label"><span>{isFitPrimeMember ? 'FITPASS COIN BALANCE' : 'MEMBERSHIP STATUS'}</span><span>{isFitPrimeMember ? `${sessionStatus?.fitpassCoins ?? 0} coins` : daysLeft > 0 ? `${daysLeft} days left` : 'Check plan'}</span></div>
                 </div>
                 <div className="member-overview-mark"><Activity size={24} /></div>
             </section>
@@ -442,15 +442,15 @@ const MemberDashboard = () => {
                         {isFitPrimeMember ? (
                             <>
                                 <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                    Sessions remaining
+                                    FitPass coin balance
                                 </span>
                                 <span style={{
-                                    background: sessionsRemaining > 0 ? 'var(--success-light)' : 'var(--danger-light)',
-                                    color: sessionsRemaining > 0 ? 'var(--success-color)' : 'var(--danger-color)',
+                                    background: (sessionStatus?.fitpassCoins || 0) > 0 ? 'var(--success-light)' : 'var(--danger-light)',
+                                    color: (sessionStatus?.fitpassCoins || 0) > 0 ? 'var(--success-color)' : 'var(--danger-color)',
                                     padding: '0.25rem 0.75rem', borderRadius: '9999px',
                                     fontSize: '0.75rem', fontWeight: '700'
                                 }}>
-                                     {sessionsRemaining} left
+                                     {sessionStatus?.fitpassCoins ?? 0} coins · up to {sessionsRemaining} check-ins
                                 </span>
                             </>
                         ) : (
@@ -586,7 +586,7 @@ const MemberDashboard = () => {
                 {isFitPrimeMember ? (
                     <div className="card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                            <h3 style={{ margin: 0 }}>FitPass Session History</h3>
+                            <h3 style={{ margin: 0 }}>FitPass Check-in History</h3>
                             <button className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} 
                                     onClick={() => {
                                         setFilterGym('');
@@ -734,7 +734,7 @@ const MemberDashboard = () => {
                                 <div className="fitpass-renewal-summary">
                                     <strong>{selectedRenewalPlan.name}</strong>
                                     <span>₹{Number(selectedRenewalPlan.price).toLocaleString('en-IN')}</span>
-                                    <small>{selectedRenewalPlan.sessions} sessions · {selectedRenewalPlan.duration || 30} {selectedRenewalPlan.durationUnit || 'days'}</small>
+                                    <small>{selectedRenewalPlan.coinAllowance ?? (Number(selectedRenewalPlan.sessions || 10) * Number(selectedRenewalPlan.coinsPerSession || sessionStatus?.coinsPerSession || 10))} FitPass coins · up to {Number(selectedRenewalPlan.sessions) || 10} check-ins · {selectedRenewalPlan.duration || 30} {selectedRenewalPlan.durationUnit || 'days'}</small>
                                 </div>
                                 <p className="fitpass-demo-note">
                                     {usesMockFitPassGateway
@@ -750,11 +750,11 @@ const MemberDashboard = () => {
                             </>
                         ) : (
                             <>
-                                <p className="fitpass-renewal-copy">Choose a session pass. If your current pass is still active, its remaining time carries forward.</p>
+                                <p className="fitpass-renewal-copy">Choose a FitPass coin plan. Any unspent balance carries forward when you renew early.</p>
                                 <div className="fitpass-renewal-options">
                                     {fitPassPlans.map((fitPassPlan) => (
                                         <button type="button" key={fitPassPlan.id || fitPassPlan._id} className="fitpass-renewal-option" onClick={() => setSelectedRenewalPlan(fitPassPlan)}>
-                                            <span><strong>{fitPassPlan.name}</strong><small>{fitPassPlan.sessions} sessions · {fitPassPlan.duration || 30} {fitPassPlan.durationUnit || 'days'}</small></span>
+                                            <span><strong>{fitPassPlan.name}</strong><small>{fitPassPlan.coinAllowance ?? (Number(fitPassPlan.sessions || 10) * Number(fitPassPlan.coinsPerSession || sessionStatus?.coinsPerSession || 10))} FitPass coins · up to {Number(fitPassPlan.sessions) || 10} check-ins · {fitPassPlan.duration || 30} {fitPassPlan.durationUnit || 'days'}</small></span>
                                             <b>₹{Number(fitPassPlan.price).toLocaleString('en-IN')} <ArrowUpRight size={16} /></b>
                                         </button>
                                     ))}

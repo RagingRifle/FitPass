@@ -16,7 +16,7 @@ const iconNames = {
   FileText: 'file-document-outline', Filter: 'filter-variant', Flame: 'fire',
   Globe: 'web', History: 'history', Info: 'information-outline', LayoutDashboard: 'view-dashboard-outline', LayoutGrid: 'view-grid-outline',
   Key: 'key-outline', Layers: 'layers-outline', LifeBuoy: 'lifebuoy', Lock: 'lock-outline', LogIn: 'login', LogOut: 'logout', Mail: 'email-outline', MapPin: 'map-marker-outline',
-  MessageSquare: 'message-text-outline', MessageSquarePlus: 'message-plus-outline', Minus: 'minus', Package: 'package-variant-closed', PackageCheck: 'package-variant-closed-check',
+  MessageSquare: 'message-text-outline', MessageSquarePlus: 'message-plus-outline', Minus: 'minus', Package: 'package-variant-closed', PackageCheck: 'package-variant-closed-check', ShoppingCart: 'cart-outline',
   PieChart: 'chart-pie', Pencil: 'pencil-outline', Phone: 'phone-outline', Play: 'play', Plus: 'plus', PlusCircle: 'plus-circle-outline', QrCode: 'qrcode',
   RefreshCw: 'refresh', RotateCcw: 'reload', RotateCw: 'refresh', Scale: 'scale-balance', Scan: 'line-scan', ScanLine: 'line-scan', Search: 'magnify', Send: 'send-outline',
   Settings: 'cog-outline', Share2: 'share-variant', ShieldAlert: 'shield-alert-outline', ShieldCheck: 'shield-check-outline', Shuffle: 'shuffle-variant', Snowflake: 'snowflake', Sparkles: 'creation-outline', Star: 'star-outline', Sun: 'weather-sunny',
@@ -37,6 +37,6 @@ export const {
   Camera, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Circle, Clock, CreditCard, DollarSign, Download,
   Clipboard, ClipboardList, Droplet, Droplets, Dumbbell, Edit2, Edit3, Eye, EyeOff, FileText, Filter, Flame, Globe, History, Info, Key, LayoutDashboard, LayoutGrid, Layers, LifeBuoy,
   Lock, LogIn, LogOut, Mail, MapPin, MessageSquare, MessageSquarePlus, Minus, Package, PackageCheck, PieChart, Pencil, Phone, Play, Plus, PlusCircle, QrCode, RefreshCw, RotateCcw, RotateCw,
-  Scale, Scan, ScanLine, Search, Send, Settings, Share2, ShieldAlert, ShieldCheck, Shuffle, Snowflake, Sparkles, Star, Sun, Target, Ticket, Trash2, TrendingDown, TrendingUp, Trophy, Utensils, User,
+  Scale, Scan, ScanLine, Search, Send, Settings, Share2, ShieldAlert, ShieldCheck, Shuffle, ShoppingCart, Snowflake, Sparkles, Star, Sun, Target, Ticket, Trash2, TrendingDown, TrendingUp, Trophy, Utensils, User,
   UserCheck, UserCog, UserMinus, UserPlus, Users, Wallet, Wrench, X, XCircle, Zap,
 } = Object.fromEntries(Object.keys(iconNames).map((key) => [key, makeIcon(key as keyof typeof iconNames)])) as Record<keyof typeof iconNames, React.ComponentType<Props>>;

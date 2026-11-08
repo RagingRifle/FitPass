@@ -34,11 +34,11 @@ export const UserControlHub: React.FC = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['fitpass-subscribers-list'] });
-      Alert.alert('Session Balance Updated', data.message || 'Sessions updated');
+      Alert.alert('FitPass Balance Updated', data.message || 'Check-in allowance and coin balance updated');
       setSelectedUser(null);
     },
     onError: (err: any) => {
-      Alert.alert('Adjustment Failed', err.response?.data?.message || err.message || 'Could not adjust sessions');
+      Alert.alert('Adjustment Failed', err.response?.data?.message || err.message || 'Could not adjust the member balance');
     },
   });
 
@@ -71,7 +71,7 @@ export const UserControlHub: React.FC = () => {
     if (!selectedUser) return;
     const count = parseInt(sessionDeltaInput);
     if (isNaN(count) || count <= 0) {
-      Alert.alert('Invalid Count', 'Please enter a valid session count.');
+      Alert.alert('Invalid Count', 'Please enter a valid check-in count.');
       return;
     }
     const delta = isAdd ? count : -count;
@@ -107,7 +107,7 @@ export const UserControlHub: React.FC = () => {
           <Typography variant="h2" style={styles.headerTitle}>User Control Hub (A-Z)</Typography>
         </View>
         <Typography variant="caption" color="secondary" style={{ marginTop: 4 }}>
-          Inspect subscriber profiles, grant bonus session credits, adjust balances, and extend membership validity.
+          Inspect subscriber profiles, grant check-in allowances with matching FitPass coins, and extend membership validity.
         </Typography>
       </Card>
 
@@ -149,7 +149,7 @@ export const UserControlHub: React.FC = () => {
                   <View style={styles.sessionPillRow}>
                     <View style={styles.sessionBadge}>
                       <Typography variant="caption" style={{ fontWeight: '800', color: '#1A1510' }}>
-                        🎟️ {u.sessionsRemaining} / {u.sessionsTotal} sessions left
+                        {u.fitpassCoins ?? 0} FitPass coins · up to {u.sessionsRemaining} check-ins
                       </Typography>
                     </View>
                   </View>
@@ -190,19 +190,19 @@ export const UserControlHub: React.FC = () => {
                   <Typography variant="caption" color="secondary" style={styles.sectionLabel}>ACCOUNT SUMMARY</Typography>
                   <View style={styles.statsRow}>
                     <View style={styles.statBox}>
-                      <Typography variant="caption" color="secondary">Remaining</Typography>
+                      <Typography variant="caption" color="secondary">FitPass coins</Typography>
                       <Typography variant="h2" style={{ color: '#B9983D', fontWeight: '900' }}>
-                        {selectedUser.sessionsRemaining}
+                        {selectedUser.fitpassCoins ?? 0}
                       </Typography>
                     </View>
                     <View style={styles.statBox}>
-                      <Typography variant="caption" color="secondary">Used</Typography>
+                      <Typography variant="caption" color="secondary">Check-ins used</Typography>
                       <Typography variant="h2" style={{ color: '#2E7D32', fontWeight: '900' }}>
                         {selectedUser.sessionsUsed || 0}
                       </Typography>
                     </View>
                     <View style={styles.statBox}>
-                      <Typography variant="caption" color="secondary">Total Grant</Typography>
+                      <Typography variant="caption" color="secondary">Plan check-in limit</Typography>
                       <Typography variant="h2" style={{ color: '#1A1510', fontWeight: '900' }}>
                         {selectedUser.sessionsTotal}
                       </Typography>
@@ -212,7 +212,7 @@ export const UserControlHub: React.FC = () => {
 
                 {/* Adjust Sessions */}
                 <View style={styles.modalSection}>
-                  <Typography variant="caption" color="secondary" style={styles.sectionLabel}>SESSION BALANCE CONTROLS</Typography>
+                  <Typography variant="caption" color="secondary" style={styles.sectionLabel}>CHECK-IN & COIN CONTROLS</Typography>
                   <Input
                     label="Reason / Audit Note"
                     placeholder="Reason for adjustment..."
@@ -229,7 +229,7 @@ export const UserControlHub: React.FC = () => {
                       style={{ width: 90 }}
                     />
                     <Button
-                      title="+ Add Credits"
+                      title="+ Add Check-ins"
                       onPress={() => handleAdjustSessions(true)}
                       loading={adjustSessionsMutation.isPending}
                       style={{ flex: 1, backgroundColor: '#2E7D32' }}

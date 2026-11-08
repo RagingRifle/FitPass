@@ -76,13 +76,19 @@ API_CLIENT.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response && error.response.status === 401) {
-      await storage.removeToken();
-      await storage.removeItem('user');
-      await storage.removeItem('selectedGymId');
-      await storage.removeItem('selectedBranchId');
-      
-      if (onUnauthorizedCallback) {
-        onUnauthorizedCallback();
+      const authHeader = error.config?.headers?.Authorization || error.config?.headers?.authorization;
+      const requestToken = typeof authHeader === 'string' ? authHeader.replace(/^Bearer\s+/i, '') : '';
+      const currentToken = await storage.getToken();
+      // Ignore 401s from anonymous or pre-login requests. They can finish after
+      // login succeeds and must not clear the new session.
+      if (requestToken && currentToken === requestToken) {
+        await storage.removeToken();
+        await storage.removeItem('user');
+        await storage.removeItem('selectedGymId');
+        await storage.removeItem('selectedBranchId');
+        await storage.removeItem('activeDivision');
+
+        if (onUnauthorizedCallback) onUnauthorizedCallback();
       }
     }
     return Promise.reject(error);

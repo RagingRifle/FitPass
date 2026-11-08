@@ -2028,6 +2028,133 @@ tbody tr:hover {
     }
 }
 
+/* FitPass plan allowance editor */
+.fitprime-plan-editor {
+    display: grid;
+    gap: 18px;
+    min-width: 0;
+    color: #211f1a;
+}
+
+.fitprime-plan-editor .fitprime-editor-field {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.fitprime-plan-editor .fitprime-editor-field > span,
+.fitprime-plan-editor .fitprime-editor-field legend,
+.fitprime-display-options legend {
+    padding: 0;
+    color: #403b30;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.fitprime-plan-editor .input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid #d9d0be;
+    border-radius: 10px;
+    background: #fffefa;
+    color: #211f1a;
+    font: inherit;
+    font-size: 0.95rem;
+}
+
+.fitprime-plan-editor .input::placeholder { color: #827a6c; opacity: 1; }
+.fitprime-plan-editor .input:focus-visible,
+.fitprime-mode-switch button:focus-visible,
+.fitprime-plan-editor input[type="checkbox"]:focus-visible {
+    outline: 3px solid rgba(179, 137, 0, 0.3);
+    outline-offset: 2px;
+    border-color: #a77b00;
+}
+
+.fitprime-editor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 16px;
+}
+
+.fitprime-mode-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    min-height: 46px;
+    padding: 4px;
+    border: 1px solid #d9d0be;
+    border-radius: 10px;
+    background: #f3efe5;
+}
+
+.fitprime-mode-switch button {
+    min-width: 0;
+    padding: 0.45rem 0.55rem;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #514b3e;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fitprime-mode-switch button.is-selected {
+    background: #211f1a;
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+}
+
+.fitprime-conversion-preview {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 13px 15px;
+    border: 1px solid #e1d8c5;
+    border-radius: 10px;
+    background: #f3efe5;
+    color: #403b30;
+    font-size: 0.85rem;
+}
+
+.fitprime-conversion-preview strong { color: #6f5200; text-align: right; }
+.fitprime-conversion-preview small { grid-column: 1 / -1; color: #625b4e; }
+
+.fitprime-display-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    margin: 0;
+    padding: 12px 14px 13px;
+    border: 1px solid #ded6c7;
+    border-radius: 10px;
+    background: #fffefa;
+}
+
+.fitprime-display-options legend { padding: 0 5px; }
+.fitprime-display-options label { display: inline-flex; align-items: center; gap: 8px; color: #373329; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.fitprime-display-options input[type="checkbox"] { width: 17px; height: 17px; margin: 0; accent-color: #a77b00; }
+
+.fitprime-editor-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 2px; }
+.fitprime-editor-actions .btn { min-width: 130px; min-height: 44px; justify-content: center; }
+
+@media (max-width: 560px) {
+    .fitprime-editor-grid { grid-template-columns: 1fr; gap: 14px; }
+    .fitprime-editor-actions { flex-direction: column-reverse; }
+    .fitprime-editor-actions .btn { width: 100%; }
+}
+
 .fitprime-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -2383,6 +2510,139 @@ tbody tr:hover {
     background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 100%);
     border-radius: var(--radius-full);
     transition: width 0.3s ease;
+}
+
+/* FitPass member cards: fixed high contrast across light and dark themes. */
+.fitpass-member-card {
+    background: #fffefa !important;
+    border-color: #ded5c4 !important;
+    color: #24211b !important;
+    box-shadow: 0 8px 24px rgba(44, 37, 23, 0.08) !important;
+}
+.fitpass-member-card:hover { border-color: #b98a00 !important; }
+.fitpass-member-name,
+.fitpass-member-card .fitpass-member-card-top span,
+.fitpass-member-card > div > div { color: #28251f; }
+.fitpass-member-card [style*="--text-secondary"],
+.fitpass-member-card [style*="--text-muted"] { color: #554f43 !important; }
+.fitpass-member-card [style*="--primary"] { color: #765800 !important; }
+.fitpass-member-card .fitpass-session-meter-container {
+    background: #f1ecdf !important;
+    border-color: #ded4c0 !important;
+    color: #39352d !important;
+}
+.fitpass-member-card .fitpass-session-meter-header { color: #403b32 !important; }
+.fitpass-member-card .fitpass-session-meter-header strong { color: #705300 !important; }
+.fitpass-member-card .fitpass-session-progress-bar { background: #d8cfbc !important; }
+.fitpass-member-card .fitpass-session-progress-fill { background: #c49800 !important; }
+.fitpass-member-card .status-pill-success { color: #155b31 !important; background: #e4f3e7 !important; border-color: #9ccaa4 !important; }
+.fitpass-member-card .status-pill-failed { color: #922b27 !important; background: #fce9e7 !important; border-color: #e2aaa5 !important; }
+.fitpass-member-card .status-pill-warning { color: #6b4a00 !important; background: #fff3d1 !important; border-color: #e3c36c !important; }
+.fitpass-member-card .btn { color: #25221c !important; background: #fffefa !important; border-color: #d8cfbd !important; }
+.fitpass-member-card .btn:hover { background: #f4efdf !important; border-color: #b98a00 !important; }
+
+/* Product catalog and editor */
+.products-page { max-width: 1160px; margin: 0 auto; padding: 32px 28px 56px; color: #25221c; }
+.products-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.products-header h1 { margin: 0; color: #211f1a; font-size: clamp(1.8rem, 3vw, 2.35rem); letter-spacing: -0.035em; }
+.products-header p { margin: 7px 0 0; color: #575145; line-height: 1.55; }
+.products-header .products-eyebrow { margin: 0 0 8px; color: #765800; font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.products-tabs { display: flex; gap: 8px; flex-shrink: 0; }
+.products-tabs button, .products-secondary-button, .products-primary-button { min-height: 42px; padding: 0 16px; border: 1px solid #d5ccba; border-radius: 10px; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
+.products-tabs button, .products-secondary-button { background: #fffefa; color: #302c24; }
+.products-tabs button.is-active, .products-primary-button { border-color: #1d1b17; background: #1d1b17; color: #ffdf24; }
+.products-primary-button:disabled { opacity: .65; cursor: wait; }
+.products-rate-panel, .products-section { margin-bottom: 20px; padding: 22px; border: 1px solid #e1d9ca; border-radius: 16px; background: #fffefa; box-shadow: 0 5px 18px rgba(49, 40, 23, .045); }
+.products-rate-panel { display: grid; grid-template-columns: minmax(200px, 1fr) minmax(180px, 260px) auto; align-items: end; gap: 16px; }
+.products-rate-panel h2, .products-section-heading h2 { margin: 0; color: #25221c; font-size: 1.12rem; }
+.products-rate-panel p, .products-section-heading p { margin: 5px 0 0; color: #615a4d; font-size: .88rem; line-height: 1.45; }
+.products-field { display: grid; min-width: 0; gap: 7px; color: #403a30; font-size: .84rem; font-weight: 700; }
+.products-field input, .products-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #d6cdbb; border-radius: 9px; background: #fff; color: #24211b; font: inherit; font-weight: 450; }
+.products-field input::placeholder, .products-field textarea::placeholder { color: #777062; opacity: 1; }
+.products-field input:focus-visible, .products-field textarea:focus-visible { outline: 3px solid rgba(169, 126, 0, .2); border-color: #9b7400; }
+.products-field input[type="file"] { padding: 7px; font-size: .82rem; }
+.products-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.products-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.products-description { grid-column: 1 / -1; }
+.products-field textarea { min-height: 86px; resize: vertical; }
+.products-form-footer { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 2px; }
+.products-checkbox { display: inline-flex; align-items: center; gap: 9px; color: #39352d; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.products-checkbox input { width: 18px; height: 18px; margin: 0; accent-color: #8a6800; }
+.products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+.products-card { overflow: hidden; border: 1px solid #e1d9ca; border-radius: 14px; background: #fffefa; box-shadow: 0 5px 18px rgba(49, 40, 23, .05); }
+.products-card > img, .products-image-placeholder { display: grid; width: 100%; height: 175px; object-fit: cover; place-items: center; background: #eee9dc; color: #5d574b; font-size: .88rem; }
+.products-card-body { padding: 16px; }
+.products-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.products-card-heading h3 { margin: 0; color: #25221c; font-size: 1rem; line-height: 1.35; }
+.products-status { flex-shrink: 0; padding: 4px 8px; border: 1px solid #d7cfc0; border-radius: 999px; color: #5a5448; font-size: .7rem; font-weight: 700; }
+.products-status.is-available { border-color: #9bc7a3; background: #e6f3e8; color: #155b31; }
+.products-price { margin-top: 10px; color: #705300; font-weight: 800; }
+.products-description-copy { min-height: 40px; margin: 9px 0; color: #514b40; font-size: .86rem; line-height: 1.5; }
+.products-stock { color: #5b554a; }
+.products-card-actions { display: flex; gap: 8px; margin-top: 14px; }
+.products-card-actions button { flex: 1; }
+.products-empty, .products-load-error { padding: 16px; border-radius: 10px; color: #484237; background: #f1ecdf; }
+.products-load-error { margin-bottom: 18px; border: 1px solid #d9ad63; background: #fff4da; color: #654600; }
+
+/* Gym partner Explore profile editor */
+.gym-discovery-fields { display: grid; gap: 18px; color: #29261f; }
+.gym-profile-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.gym-profile-field { display: grid; min-width: 0; gap: 7px; color: #403a30; font-size: .84rem; font-weight: 700; }
+.gym-profile-field input, .gym-profile-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px; padding: 9px 11px; border: 1px solid #d6cdbb; border-radius: 9px; background: #fffefa; color: #24211b; font: inherit; font-weight: 450; }
+.gym-profile-field textarea { resize: vertical; }
+.gym-profile-field input:focus-visible, .gym-profile-field textarea:focus-visible, .gym-weekly-hours-row input:focus-visible, .gym-exception-row input:focus-visible { outline: 3px solid rgba(169, 126, 0, .2); border-color: #9b7400; }
+.gym-profile-field small { color: #655e52; font-weight: 500; }
+.gym-profile-upload { position: relative; display: inline-flex; width: fit-content; align-items: center; gap: 7px; padding: 7px 10px; border: 1px solid #d7cdb9; border-radius: 8px; background: #f3efe5; color: #4a4438; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.gym-profile-upload input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.gym-profile-schedule-block { display: grid; gap: 12px; padding: 16px; border: 1px solid #e1d9ca; border-radius: 12px; background: #faf8f2; }
+.gym-profile-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.gym-profile-section-heading h3, .gym-profile-section-heading h4 { margin: 0; color: #29261f; font-size: 1rem; }
+.gym-profile-section-heading p { margin: 4px 0 0; color: #625b4f; font-size: .82rem; line-height: 1.45; }
+.gym-weekly-hours-table, .gym-exceptions-list { display: grid; gap: 8px; }
+.gym-weekly-hours-row, .gym-exception-row { display: grid; grid-template-columns: 1fr auto minmax(110px, .75fr) minmax(110px, .75fr); align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid #e4ddcf; border-radius: 9px; background: #fffefa; }
+.gym-weekly-hours-row > strong { color: #302c24; font-size: .86rem; }
+.gym-weekly-hours-row label, .gym-exception-row label { display: grid; gap: 4px; color: #554e42; font-size: .72rem; font-weight: 700; }
+.gym-weekly-hours-row input[type="time"], .gym-exception-row input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 36px; padding: 5px 7px; border: 1px solid #d6cdbb; border-radius: 7px; background: #fff; color: #25221c; font: inherit; font-size: .8rem; }
+.gym-weekly-hours-row input:disabled, .gym-exception-row input:disabled { color: #777064; background: #efede7; }
+.gym-closed-toggle { display: inline-flex !important; grid-template-columns: auto auto; align-items: center; gap: 6px !important; white-space: nowrap; }
+.gym-closed-toggle input { width: 16px; height: 16px; margin: 0; accent-color: #987300; }
+.gym-exception-row { grid-template-columns: minmax(135px, 1fr) auto minmax(100px, .7fr) minmax(100px, .7fr) minmax(130px, 1fr) 34px; }
+.gym-exception-reason { min-width: 0; }
+.gym-exception-delete { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #e2c1bd; border-radius: 8px; background: #fff5f3; color: #96362f; cursor: pointer; }
+.gym-profile-empty-note { margin: 0; color: #625b4f; font-size: .84rem; }
+.gym-profile-explore-editor > .btn { margin-top: 18px; }
+.partner-gym-profile-fields { max-height: 54vh; overflow: auto; margin-top: 18px; padding: 16px; border: 1px solid #e1d9ca; border-radius: 12px; background: #faf8f2; }
+.partner-gym-profile-fields > h4 { margin: 0; color: #29261f; font-size: 1rem; }
+.partner-gym-profile-fields > p { margin: 5px 0 16px; color: #625b4f; font-size: .82rem; }
+.partner-gym-description-preview { display: -webkit-box; overflow: hidden; margin: 10px 0 0; color: #554e42; font-size: .82rem; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.fitpass-gym-weekly-hours { display: grid; gap: 5px; margin-top: 8px; }
+.fitpass-gym-weekly-hours > div, .fitpass-gym-special-hours > div { display: flex; justify-content: space-between; gap: 12px; color: #4d473d; font-size: .75rem; line-height: 1.4; }
+.fitpass-gym-weekly-hours > div.is-today { color: #5d4500; }
+.fitpass-gym-weekly-hours > div strong { color: #343027; text-align: right; }
+.fitpass-gym-today-exception { margin-top: 9px; padding: 8px; border-radius: 7px; background: #fff0cf; color: #624600; font-size: .75rem; font-weight: 700; }
+.fitpass-gym-special-hours { display: grid; gap: 6px; margin-top: 11px; padding-top: 9px; border-top: 1px solid #ddd4c2; }
+.fitpass-gym-special-hours > strong { color: #302b20; font-size: .76rem; }
+.fitpass-gym-special-hours > div span:last-child { color: #403a30; text-align: right; }
+@media (max-width: 760px) {
+    .gym-profile-form-grid { grid-template-columns: 1fr; }
+    .gym-weekly-hours-row { grid-template-columns: minmax(80px, 1fr) auto 1fr 1fr; gap: 7px; padding: 8px; }
+    .gym-exception-row { grid-template-columns: 1fr auto 1fr 1fr 34px; }
+    .gym-exception-reason { grid-column: 1 / -2; }
+    .gym-profile-section-heading { align-items: flex-start; }
+}
+@media (max-width: 760px) {
+    .products-page { padding: 22px 16px 40px; }
+    .products-header { align-items: flex-start; flex-direction: column; }
+    .products-tabs { width: 100%; }
+    .products-tabs button { flex: 1; }
+    .products-rate-panel { grid-template-columns: 1fr; align-items: stretch; }
+    .products-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+    .products-form { grid-template-columns: 1fr; }
+    .products-description, .products-form-footer { grid-column: auto; }
+    .products-form-footer { align-items: stretch; flex-direction: column; }
+    .products-form-footer .products-primary-button { width: 100%; }
 }
 
 .fitpass-log-table-wrapper {

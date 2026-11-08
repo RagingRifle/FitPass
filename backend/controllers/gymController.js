@@ -76,7 +76,7 @@ const getGymById = catchAsync(async (req, res, next) => {
 const getPartneredGyms = catchAsync(async (req, res, next) => {
     try {
         // Find all gyms. In this system, all non-system gyms can be considered partnered.
-        const gyms = await Gym.find({ id: { $ne: 'SYSTEM' } }).select('id name address phone email status images defaultSessionDurationMinutes');
+        const gyms = await Gym.find({ id: { $ne: 'SYSTEM' } }).select('id name address phone email status images latitude longitude defaultSessionDurationMinutes');
         res.status(200).json(gyms);
     } catch (error) { next(error); }
 });

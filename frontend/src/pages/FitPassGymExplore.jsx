@@ -4,6 +4,30 @@ import { Skeleton } from '../components/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { Check, Dumbbell, X, MapPin, Star, Phone, Navigation } from 'lucide-react';
 
+const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const displayTime = (value = '') => {
+  const text = String(value).trim();
+  const match = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return text || '—';
+  const hour = Number(match[1]);
+  return `${hour % 12 || 12}:${match[2]} ${hour >= 12 ? 'PM' : 'AM'}`;
+};
+const scheduleRows = profile => {
+  const weekly = profile?.weeklySchedule && Object.keys(profile.weeklySchedule).length ? profile.weeklySchedule : null;
+  const workingDays = profile?.workingDays || WEEK_DAYS;
+  return WEEK_DAYS.map(day => {
+    const value = weekly?.[day] || {};
+    const closed = value.closed !== undefined ? value.closed : !workingDays.includes(day);
+    return { day, closed, text: closed ? 'Closed' : `${displayTime(value.open || value.openingTime || profile?.openingTime)} – ${displayTime(value.close || value.closingTime || profile?.closingTime)}` };
+  });
+};
+const upcomingScheduleExceptions = profile => {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: profile?.timeZone || 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const date = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+  const key = `${date.year}-${date.month}-${date.day}`;
+  return (profile?.scheduleExceptions || []).filter(item => item.date >= key).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4);
+};
+
 export default function FitPassGymExplore() {
   const [loading, setLoading] = useState(true);
   const [gyms, setGyms] = useState([]);
@@ -526,13 +550,13 @@ export default function FitPassGymExplore() {
                 </div>
 
                 <div style={{ background: '#F6F3EC', padding: '16px', borderRadius: '12px', border: '1.5px solid #DFD7C7' }}>
-                  <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#000000', marginBottom: '8px' }}>Operating Hours</h4>
-                  <div style={{ fontSize: '13px', color: '#555045', fontWeight: '600' }}>
-                    {selectedGym.discoveryProfile?.openingTime || '6:00 AM'} - {selectedGym.discoveryProfile?.closingTime || '10:00 PM'}
+                  <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#000000', marginBottom: '3px' }}>Operating Hours</h4>
+                  <small style={{ color: '#625b4f' }}>Local gym time · {selectedGym.discoveryProfile?.timeZone || 'Asia/Kolkata'}</small>
+                  <div className="fitpass-gym-weekly-hours">
+                    {scheduleRows(selectedGym.discoveryProfile).map(item => <div key={item.day} className={item.day === selectedGym.discoveryProfile?.todayHours?.day ? 'is-today' : ''}><span>{item.day}</span><strong>{item.text}</strong></div>)}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#000000', fontWeight: '700', marginTop: '6px' }}>
-                    Working Days: {selectedGym.discoveryProfile?.workingDays?.join(', ') || 'All Days'}
-                  </div>
+                  {selectedGym.discoveryProfile?.todayHours?.isException && <div className="fitpass-gym-today-exception">Today: {selectedGym.discoveryProfile.todayHours.closed ? 'Closed' : `${displayTime(selectedGym.discoveryProfile.todayHours.open)} – ${displayTime(selectedGym.discoveryProfile.todayHours.close)}`}{selectedGym.discoveryProfile.todayHours.reason ? ` · ${selectedGym.discoveryProfile.todayHours.reason}` : ''}</div>}
+                  {upcomingScheduleExceptions(selectedGym.discoveryProfile).length > 0 && <div className="fitpass-gym-special-hours"><strong>Special hours</strong>{upcomingScheduleExceptions(selectedGym.discoveryProfile).map(item => <div key={item.date}><span>{new Date(`${item.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span><span>{item.closed ? 'Closed' : `${displayTime(item.open)} – ${displayTime(item.close)}`}{item.reason ? ` · ${item.reason}` : ''}</span></div>)}</div>}
                 </div>
               </div>
 

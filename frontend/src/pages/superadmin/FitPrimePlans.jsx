@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import API from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import Modal from '../../components/Modal';
+import { Link } from 'react-router-dom';
 import { 
     Ticket, 
     Plus, 
@@ -26,17 +27,22 @@ function FitPrimePlans() {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [coinsPerCheckIn, setCoinsPerCheckIn] = useState(10);
 
     // Modal & Form state for Create / Edit
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
     const [name, setName] = useState('');
-    const [sessions, setSessions] = useState('');
+    const [inputMode, setInputMode] = useState('sessions');
+    const [inputAmount, setInputAmount] = useState('');
+    const [displayCoins, setDisplayCoins] = useState(true);
+    const [displayCheckIns, setDisplayCheckIns] = useState(true);
     const [price, setPrice] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         fetchPlans();
+        API.get('/store/coin-settings?division=fitpass').then(({ data }) => setCoinsPerCheckIn(Number(data.coinsPerSession) || 10)).catch(() => {});
     }, []);
 
     const fetchPlans = async () => {
@@ -54,7 +60,10 @@ function FitPrimePlans() {
     const handleOpenCreateModal = () => {
         setEditingPlan(null);
         setName('');
-        setSessions('');
+        setInputMode('sessions');
+        setInputAmount('');
+        setDisplayCoins(true);
+        setDisplayCheckIns(true);
         setPrice('');
         setIsModalOpen(true);
     };
@@ -62,7 +71,11 @@ function FitPrimePlans() {
     const handleOpenEditModal = (plan) => {
         setEditingPlan(plan);
         setName(plan.name || '');
-        setSessions(plan.sessions ?? plan.duration ?? '');
+        const mode = plan.coinInputMode === 'coins' ? 'coins' : 'sessions';
+        setInputMode(mode);
+        setInputAmount(mode === 'coins' ? (plan.coinAllowance || '') : (plan.sessions ?? plan.duration ?? ''));
+        setDisplayCoins(plan.displayCoins !== false);
+        setDisplayCheckIns(plan.displayCheckIns !== false);
         setPrice(plan.price || '');
         setIsModalOpen(true);
     };
@@ -72,8 +85,12 @@ function FitPrimePlans() {
         setError('');
         setSuccessMsg('');
 
-        if (Number(sessions) <= 0) {
-            alert('Sessions must be a positive whole number');
+        if (!Number.isInteger(Number(inputAmount)) || Number(inputAmount) <= 0) {
+            alert(`Enter a positive whole number of ${inputMode === 'coins' ? 'FitCoins' : 'check-ins'}.`);
+            return;
+        }
+        if (!displayCoins && !displayCheckIns) {
+            alert('Choose at least one value to show on the plan.');
             return;
         }
 
@@ -84,10 +101,13 @@ function FitPrimePlans() {
 
         try {
             setSubmitting(true);
-            const payload = { 
-                name: name.trim(), 
-                sessions: Number(sessions), 
-                price: Number(price) 
+            const payload = {
+                name: name.trim(),
+                coinInputMode: inputMode,
+                ...(inputMode === 'coins' ? { coinAllowance: Number(inputAmount) } : { sessions: Number(inputAmount) }),
+                displayCoins,
+                displayCheckIns,
+                price: Number(price),
             };
 
             if (editingPlan) {
@@ -122,11 +142,11 @@ function FitPrimePlans() {
 
     // Calculate real summary statistics strictly from live database data
     const totalPlans = plans.length;
-    const totalSessionsCapacity = plans.reduce((sum, p) => sum + (Number(p.sessions ?? p.duration) || 0), 0);
+    const totalSessionsCapacity = plans.reduce((sum, p) => sum + (Number(p.sessions ?? 10) || 0), 0);
     
     const avgPricePerSession = totalPlans > 0
         ? (plans.reduce((sum, p) => {
-            const count = Number(p.sessions ?? p.duration) || 1;
+            const count = Number(p.sessions ?? 10) || 1;
             const cost = Number(p.price) || 0;
             return sum + (cost / count);
           }, 0) / totalPlans).toFixed(2)
@@ -157,16 +177,16 @@ function FitPrimePlans() {
                     </div>
                     <div className="fitprime-header-text">
                         <h2>FitPass Member Plans</h2>
-                        <p>Session-based membership tiers granting universal gym check-ins across all partner locations.</p>
+                        <p>Coin-funded memberships for check-ins across FitPass partner locations.</p>
                     </div>
                 </div>
-                <button 
-                    className="btn btn-primary" 
-                    onClick={handleOpenCreateModal}
-                >
-                    <Plus size={18} />
-                    Create FitPrime Plan
-                </button>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <Link to="/products" className="btn btn-secondary">Manage FitPass Products</Link>
+                    <button className="btn btn-primary" onClick={handleOpenCreateModal}>
+                        <Plus size={18} />
+                        Create FitPass Plan
+                    </button>
+                </div>
             </div>
 
             {/* Notifications */}
@@ -200,8 +220,8 @@ function FitPrimePlans() {
                         <Layers size={22} />
                     </div>
                     <div>
-                        <div className="fitprime-stat-val">{totalSessionsCapacity}</div>
-                        <div className="fitprime-stat-lbl">Aggregated Check-ins</div>
+                    <div className="fitprime-stat-val">{totalSessionsCapacity * coinsPerCheckIn}</div>
+                        <div className="fitprime-stat-lbl">FitCoins in available plans</div>
                     </div>
                 </div>
 
@@ -211,7 +231,7 @@ function FitPrimePlans() {
                     </div>
                     <div>
                         <div className="fitprime-stat-val">₹{avgPricePerSession}</div>
-                        <div className="fitprime-stat-lbl">Avg. Price / Session</div>
+                        <div className="fitprime-stat-lbl">Avg. plan price / check-in</div>
                     </div>
                 </div>
 
@@ -233,7 +253,7 @@ function FitPrimePlans() {
                     <input 
                         className="input" 
                         type="text" 
-                        placeholder="Search plans by name or session count..." 
+                        placeholder="Search plans by name or check-in allowance..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -249,7 +269,7 @@ function FitPrimePlans() {
                     <Ticket size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem', opacity: 0.5 }} />
                     <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>No FitPrime Plans Found</h3>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem' }}>
-                        {searchTerm ? 'No plans match your current search query.' : 'Create a session pass for FitPass members to purchase or renew themselves.'}
+                        {searchTerm ? 'No plans match your current search query.' : 'Create a FitPass coin plan for members to purchase or renew.'}
                     </p>
                     {!searchTerm && (
                         <button className="btn btn-primary" onClick={handleOpenCreateModal}>
@@ -261,8 +281,8 @@ function FitPrimePlans() {
             ) : (
                 <div className="fitprime-grid">
                     {filteredPlans.map(plan => {
-                        const sessionCount = plan.sessions ?? plan.duration ?? 0;
-                        const perSessionCost = sessionCount > 0 ? (plan.price / sessionCount).toFixed(2) : 0;
+                        const sessionCount = plan.sessions == null ? 10 : Number(plan.sessions);
+                        const coinAllowance = Number(plan.coinAllowance) > 0 ? Number(plan.coinAllowance) : sessionCount * coinsPerCheckIn;
                         const createdDate = plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : null;
 
                         return (
@@ -281,17 +301,17 @@ function FitPrimePlans() {
                                             ₹{Number(plan.price).toLocaleString('en-IN')}
                                             <span>/ plan price</span>
                                         </div>
-                                        <div className="fitprime-per-session-pill">
+                                        {plan.displayCoins !== false && <div className="fitprime-per-session-pill">
                                             <Sparkles size={12} />
-                                            ₹{perSessionCost} per session
-                                        </div>
+                                            {coinAllowance} FitCoins
+                                        </div>}
                                     </div>
 
                                     <div className="fitprime-features-list">
-                                        <div className="fitprime-feature-item">
+                                        {plan.displayCheckIns !== false && <div className="fitprime-feature-item">
                                             <CheckCircle2 size={16} className="fitprime-feature-icon" />
-                                            <span><strong>{sessionCount}</strong> check-in sessions</span>
-                                        </div>
+                                            <span>Up to <strong>{sessionCount}</strong> check-ins</span>
+                                        </div>}
                                         <div className="fitprime-feature-item">
                                             <Shield size={16} className="fitprime-feature-icon" />
                                             <span>System Scope: <strong>{plan.gymId}</strong></span>
@@ -335,75 +355,45 @@ function FitPrimePlans() {
                 onClose={() => setIsModalOpen(false)} 
                 title={editingPlan ? 'Edit FitPrime Plan' : 'Create FitPrime Plan'}
             >
-                <form onSubmit={handleSubmitPlan} style={{ marginTop: '0.5rem' }}>
-                    <div className="input-group">
-                        <label>Plan Title</label>
-                        <input 
-                            className="input" 
-                            type="text" 
-                            value={name} 
-                            onChange={(e) => setName(e.target.value)} 
-                            required 
-                            placeholder="e.g. 10 Session Pack" 
-                        />
+                <form className="fitprime-plan-editor" onSubmit={handleSubmitPlan}>
+                    <label className="fitprime-editor-field fitprime-editor-name">
+                        <span>Plan title</span>
+                        <input className="input" type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. FitPass Pro" />
+                    </label>
+
+                    <div className="fitprime-editor-grid">
+                        <fieldset className="fitprime-editor-field fitprime-mode-field">
+                            <legend>Enter allowance as</legend>
+                            <div className="fitprime-mode-switch" role="group" aria-label="Allowance input type">
+                                <button type="button" className={inputMode === 'sessions' ? 'is-selected' : ''} onClick={() => setInputMode('sessions')}>Check-ins</button>
+                                <button type="button" className={inputMode === 'coins' ? 'is-selected' : ''} onClick={() => setInputMode('coins')}>FitCoins</button>
+                            </div>
+                        </fieldset>
+                        <label className="fitprime-editor-field">
+                            <span>{inputMode === 'coins' ? 'FitCoins amount' : 'Included check-ins'}</span>
+                            <input className="input" type="number" min="1" step="1" value={inputAmount} onChange={(e) => setInputAmount(e.target.value)} required placeholder={inputMode === 'coins' ? 'e.g. 300' : 'e.g. 30'} />
+                        </label>
+                        <label className="fitprime-editor-field">
+                            <span>Plan price (₹)</span>
+                            <input className="input" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required placeholder="e.g. 1499" />
+                        </label>
                     </div>
 
-                    <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                        <div className="input-group">
-                            <label>Sessions (Check-ins)</label>
-                            <input 
-                                className="input" 
-                                type="number" 
-                                min="1" 
-                                step="1" 
-                                value={sessions} 
-                                onChange={(e) => setSessions(e.target.value)} 
-                                required 
-                                placeholder="e.g. 10" 
-                            />
-                        </div>
+                    {Number(inputAmount) > 0 && <div className="fitprime-conversion-preview" aria-live="polite">
+                        <span>{inputMode === 'coins' ? 'Converted check-in limit' : 'Converted coin allowance'}</span>
+                        <strong>{inputMode === 'coins' ? `Up to ${Math.floor(Number(inputAmount) / coinsPerCheckIn)} check-ins` : `${Number(inputAmount) * coinsPerCheckIn} FitCoins`}</strong>
+                        <small>Rate: {coinsPerCheckIn} FitCoins per check-in</small>
+                    </div>}
 
-                        <div className="input-group">
-                            <label>Price (₹)</label>
-                            <input 
-                                className="input" 
-                                type="number" 
-                                min="0" 
-                                step="0.01" 
-                                value={price} 
-                                onChange={(e) => setPrice(e.target.value)} 
-                                required 
-                                placeholder="e.g. 999" 
-                            />
-                        </div>
-                    </div>
+                    <fieldset className="fitprime-display-options">
+                        <legend>Show on the member plan</legend>
+                        <label><input type="checkbox" checked={displayCoins} onChange={(e) => setDisplayCoins(e.target.checked)} /> FitCoins</label>
+                        <label><input type="checkbox" checked={displayCheckIns} onChange={(e) => setDisplayCheckIns(e.target.checked)} /> Check-in limit</label>
+                    </fieldset>
 
-                    {Number(sessions) > 0 && Number(price) > 0 && (
-                        <div style={{ padding: '0.75rem 1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: '1.25rem', fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>Calculated per-session rate:</span>
-                            <strong style={{ color: 'var(--primary)', fontFamily: 'Outfit, sans-serif', fontSize: '0.95rem' }}>
-                                ₹{(Number(price) / Number(sessions)).toFixed(2)} / session
-                            </strong>
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '1.5rem' }}>
-                        <button 
-                            type="button" 
-                            className="btn btn-secondary" 
-                            onClick={() => setIsModalOpen(false)}
-                            style={{ flex: 1 }}
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            type="submit" 
-                            className="btn btn-primary" 
-                            disabled={submitting}
-                            style={{ flex: 1 }}
-                        >
-                            {submitting ? 'Saving...' : (editingPlan ? 'Update Plan' : 'Create Plan')}
-                        </button>
+                    <div className="fitprime-editor-actions">
+                        <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                        <button type="submit" className="btn btn-primary" disabled={submitting}>{submitting ? 'Saving…' : editingPlan ? 'Save changes' : 'Create plan'}</button>
                     </div>
                 </form>
             </Modal>

@@ -7,28 +7,92 @@ import {
 
 const FitPassAnalyticsPage = () => {
   const [analytics, setAnalytics] = useState(null);
+  const [gymAnalytics, setGymAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [loadingMemberList, setLoadingMemberList] = useState(true);
   const [selectedMemberSummary, setSelectedMemberSummary] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [period, setPeriod] = useState('any');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [gymId, setGymId] = useState('');
+  const [gymOptions, setGymOptions] = useState([]);
+  const [gymsLoading, setGymsLoading] = useState(false);
 
   // Load analytics on mount
+  useEffect(() => { fetchAnalytics(); }, [period, fromDate, toDate, gymId]);
   useEffect(() => {
-    fetchAnalytics();
+    const loadMembers = async () => {
+      try {
+        const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+        const isGlobalFitPassAdmin = ['superadmin', 'fitpass_admin'].includes(user?.role);
+        const { data } = await API.get(isGlobalFitPassAdmin
+          ? '/superadmin/fitpass/members?pageSize=100'
+          : '/members?limit=100');
+        setSearchResults(isGlobalFitPassAdmin ? (data.data || []) : (data.members || []));
+      } catch (err) {
+        console.error('Error loading FitPass members:', err);
+      } finally { setLoadingMemberList(false); }
+    };
+    loadMembers();
+  }, []);
+  useEffect(() => {
+    const loadGyms = async () => {
+      setGymsLoading(true);
+      try {
+        const { data } = await API.get('/superadmin/gyms');
+        const list = Array.isArray(data) ? data : data.gyms || [];
+        setGymOptions(list.map(g => ({ gymId: g._id || g.id, gymName: g.name })).filter(g => g.gymId && g.gymName));
+      } catch {
+        // The analytics endpoint still supplies gyms with visit activity for roles
+        // that cannot access the global gym directory.
+      } finally { setGymsLoading(false); }
+    };
+    loadGyms();
   }, []);
 
   const fetchAnalytics = async () => {
     try {
-      setLoading(true);
-      const { data } = await API.get('/sessions/analytics');
+      if (!analytics) setLoading(true);
+      const params = {};
+      if (period !== 'any') { if (fromDate) params.from = fromDate; if (toDate) params.to = toDate; }
+      const { data } = await API.get('/sessions/analytics', { params });
       setAnalytics(data.analytics);
+      setGymOptions(current => [...new Map([...current, ...(data.analytics?.availableGyms || [])].map(g => [g.gymId, g])).values()]);
+      if (gymId) {
+        setGymAnalytics(null);
+        const { data: gymData } = await API.get('/sessions/analytics', { params: { ...params, gymId } });
+        setGymAnalytics(gymData.analytics);
+      } else setGymAnalytics(null);
     } catch (err) {
       console.error('Error fetching FitPass analytics:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const dateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const selectPreset = (preset) => {
+    if (preset === 'any') { setPeriod('any'); setFromDate(''); setToDate(''); return; }
+    const today = new Date();
+    let from = null; let to = today;
+    if (preset === 'today') from = today;
+    if (preset === 'yesterday') { from = new Date(today); from.setDate(today.getDate() - 1); to = from; }
+    if (preset === 'last7') { from = new Date(today); from.setDate(today.getDate() - 6); }
+    if (preset === 'last30') { from = new Date(today); from.setDate(today.getDate() - 29); }
+    if (preset === 'lastMonth') { from = new Date(today.getFullYear(), today.getMonth() - 1, 1); to = new Date(today.getFullYear(), today.getMonth(), 0); }
+    if (preset === 'thisMonth') { from = new Date(today.getFullYear(), today.getMonth(), 1); }
+    if (preset === 'thisYear') { from = new Date(today.getFullYear(), 0, 1); }
+    setPeriod(preset);
+    setFromDate(from ? dateKey(from) : '');
+    setToDate(to === today ? dateKey(today) : dateKey(to));
+  };
+  const updateCustomDate = (key, value) => {
+    setPeriod('custom');
+    if (key === 'from') setFromDate(value); else setToDate(value);
   };
 
   // Search members to view their individual FitPass summary
@@ -38,10 +102,13 @@ const FitPassAnalyticsPage = () => {
 
     try {
       setSearching(true);
-      // Query members endpoint
-      const { data } = await API.get(`/members?search=${searchQuery}`);
-      // Filter members who are FitPass members or show all to allow checking
-      setSearchResults(data.members || []);
+      const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+      const isGlobalFitPassAdmin = ['superadmin', 'fitpass_admin'].includes(user?.role);
+      const query = encodeURIComponent(searchQuery.trim());
+      const { data } = await API.get(isGlobalFitPassAdmin
+        ? `/superadmin/fitpass/members?search=${query}&pageSize=100`
+        : `/members?search=${query}&limit=100`);
+      setSearchResults(isGlobalFitPassAdmin ? (data.data || []) : (data.members || []));
     } catch (err) {
       console.error('Error searching members:', err);
     } finally {
@@ -81,8 +148,24 @@ const FitPassAnalyticsPage = () => {
         </p>
       </header>
 
+      <section className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          <div><h3 style={{ margin: 0 }}>All-gym date filters</h3><p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '.85rem' }}>Choose a date range for the network-wide overview. Changes apply automatically.</p></div>
+          <button type="button" className="btn btn-secondary" onClick={() => selectPreset('any')}>Clear date filters</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '1rem', alignItems: 'end' }}>
+          <label className="products-field">Date preset<select className="input" value={period} onChange={e => selectPreset(e.target.value)}><option value="any">Any time</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="last7">Last 7 days</option><option value="last30">Last 30 days</option><option value="lastMonth">Last month</option><option value="thisMonth">This month</option><option value="thisYear">This year</option><option value="custom">Custom range</option></select></label>
+          <label className="products-field">From<input className="input" type="date" value={period === 'any' ? '' : fromDate} onChange={e => updateCustomDate('from', e.target.value)} /></label>
+          <label className="products-field">To<input className="input" type="date" value={period === 'any' ? '' : toDate} onChange={e => updateCustomDate('to', e.target.value)} /></label>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '.78rem', margin: '1rem 0 0' }}>This date range applies to the all-gym overview below. Revenue reflects FitPass network payments; payments aren’t assigned to partner gyms.</p>
+      </section>
+
       {/* Analytics KPI Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px', borderLeft: '6px solid #f59e0b' }}><span style={{ color: 'var(--text-secondary)', fontSize: '.85rem', textTransform: 'uppercase', fontWeight: 700 }}>Network Revenue</span><h2 style={{ fontSize: '2rem', margin: '.25rem 0' }}>₹{Number(analytics?.networkRevenue || 0).toLocaleString('en-IN')}</h2><small style={{ color: 'var(--text-secondary)' }}>FitPass plan payments in selected time range</small></div>
+        <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px', borderLeft: '6px solid #8b5cf6' }}><span style={{ color: 'var(--text-secondary)', fontSize: '.85rem', textTransform: 'uppercase', fontWeight: 700 }}>Members Visited</span><h2 style={{ fontSize: '2rem', margin: '.25rem 0' }}>{analytics?.periodMembers || 0}</h2><small style={{ color: 'var(--text-secondary)' }}>Unique members in selected range</small></div>
+        <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px', borderLeft: '6px solid #06b6d4' }}><span style={{ color: 'var(--text-secondary)', fontSize: '.85rem', textTransform: 'uppercase', fontWeight: 700 }}>Sessions / Check-ins</span><h2 style={{ fontSize: '2rem', margin: '.25rem 0' }}>{analytics?.periodCheckIns || 0}</h2><small style={{ color: 'var(--text-secondary)' }}>Successful partner gym visits in selected range</small></div>
         {/* Total FitPass Members */}
         <div className="glass" style={{ padding: '1.5rem', borderRadius: '16px', borderLeft: '6px solid var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -136,6 +219,18 @@ const FitPassAnalyticsPage = () => {
           <TrendingUp size={36} style={{ opacity: 0.15, color: 'var(--accent-color)' }} />
         </div>
       </div>
+
+      <section className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          <div><h3 style={{ margin: 0 }}>Gym-wise check-in report</h3><p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '.85rem' }}>Choose a gym to see its check-ins, unique members, and estimated FitCoins used for the selected date range.</p></div>
+          <label className="products-field" style={{ minWidth: 260 }}>Partner gym<select className="input" value={gymId} onChange={e => setGymId(e.target.value)}><option value="">Select a gym</option>{gymOptions.map(g => <option key={g.gymId} value={g.gymId}>{g.gymName}</option>)}</select>{gymsLoading && <small>Loading gym list…</small>}</label>
+        </div>
+        {gymId ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '1rem' }}>
+          <div className="glass" style={{ padding: '1.25rem', borderRadius: 14 }}><small>Check-ins at selected gym</small><h2 style={{ margin: '.35rem 0' }}>{gymAnalytics?.periodCheckIns ?? '—'}</h2></div>
+          <div className="glass" style={{ padding: '1.25rem', borderRadius: 14 }}><small>Unique members</small><h2 style={{ margin: '.35rem 0' }}>{gymAnalytics?.periodMembers ?? '—'}</h2></div>
+          <div className="glass" style={{ padding: '1.25rem', borderRadius: 14 }}><small>Estimated FitCoins used</small><h2 style={{ margin: '.35rem 0' }}>{gymAnalytics?.periodCoinsUsed?.toLocaleString('en-IN') ?? '—'}</h2><small>At {gymAnalytics?.coinRatePerCheckIn || 10} coins per check-in</small></div>
+        </div> : <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Select a partner gym to view its report.</p>}
+      </section>
 
       {/* Main Content Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -192,6 +287,12 @@ const FitPassAnalyticsPage = () => {
                 </div>
               ))}
             </div>
+          )}
+          {!searching && searchQuery.trim() && searchResults.length === 0 && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem', margin: '-.75rem 0 1rem' }}>No matching FitPass members found. Check the name, phone, or email and try again.</p>
+          )}
+          {!searchQuery.trim() && !loadingMemberList && searchResults.length === 0 && (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem', margin: '-.75rem 0 1rem' }}>No FitPass members are available in this account’s scope.</p>
           )}
 
           {/* Individual Member Summary Panel */}
@@ -326,7 +427,7 @@ const FitPassAnalyticsPage = () => {
             <Calendar size={18} /> Daily Network Traffic
           </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-            Daily check-ins at partner gyms over the last 30 active days.
+            Daily check-ins across partner gyms in the selected date range.
           </p>
 
           {analytics?.dailyCheckIns?.length > 0 ? (

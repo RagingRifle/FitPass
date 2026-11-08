@@ -10,6 +10,7 @@ const {
     generateDailyBranchDutyQR, 
     verifyDailyBranchDutyQR 
 } = require('../utils/totpHelper');
+const { H4_GYM_IDS } = require('../config/constants');
 
 // @desc    Mark attendance for a member (by staff scanning member QR or PIN entry)
 // @route   POST /api/attendance
@@ -63,35 +64,60 @@ const markAttendance = catchAsync(async (req, res, next) => {
         plan = await prisma.plan.findUnique({ where: { id: member.planId } }).catch(() => null);
     }
 
-    // 3. Session credits handling
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const effectiveGymId = req.user.gymId || member.gymId;
+    const effectiveBranchId = req.user.branchId || member.branchId || null;
+    const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
+
+    if (isH4Member) {
+        const existingToday = await prisma.attendance.findFirst({
+            where: { memberId: member.id, gymId: effectiveGymId, branchId: effectiveBranchId, date: { gte: today, lt: tomorrow } },
+        });
+        if (existingToday) return res.status(409).json({ success: false, message: 'Attendance already marked for today.' });
+    }
+
+    // 3. Session credits handling. H4 credits are visits, not a currency.
     let sessionDeductionMessage = '';
     const isSessionPlan = (plan && plan.sessions && plan.sessions > 0) || (member.sessionsTotal && member.sessionsTotal > 0);
 
     if (isSessionPlan) {
-        const remaining = member.sessionsRemaining ?? 0;
-        if (remaining <= 0) {
-            res.status(400);
-            throw new Error(`Member has 0 sessions remaining out of ${member.sessionsTotal || plan.sessions || 0}. Please renew or top up plan.`);
+        const sessionWhere = {
+            id: member.id,
+            sessionsRemaining: { gte: 1 },
+            ...(isH4Member ? { OR: [{ lastCheckInAt: null }, { lastCheckInAt: { lt: today } }] } : {}),
+        };
+        const consumed = await prisma.member.updateMany({
+            where: sessionWhere,
+            data: { sessionsRemaining: { decrement: 1 }, ...(isH4Member ? { lastCheckInAt: now } : {}) },
+        });
+        if (!consumed.count) {
+            if (isH4Member) {
+                const fresh = await prisma.member.findUnique({ where: { id: member.id } });
+                if (fresh?.lastCheckInAt && new Date(fresh.lastCheckInAt) >= today) return res.status(409).json({ success: false, message: 'Attendance already marked for today.' });
+            }
+            return res.status(400).json({ success: false, message: `Member has 0 sessions remaining out of ${member.sessionsTotal || plan.sessions || 0}. Please renew or top up plan.` });
         }
 
         // Deduct 1 session credit
-        const newRemaining = remaining - 1;
-        member = await prisma.member.update({
-            where: { id: member.id },
-            data: {
-                sessionsRemaining: newRemaining,
-                lastCheckInAt: new Date()
-            }
-        });
+        const updatedMember = await prisma.member.findUnique({ where: { id: member.id } });
+        const newRemaining = updatedMember.sessionsRemaining;
+        member = updatedMember;
 
         sessionDeductionMessage = ` (Session credit used: 1. ${newRemaining} of ${member.sessionsTotal || plan.sessions} remaining)`;
+    } else if (isH4Member) {
+        const marked = await prisma.member.updateMany({
+            where: { id: member.id, OR: [{ lastCheckInAt: null }, { lastCheckInAt: { lt: today } }] },
+            data: { lastCheckInAt: now },
+        });
+        if (!marked.count) return res.status(409).json({ success: false, message: 'Attendance already marked for today.' });
     }
 
-    // 4. Record Attendance for this session (flexible timings, no 1-per-day restriction)
-    const now = new Date();
+    // 4. Record attendance. H4 members are limited to one check-in per day.
     const checkInTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const effectiveGymId = req.user.gymId || member.gymId;
-    const effectiveBranchId = req.user.branchId || member.branchId || null;
 
     const attendance = await prisma.attendance.create({
         data: {

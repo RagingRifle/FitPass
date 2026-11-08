@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { StyleSheet, View, StatusBar } from 'react-native';
-import { LayoutDashboard, Building2, ScanLine, BadgeCheck } from '@/components/ui/app-icons';
+import { LayoutDashboard, Building2, ScanLine, BadgeCheck, ShoppingCart } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { CustomTabBar } from '@/components/layout/CustomTabBar';
 
@@ -48,10 +48,18 @@ export default function FitPassLayout() {
         }}
       />
       <Tabs.Screen
-        name="plans"
+        name="shop"
         options={{
-          title: 'Plans',
-          tabBarLabel: 'Plans',
+          title: 'Shop',
+          tabBarLabel: 'Shop',
+          tabBarIcon: ({ color }) => <ShoppingCart color={color} size={20} />,
+        }}
+      />
+      <Tabs.Screen
+        name="packs"
+        options={{
+          title: 'Packs',
+          tabBarLabel: 'Packs',
           tabBarIcon: ({ color }) => <BadgeCheck color={color} size={20} />,
         }}
       />

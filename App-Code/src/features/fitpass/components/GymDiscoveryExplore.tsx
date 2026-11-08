@@ -15,6 +15,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiscoveryGyms, usePublicPostsFeed } from '../api/fitpass.api';
 import type { DiscoveryGymItem } from '../types';
 
+const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const formatHours = (value?: string) => {
+  if (!value) return '—';
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return value;
+  const hour = Number(match[1]);
+  return `${hour % 12 || 12}:${match[2]} ${hour >= 12 ? 'PM' : 'AM'}`;
+};
+const getScheduleRows = (profile: DiscoveryGymItem['discoveryProfile']) => {
+  const weekly = profile.weeklySchedule && Object.keys(profile.weeklySchedule).length ? profile.weeklySchedule : null;
+  return WEEK_DAYS.map(day => {
+    const slot = weekly?.[day];
+    const closed = slot?.closed ?? !((profile.workingDays || WEEK_DAYS).includes(day));
+    return { day, closed, label: closed ? 'Closed' : `${formatHours(slot?.open || profile.openingTime)} – ${formatHours(slot?.close || profile.closingTime)}` };
+  });
+};
+
 // FitPass discovery palette.
 const COLORS = {
   primary: '#FEDF1E',
@@ -246,9 +263,10 @@ export const GymDiscoveryExplore: React.FC = () => {
                   </Text>
 
                   <Text style={styles.modalSectionTitle}>Operating Hours</Text>
-                  <Text style={styles.modalDesc}>
-                    {selectedGym.discoveryProfile?.openingTime} - {selectedGym.discoveryProfile?.closingTime}
-                  </Text>
+                  <Text style={styles.hoursTimezone}>Local gym time · {selectedGym.discoveryProfile?.timeZone || 'Asia/Kolkata'}</Text>
+                  {getScheduleRows(selectedGym.discoveryProfile).map(row => <View key={row.day} style={styles.hoursRow}><Text style={styles.hoursDay}>{row.day}</Text><Text style={styles.hoursValue}>{row.label}</Text></View>)}
+                  {selectedGym.discoveryProfile?.todayHours?.isException && <View style={styles.specialHoursBox}><Text style={styles.specialHoursTitle}>Today's change</Text><Text style={styles.hoursValue}>{selectedGym.discoveryProfile.todayHours.closed ? 'Closed' : `${formatHours(selectedGym.discoveryProfile.todayHours.open)} – ${formatHours(selectedGym.discoveryProfile.todayHours.close)}`}{selectedGym.discoveryProfile.todayHours.reason ? ` · ${selectedGym.discoveryProfile.todayHours.reason}` : ''}</Text></View>}
+                  {!!selectedGym.discoveryProfile?.scheduleExceptions?.length && <View style={styles.specialHoursBox}><Text style={styles.specialHoursTitle}>Special hours</Text>{selectedGym.discoveryProfile.scheduleExceptions.filter(item => item.date >= new Intl.DateTimeFormat('en-CA', { timeZone: selectedGym.discoveryProfile?.timeZone || 'Asia/Kolkata' }).format(new Date())).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4).map(item => <View key={item.date} style={styles.hoursRow}><Text style={styles.hoursDay}>{item.date}</Text><Text style={styles.hoursValue}>{item.closed ? 'Closed' : `${formatHours(item.open)} – ${formatHours(item.close)}`}{item.reason ? ` · ${item.reason}` : ''}</Text></View>)}</View>}
 
                   <Text style={styles.modalSectionTitle}>Amenities Available</Text>
                   <View style={styles.chipsWrap}>
@@ -580,6 +598,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
+  hoursRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingVertical: 5 },
+  hoursTimezone: { color: COLORS.textMuted, fontSize: 11, marginBottom: 4 },
+  hoursDay: { color: COLORS.textSecondary, fontSize: 13 },
+  hoursValue: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700', textAlign: 'right', flexShrink: 1 },
+  specialHoursBox: { marginTop: 10, padding: 10, borderRadius: 9, backgroundColor: '#FFF4D7', borderWidth: 1, borderColor: '#E4C574' },
+  specialHoursTitle: { color: '#644B00', fontWeight: '800', marginBottom: 3 },
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
