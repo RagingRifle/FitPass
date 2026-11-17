@@ -1,7 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import {
-    getBodyAssessments,
+import { getBodyAssessments,
     createBodyAssessment,
     updateBodyAssessment,
     deleteBodyAssessment,
@@ -10,31 +9,44 @@ import {
 import Modal from '../components/Modal';
 import MemberFilterSelect from '../components/MemberFilterSelect';
 import ResetFiltersButton from '../components/ResetFiltersButton';
-import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, Legend
 } from 'recharts';
-import { Pencil, Trash2, TrendingUp, ShieldAlert, Award, Activity, Scale, Percent } from 'lucide-react';
+import { Loader,  Pencil, Trash2, TrendingUp, ShieldAlert, Award, Activity, Scale, Percent } from 'lucide-react';
 
 const BodyAssessments = () => {
-    const { user } = useContext(AuthContext);
+    const { user, activeDivision, selectedGymId } = useContext(AuthContext);
     const isStaff = ['admin', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'].includes(user?.role);
+    const isH4Assessment = user?.role === 'h4_admin' || activeDivision === 'h4' || String(user?.gymName || '').toUpperCase().includes('H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || user?.gymId || ''));
+    const graphGymId = String(selectedGymId || user?.gymId?._id || user?.gymId?.id || user?.gymId || 'h4');
+    const assessmentMetrics = [
+        { key: 'Weight', label: 'Weight', unit: 'kg', color: '#0F766E' },
+        { key: 'BMI', label: 'BMI', unit: '', color: '#2563EB' },
+        { key: 'Body Fat %', label: 'Body fat', unit: '%', color: '#D97706' },
+        { key: 'Muscle Mass', label: 'Muscle mass', unit: 'kg', color: '#7C3AED' },
+        { key: 'BMR', label: 'BMR', unit: 'kcal', color: '#DC2626' },
+        { key: 'Waist', label: 'Waist', unit: 'cm', color: '#0891B2' },
+    ];
 
     const [members, setMembers] = useState([]);
     const [selectedMemberId, setSelectedMemberId] = useState('');
     const [assessments, setAssessments] = useState([]);
     const [assessmentFilters, setAssessmentFilters] = useState({ from: '', to: '' });
     const [loading, setLoading] = useState(true);
+    const [customGraphs, setCustomGraphs] = useState([]);
+    const [graphDraft, setGraphDraft] = useState({ title: '', metrics: ['Weight', 'BMI'], type: 'line' });
     
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssessment, setEditingAssessment] = useState(null);
     const [formData, setFormData] = useState({
         weight: '',
+        heightCm: '',
         bmi: '',
         bodyFat: '',
         muscleMass: '',
         bmr: '',
+        waistCm: '',
         inBodyScore: '',
         assessmentDate: new Date().toISOString().split('T')[0]
     });
@@ -46,6 +58,14 @@ const BodyAssessments = () => {
             setSelectedMemberId(user.memberId);
         }
     }, [user, isStaff]);
+
+    useEffect(() => {
+        if (!isH4Assessment) return;
+        try {
+            const saved = JSON.parse(localStorage.getItem(`h4-assessment-graphs:${graphGymId}`) || '[]');
+            setCustomGraphs(Array.isArray(saved) ? saved : []);
+        } catch { setCustomGraphs([]); }
+    }, [isH4Assessment, graphGymId]);
 
     useEffect(() => {
         if (selectedMemberId) {
@@ -89,10 +109,12 @@ const BodyAssessments = () => {
             setEditingAssessment(assessment);
             setFormData({
                 weight: assessment.weight,
+                heightCm: assessment.heightCm || selectedMember?.heightCm || '',
                 bmi: assessment.bmi,
                 bodyFat: assessment.bodyFat,
                 muscleMass: assessment.muscleMass,
                 bmr: assessment.bmr,
+                waistCm: assessment.waistCm || '',
                 inBodyScore: assessment.inBodyScore || '',
                 assessmentDate: assessment.assessmentDate.split('T')[0]
             });
@@ -100,10 +122,12 @@ const BodyAssessments = () => {
             setEditingAssessment(null);
             setFormData({
                 weight: '',
+                heightCm: selectedMember?.heightCm || '',
                 bmi: '',
                 bodyFat: '',
                 muscleMass: '',
                 bmr: '',
+                waistCm: '',
                 inBodyScore: '',
                 assessmentDate: new Date().toISOString().split('T')[0]
             });
@@ -119,7 +143,16 @@ const BodyAssessments = () => {
         }
 
         try {
-            const submissionData = {
+            const submissionData = isH4Assessment ? {
+                memberId: selectedMemberId,
+                weight: Number(formData.weight),
+                ...(!selectedMember?.heightCm ? { heightCm: Number(formData.heightCm) } : {}),
+                bodyFat: formData.bodyFat === '' ? null : Number(formData.bodyFat),
+                muscleMass: formData.muscleMass === '' ? null : Number(formData.muscleMass),
+                bmr: formData.bmr === '' ? null : Number(formData.bmr),
+                waistCm: formData.waistCm === '' ? null : Number(formData.waistCm),
+                assessmentDate: formData.assessmentDate
+            } : {
                 memberId: selectedMemberId,
                 ...formData,
                 inBodyScore: formData.inBodyScore ? Number(formData.inBodyScore) : null
@@ -130,6 +163,7 @@ const BodyAssessments = () => {
             } else {
                 await createBodyAssessment(submissionData);
             }
+            if (isH4Assessment && !selectedMember?.heightCm) await fetchMembers();
             await fetchAssessments(selectedMemberId, assessmentFilters);
             setIsModalOpen(false);
         } catch (error) {
@@ -148,6 +182,17 @@ const BodyAssessments = () => {
         }
     };
 
+    const saveCustomGraphs = (nextGraphs) => {
+        setCustomGraphs(nextGraphs);
+        localStorage.setItem(`h4-assessment-graphs:${graphGymId}`, JSON.stringify(nextGraphs));
+    };
+    const createCustomGraph = (event) => {
+        event.preventDefault();
+        if (!graphDraft.title.trim() || !graphDraft.metrics.length) return;
+        saveCustomGraphs([...customGraphs, { ...graphDraft, id: `${Date.now()}` }]);
+        setGraphDraft({ title: '', metrics: ['Weight', 'BMI'], type: 'line' });
+    };
+
     const safeAssessments = Array.isArray(assessments) ? assessments : [];
     const safeMembers = Array.isArray(members) ? members : [];
     const selectedMember = safeMembers.find(member => String(member._id || member.id) === String(selectedMemberId));
@@ -161,11 +206,16 @@ const BodyAssessments = () => {
         'Body Fat %': a.bodyFat,
         'Muscle Mass': a.muscleMass,
         BMR: a.bmr,
+        Waist: a.waistCm,
         Score: a.inBodyScore || 0
     }));
 
     // Get latest assessment for quick metrics
     const latest = displayedAssessments[displayedAssessments.length - 1];
+    const bmiHeightCm = Number(formData.heightCm || selectedMember?.heightCm || 0);
+    const calculatedBmi = Number(formData.weight) > 0 && bmiHeightCm > 0
+        ? (Number(formData.weight) / ((bmiHeightCm / 100) ** 2)).toFixed(1)
+        : '';
 
     // Helper to evaluate BMI status
     const getBmiStatus = (bmi) => {
@@ -182,6 +232,16 @@ const BodyAssessments = () => {
         if (fat < 25) return { label: 'Slightly Over', color: '#f59e0b' };
         return { label: 'High', color: '#ef4444' };
     };
+
+    const latestMetrics = latest ? [
+        { label: 'WEIGHT', value: `${latest.weight} kg`, icon: Scale, color: '#10b981' },
+        latest.bmi != null && { label: 'BMI · calculated', value: latest.bmi, icon: Activity, color: '#0ea5e9' },
+        latest.bodyFat != null && { label: 'BODY FAT', value: `${latest.bodyFat}%`, icon: Percent, color: '#f59e0b' },
+        latest.muscleMass != null && { label: 'SKELETAL MUSCLE', value: `${latest.muscleMass} kg`, icon: TrendingUp, color: '#8b5cf6' },
+        latest.waistCm != null && { label: 'WAIST', value: `${latest.waistCm} cm`, icon: Activity, color: '#0ea5e9' },
+        latest.bmr != null && { label: 'DEVICE BMR', value: `${latest.bmr} kcal`, icon: Award, color: '#ef4444' },
+        !isH4Assessment && latest.inBodyScore != null && { label: 'INBODY DEVICE SCORE', value: latest.inBodyScore, icon: Award, color: '#ef4444' },
+    ].filter(Boolean) : [];
 
     return (
         <div className="fade-in">
@@ -210,6 +270,32 @@ const BodyAssessments = () => {
                 </div>
             )}
 
+            {isH4Assessment && isStaff && selectedMemberId && (
+                <section className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid #0F766E' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                        <div><span style={{ color: '#0F766E', fontWeight: 800, fontSize: '.72rem', letterSpacing: '.12em' }}>ASSESSMENT STUDIO</span><h3 style={{ margin: '.25rem 0' }}>Build a custom progress graph</h3><p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '.85rem' }}>Choose the readings to compare for this member.</p></div>
+                    </div>
+                    <form onSubmit={createCustomGraph} style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 1.2fr) minmax(140px, .7fr) auto', alignItems: 'end', gap: '1rem', marginTop: '1rem' }}>
+                        <div className="input-group"><label>Graph title</label><input className="input" value={graphDraft.title} onChange={e => setGraphDraft({ ...graphDraft, title: e.target.value })} placeholder="e.g. Strength and waist trend" maxLength={80} required /></div>
+                        <div className="input-group"><label>Graph style</label><select className="input" value={graphDraft.type} onChange={e => setGraphDraft({ ...graphDraft, type: e.target.value })}><option value="line">Line</option><option value="area">Filled area</option></select></div>
+                        <button className="btn btn-primary" type="submit" disabled={!graphDraft.title.trim() || graphDraft.metrics.length === 0}>Create graph</button>
+                        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '.55rem 1rem', flexWrap: 'wrap' }}>
+                            {assessmentMetrics.map(metric => <label key={metric.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '.4rem', fontSize: '.82rem' }}><input type="checkbox" checked={graphDraft.metrics.includes(metric.key)} onChange={event => setGraphDraft({ ...graphDraft, metrics: event.target.checked ? [...graphDraft.metrics, metric.key] : graphDraft.metrics.filter(key => key !== metric.key) })} />{metric.label}{metric.unit ? ` (${metric.unit})` : ''}</label>)}
+                        </div>
+                    </form>
+                    {customGraphs.length > 0 && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+                        {customGraphs.map(graph => {
+                            const Chart = graph.type === 'area' ? AreaChart : LineChart;
+                            const Series = graph.type === 'area' ? Area : Line;
+                            return <article className="card" key={graph.id} style={{ padding: '1rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}><div><h3 style={{ margin: 0, fontSize: '1rem' }}>{graph.title}</h3><small style={{ color: 'var(--text-secondary)' }}>{graph.metrics.map(key => assessmentMetrics.find(metric => metric.key === key)?.label || key).join(' · ')}</small></div><button type="button" className="btn" aria-label={`Delete ${graph.title}`} onClick={() => saveCustomGraphs(customGraphs.filter(item => item.id !== graph.id))}><Trash2 size={16} /></button></div>
+                                <div style={{ height: 240, marginTop: 10 }}><ResponsiveContainer width="100%" height="100%"><Chart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend />{graph.metrics.map(key => { const metric = assessmentMetrics.find(item => item.key === key); return <Series key={key} type="monotone" dataKey={key} name={metric?.label || key} stroke={metric?.color || '#0F766E'} fill={metric?.color || '#0F766E'} strokeWidth={2.5} connectNulls />; })}</Chart></ResponsiveContainer></div>
+                            </article>;
+                        })}
+                    </div>}
+                </section>
+            )}
+
             {!isStaff && <div className="card" style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Member ID: {user?.registrationNumber || user?.memberId || '—'} · {user?.name || 'Member'} · {user?.phone || 'No phone'}</div>}
 
             {!selectedMemberId ? (
@@ -223,65 +309,9 @@ const BodyAssessments = () => {
             ) : (
                 <div>
                     {/* Latest InBody Overview Card */}
-                    {latest ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-                            <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.75rem', borderRadius: '12px' }}>
-                                    <Scale size={24} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '600' }}>WEIGHT</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{latest.weight} kg</div>
-                                </div>
-                            </div>
-                            
-                            <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                <div style={{ background: 'rgba(14, 165, 233, 0.1)', color: '#0ea5e9', padding: '0.75rem', borderRadius: '12px' }}>
-                                    <Activity size={24} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '600' }}>BMI</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{latest.bmi}</div>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: '700', color: getBmiStatus(latest.bmi).color }}>
-                                        {getBmiStatus(latest.bmi).label}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '0.75rem', borderRadius: '12px' }}>
-                                    <Percent size={24} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '600' }}>BODY FAT %</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{latest.bodyFat}%</div>
-                                    <span style={{ fontSize: '0.7rem', fontWeight: '700', color: getFatStatus(latest.bodyFat).color }}>
-                                        {getFatStatus(latest.bodyFat).label}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', padding: '0.75rem', borderRadius: '12px' }}>
-                                    <TrendingUp size={24} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '600' }}>MUSCLE MASS (SMM)</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{latest.muscleMass} kg</div>
-                                </div>
-                            </div>
-
-                            <div className="card" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '0.75rem', borderRadius: '12px' }}>
-                                    <Award size={24} />
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: '600' }}>INBODY SCORE</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{latest.inBodyScore || 'N/A'} / 100</div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : null}
+                    {latest && latestMetrics.length > 0 && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                        {latestMetrics.map(({ label, value, icon: MetricIcon, color }) => <div className="card" key={label} style={{ display: 'flex', gap: '.85rem', alignItems: 'center' }}><div style={{ background: `${color}18`, color, padding: '.7rem', borderRadius: '12px' }}><MetricIcon size={22} /></div><div><div style={{ fontSize: '.72rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{label}</div><div style={{ fontSize: '1.35rem', fontWeight: 800 }}>{value}</div></div></div>)}
+                    </div>}
 
                     {displayedAssessments.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
@@ -344,7 +374,7 @@ const BodyAssessments = () => {
                                                 <th>Body Fat %</th>
                                                 <th>Muscle Mass (kg)</th>
                                                 <th>BMR (kcal)</th>
-                                                <th>InBody Score</th>
+                                                {!isH4Assessment && <th>InBody device score</th>}
                                                 {isStaff && <th>Actions</th>}
                                             </tr>
                                         </thead>
@@ -357,17 +387,17 @@ const BodyAssessments = () => {
                                                     <td>{item.weight} kg</td>
                                                     <td>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                            {item.bmi}
-                                                            <span style={{
+                                                            {item.bmi ?? '—'}
+                                                            {item.bmi != null && <span style={{
                                                                 width: '8px', height: '8px', borderRadius: '50%',
                                                                 background: getBmiStatus(item.bmi).color
-                                                            }} title={getBmiStatus(item.bmi).label} />
+                                                            }} title={getBmiStatus(item.bmi).label} />}
                                                         </div>
                                                     </td>
-                                                    <td>{item.bodyFat}%</td>
-                                                    <td>{item.muscleMass} kg</td>
-                                                    <td>{item.bmr} kcal</td>
-                                                    <td>{item.inBodyScore || '—'}</td>
+                                                    <td>{item.bodyFat == null ? '—' : `${item.bodyFat}%`}</td>
+                                                    <td>{item.muscleMass == null ? '—' : `${item.muscleMass} kg`}</td>
+                                                    <td>{item.bmr == null ? '—' : `${item.bmr} kcal`}</td>
+                                                    {!isH4Assessment && <td>{item.inBodyScore ?? '—'}</td>}
                                                     {isStaff && (
                                                         <td>
                                                             <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -400,8 +430,25 @@ const BodyAssessments = () => {
             )}
 
             {/* Assessment Input Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingAssessment ? 'Edit Body Assessment Record' : 'Record InBody Assessment'}>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingAssessment ? 'Edit Body Assessment Record' : isH4Assessment ? 'Record H4 Body Assessment' : 'Record InBody Assessment'}>
                 <form onSubmit={handleSubmit}>
+                    {isH4Assessment ? <>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '.82rem', marginTop: 0 }}>Record the member’s weight and optional readings from the InBody device. BMI is calculated from their saved height.</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        {!selectedMember?.heightCm && <div className="input-group"><label>Height baseline (cm) *</label><input className="input" type="number" min="80" max="250" step="0.1" value={formData.heightCm} onChange={e => setFormData({ ...formData, heightCm: e.target.value })} required /><small>Save once; it stays on the member profile for future BMI calculations.</small></div>}
+                        <div className="input-group"><label>Weight (kg) *</label><input className="input" type="number" min="1" max="500" step="0.1" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} required /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="input-group"><label>Calculated BMI</label><input className="input" value={calculatedBmi || 'Enter height and weight'} readOnly aria-readonly="true" /><small>Weight ÷ height². Calculated automatically.</small></div>
+                        <div className="input-group"><label>Waist (cm) · optional</label><input className="input" type="number" min="30" max="250" step="0.1" value={formData.waistCm} onChange={e => setFormData({ ...formData, waistCm: e.target.value })} /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div className="input-group"><label>Body fat (PBF %) · device reading</label><input className="input" type="number" min="0" max="75" step="0.1" value={formData.bodyFat} onChange={e => setFormData({ ...formData, bodyFat: e.target.value })} /></div>
+                        <div className="input-group"><label>Skeletal muscle mass (kg) · device reading</label><input className="input" type="number" min="0" step="0.1" value={formData.muscleMass} onChange={e => setFormData({ ...formData, muscleMass: e.target.value })} /></div>
+                    </div>
+                    <div className="input-group"><label>BMR (kcal) · optional device reading</label><input className="input" type="number" min="200" max="6000" step="1" value={formData.bmr} onChange={e => setFormData({ ...formData, bmr: e.target.value })} /><small>Leave blank unless the InBody device provides this value.</small></div>
+                    <div className="input-group"><label>Assessment date *</label><input className="input" type="date" value={formData.assessmentDate} onChange={e => setFormData({ ...formData, assessmentDate: e.target.value })} required /></div>
+                    </> : <>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div className="input-group">
                             <label>Weight (kg) *</label>
@@ -485,6 +532,7 @@ const BodyAssessments = () => {
                             required
                         />
                     </div>
+                    </>}
 
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.25rem' }}>
                         {editingAssessment ? 'Update Record' : 'Record Assessment'}

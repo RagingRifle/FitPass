@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/useToast';
 const FITPRIME_LOGO = require('../../../../assets/fitprime-icon.png');
 const H4_PORTAL_LOGO = require('../../../../assets/h4-app-icon.png');
 const FITPASS_PORTAL_LOGO = require('../../../../assets/fitpass-icon.png');
-type PortalType = 'fitpass' | 'h4' | null;
+type PortalType = 'fitpass' | 'h4' | 'h4_trainer' | 'fitpass_trainer' | null;
 
 export const LoginForm: React.FC = () => {
   const router = useRouter();
@@ -88,7 +88,7 @@ export const LoginForm: React.FC = () => {
     try {
       const result = await login(email.trim().toLowerCase(), password, selectedPortal || undefined);
       if (result.success) {
-        toast.show(`Welcome to ${selectedPortal === 'fitpass' ? 'FitPass' : 'H4 Fit Club'}!`, 'success');
+        toast.show(`Welcome to ${selectedPortal === 'fitpass' ? 'FitPass' : selectedPortal === 'h4_trainer' ? 'H4 Trainer' : selectedPortal === 'fitpass_trainer' ? 'FitPass Trainer' : 'H4 Fit Club'}!`, 'success');
       } else {
         // Friendly portal-mismatch messages
         const msg = result.message || '';
@@ -179,6 +179,10 @@ export const LoginForm: React.FC = () => {
               </View>
 
               <View style={styles.portalBottomGroup}>
+                <View style={styles.portalChoiceHeading}>
+                  <Text style={styles.portalChoiceTitle}>Choose your space</Text>
+                  <Text style={styles.portalChoiceSubtitle}>Select the account you want to open.</Text>
+                </View>
                 <View style={styles.portalCardContainer}>
                   {/* H4 PORTAL BUTTON (FIRST) */}
                   <TouchableOpacity
@@ -199,6 +203,30 @@ export const LoginForm: React.FC = () => {
                         <View style={styles.portalCardTextGroup}>
                           <Text style={styles.portalCardTitleH4}>H4 Fitness</Text>
                           <Text style={styles.portalCardDescH4}>Your training, membership and progress</Text>
+                        </View>
+                        <Ionicons name="arrow-forward" size={20} color="#40291A" />
+                      </View>
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.portalCard}
+                    activeOpacity={0.88}
+                    onPress={() => setSelectedPortal('h4_trainer')}
+                  >
+                    <LinearGradient
+                      colors={['#F8E45D', '#E4C51A']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.portalCardGradient}
+                    >
+                      <View style={styles.portalCardContent}>
+                        <View style={styles.portalCardIconWrapper}>
+                          <Image source={H4_PORTAL_LOGO} style={styles.portalCardLogoIcon} resizeMode="cover" />
+                        </View>
+                        <View style={styles.portalCardTextGroup}>
+                          <Text style={styles.portalCardTitleH4}>H4 Trainer</Text>
+                          <Text style={styles.portalCardDescH4}>Member coaching and assessments</Text>
                         </View>
                         <Ionicons name="arrow-forward" size={20} color="#40291A" />
                       </View>
@@ -241,8 +269,10 @@ export const LoginForm: React.FC = () => {
   }
 
   // STEP 2: LOGIN FORM PAGE FOR SELECTED PORTAL (Light Theme, Premium Orange branding)
-  const isH4 = selectedPortal === 'h4';
-  const portalTitle = isH4 ? 'H4 PORTAL' : 'FIT-PASS';
+  const isH4Trainer = selectedPortal === 'h4_trainer';
+  const isFitpassTrainer = selectedPortal === 'fitpass_trainer';
+  const isH4 = selectedPortal === 'h4' || isH4Trainer;
+  const portalTitle = isH4Trainer ? 'H4 TRAINER' : isFitpassTrainer ? 'FITPASS TRAINER' : isH4 ? 'H4 PORTAL' : 'FIT-PASS';
   const accent = isH4 ? '#B96B37' : '#594DC1';
 
   return (
@@ -462,7 +492,7 @@ const styles = StyleSheet.create({
   },
   portalHeader: {
     alignItems: 'flex-start',
-    marginTop: 54,
+    marginTop: 30,
   },
   brandMark: {
     width: 58,
@@ -490,8 +520,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   portalCardContainer: {
-    gap: 16,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 14,
+  },
+  portalChoiceHeading: {
+    marginBottom: 14,
+  },
+  portalChoiceTitle: {
+    color: '#FFFFFF',
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  portalChoiceSubtitle: {
+    color: 'rgba(235,247,244,0.72)',
+    fontSize: 13,
+    marginTop: 3,
   },
   portalBottomGroup: {
     marginTop: 'auto',

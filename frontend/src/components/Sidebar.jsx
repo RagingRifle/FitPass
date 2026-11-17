@@ -26,6 +26,7 @@ const NAV_GROUPS = {
                 { name: 'Fit-Prime Plans', path: '/superadmin/plans', icon: Package },
                 { name: 'Products & Coins', path: '/products', icon: Banknote },
                 { name: 'Members Directory', path: '/members', icon: Users },
+                { name: 'FitPass Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
             ]
         },
         {
@@ -47,6 +48,7 @@ const NAV_GROUPS = {
                 { name: 'Plans', path: '/plans', icon: Package },
                 { name: 'Products & Coins', path: '/products', icon: Banknote },
                 { name: 'Classes', path: '/classes', icon: Dumbbell },
+                { name: 'FitPass Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
                 { name: 'Assessments', path: '/body-assessments', icon: LineChart },
                 { name: 'Staff', path: '/staff', icon: ShieldCheck },
                 { name: 'Branches', path: '/branches', icon: Building2 },
@@ -100,6 +102,7 @@ const NAV_GROUPS = {
             items: [
                 { name: 'Attendance', path: '/attendance', icon: UserCheck },
                 { name: 'Classes', path: '/classes', icon: Dumbbell },
+                { name: 'FitPass Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
                 { name: 'Assessments', path: '/body-assessments', icon: LineChart },
                 { name: 'Workout Plans', path: '/workout-plans', icon: Dumbbell },
                 { name: 'Diet Plans', path: '/diet-plans', icon: Apple },
@@ -129,6 +132,8 @@ const NAV_GROUPS = {
             items: [
                 { name: 'FitPass Visits', path: '/partner/visit-log', icon: Zap },
                 { name: 'FitPass Leads', path: '/partner/fitpass-leads', icon: Target },
+                { name: 'Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
+                { name: 'Trainers & Staff', path: '/staff', icon: ShieldCheck },
             ]
         },
         {
@@ -202,6 +207,7 @@ const Sidebar = () => {
                         { name: 'FitPass Orders', path: '/superadmin/fitpass-orders', icon: Receipt },
                         { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
                         { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
+                        { name: 'Branch Payouts', path: '/superadmin/fitpass-payouts', icon: IndianRupee },
                         { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },
                     ]
                 },
@@ -216,7 +222,7 @@ const Sidebar = () => {
         } else {
             // H4 division
             if (hasSelectedGym) {
-                const suffix = !selectedBranchId ? ' of all branches' : '';
+                const suffix = '';
                 
                 const gymMgmtItems = [
                     { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
@@ -288,6 +294,9 @@ const Sidebar = () => {
                     { name: 'FitPass Orders', path: '/superadmin/fitpass-orders', icon: Receipt },
                     { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
                     { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
+                    ...(user?.fitPassPayoutAccess ? [{ name: 'Branch Payouts', path: '/superadmin/fitpass-payouts', icon: IndianRupee }] : []),
+                    { name: 'Admins Directory', path: '/fitpass/admins', icon: ShieldCheck },
+                    { name: 'Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
                 ]
             },
             {
@@ -299,7 +308,7 @@ const Sidebar = () => {
             }
         ];
     } else if (role === 'h4_admin') {
-        const suffix = !selectedBranchId ? ' of all branches' : '';
+        const suffix = '';
         const gymMgmtItems = [
             { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
 
@@ -338,6 +347,7 @@ const Sidebar = () => {
                     { name: `Analytics${suffix}`, path: '/analytics', icon: LineChart },
                     { name: `Workout Plans${suffix}`, path: '/workout-plans', icon: Dumbbell },
                     { name: `Diet Plans${suffix}`, path: '/diet-plans', icon: Apple },
+                    ...(!user?.branchId ? [{ name: 'Admins Directory', path: '/h4/admins', icon: ShieldCheck }] : []),
                     { name: 'Audit Logs', path: '/audit', icon: History },
                     { name: `Settings${suffix}`, path: '/settings', icon: Settings },
                 ]
@@ -346,7 +356,7 @@ const Sidebar = () => {
     } else {
         const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
         const userGymId = user?.gymId?._id || user?.gymId || '';
-        const isH4Gym = normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd';
+        const isH4Gym = normalizedGym === 'H4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(userGymId));
         const isPartnerAdmin = role === 'partner' || (role === 'admin' && !isH4Gym);
 
         if (isPartnerAdmin) {
@@ -356,6 +366,7 @@ const Sidebar = () => {
                 ...group,
                 items: group.items.filter(item => {
                     if (role === 'member' && isH4Gym && item.path === '/explore-gyms') return false;
+                    if (item.path === '/fitpass-classes' && (activeDivision !== 'fitpass' || isH4Gym)) return false;
                     return true;
                 })
             }));
@@ -367,7 +378,8 @@ const Sidebar = () => {
             ...group,
             items: group.items.filter(item => {
                 if (item.path === '/branches') return false;
-                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
+                if (item.path === '/fitpass-classes' && role === 'h4_admin') return false;
+                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
                 return true;
             })
         }));

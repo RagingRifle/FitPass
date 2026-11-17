@@ -6,7 +6,7 @@ import { H4PaymentHistory } from '@/features/h4';
 
 export default function H4PaymentsScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4PaymentHistory />
     </SafeAreaView>
   );

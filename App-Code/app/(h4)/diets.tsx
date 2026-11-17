@@ -6,7 +6,7 @@ import { H4Diets } from '@/features/h4';
 
 export default function H4DietsScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4Diets />
     </SafeAreaView>
   );

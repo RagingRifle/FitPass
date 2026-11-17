@@ -21,6 +21,7 @@ export const FITPASS_KEYS = {
   dashboard: ['fitpass', 'dashboard'] as const,
   sessionStatus: ['fitpass', 'sessionStatus'] as const,
   history: (page = 1) => ['fitpass', 'history', page] as const,
+  recentActivity: ['fitpass', 'recentActivity'] as const,
   partnerGyms: ['fitpass', 'partnerGyms'] as const,
   partnerGymDetail: (id: string) => ['fitpass', 'partnerGym', id] as const,
   gymReviews: (id: string) => ['fitpass', 'gymReviews', id] as const,
@@ -61,6 +62,16 @@ export const useSessionHistory = (page = 1) =>
     queryKey: FITPASS_KEYS.history(page),
     queryFn: async () => {
       const { data } = await API_CLIENT.get(`/member-portal/sessions/history?page=${page}&limit=20`);
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+export const useRecentSessionActivity = () =>
+  useQuery<{ data: CheckInHistoryItem[]; total: number }>({
+    queryKey: FITPASS_KEYS.recentActivity,
+    queryFn: async () => {
+      const { data } = await API_CLIENT.get('/member-portal/sessions/history?page=1&limit=100');
       return data;
     },
     staleTime: 60_000,
@@ -153,6 +164,7 @@ export const useCheckIn = () => {
       qc.invalidateQueries({ queryKey: FITPASS_KEYS.sessionStatus });
       qc.invalidateQueries({ queryKey: FITPASS_KEYS.dashboard });
       qc.invalidateQueries({ queryKey: ['fitpass', 'history'] });
+      qc.invalidateQueries({ queryKey: FITPASS_KEYS.recentActivity });
     },
   });
 };

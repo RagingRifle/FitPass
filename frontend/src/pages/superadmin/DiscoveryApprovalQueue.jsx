@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { discoveryService } from '../../services/discoveryService';
-import { Check, X } from 'lucide-react';
+import { Loader,  Check, X } from 'lucide-react';
 
 export default function DiscoveryApprovalQueue() {
   const [loading, setLoading] = useState(true);

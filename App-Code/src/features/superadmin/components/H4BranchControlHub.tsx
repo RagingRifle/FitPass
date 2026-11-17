@@ -76,6 +76,16 @@ export const H4BranchControlHub: React.FC = () => {
       Alert.alert('Validation Error', 'Branch name is required');
       return;
     }
+    if ((editingBranch.scheduleExceptions || []).some((item: any) => !/^\d{4}-\d{2}-\d{2}$/.test(item.date || ''))) {
+      Alert.alert('Validation Error', 'Enter a date for each holiday or special-hours entry.');
+      return;
+    }
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const workingDays = editingBranch.workingDays || [];
+    const weeklySchedule = Object.fromEntries(days.map(day => [day, workingDays.includes(day)
+      ? { closed: false, open: editingBranch.openingTime || '06:00 AM', close: editingBranch.closingTime || '10:00 PM' }
+      : { closed: true },
+    ]));
     updateMutation.mutate({
       id: editingBranch._id || editingBranch.id,
       updates: {
@@ -85,6 +95,18 @@ export const H4BranchControlHub: React.FC = () => {
         email: editingBranch.email,
         managerName: editingBranch.managerName,
         status: editingBranch.status || 'Active',
+        profile: {
+          shortDescription: editingBranch.shortDescription || '',
+          description: editingBranch.description || '',
+          website: editingBranch.website || '',
+          openingTime: editingBranch.openingTime || '06:00 AM',
+          closingTime: editingBranch.closingTime || '10:00 PM',
+          workingDays,
+          weeklySchedule,
+          scheduleExceptions: editingBranch.scheduleExceptions || [],
+          amenities: editingBranch.amenities || [],
+          equipments: editingBranch.equipments || [],
+        },
       },
     });
   };
@@ -295,6 +317,52 @@ export const H4BranchControlHub: React.FC = () => {
                 placeholder="e.g. branch@h4gyms.com"
                 keyboardType="email-address"
               />
+              <Input
+                label="Short Description"
+                value={editingBranch.shortDescription || ''}
+                onChangeText={(val) => setEditingBranch({ ...editingBranch, shortDescription: val })}
+                placeholder="A quick introduction for members"
+              />
+              <Input
+                label="Branch Details"
+                value={editingBranch.description || ''}
+                onChangeText={(val) => setEditingBranch({ ...editingBranch, description: val })}
+                placeholder="Services and information for members"
+                multiline
+                style={{ minHeight: 88, textAlignVertical: 'top' }}
+              />
+              <Input
+                label="Website"
+                value={editingBranch.website || ''}
+                onChangeText={(val) => setEditingBranch({ ...editingBranch, website: val })}
+                placeholder="https://h4gym.com"
+                keyboardType="url"
+              />
+              <Input label="Opens" value={editingBranch.openingTime || '06:00 AM'} onChangeText={(val) => setEditingBranch({ ...editingBranch, openingTime: val })} placeholder="06:00 AM" />
+              <Input label="Closes" value={editingBranch.closingTime || '10:00 PM'} onChangeText={(val) => setEditingBranch({ ...editingBranch, closingTime: val })} placeholder="10:00 PM" />
+              <Typography variant="bodySm" style={styles.formSectionLabel}>Open days</Typography>
+              <View style={styles.dayPills}>
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+                  const isOpen = (editingBranch.workingDays || []).includes(day);
+                  return <TouchableOpacity key={day} onPress={() => setEditingBranch({ ...editingBranch, workingDays: isOpen ? editingBranch.workingDays.filter((item: string) => item !== day) : [...(editingBranch.workingDays || []), day] })} style={[styles.dayPill, isOpen && styles.dayPillActive]}><Typography variant="caption" style={[styles.dayPillText, isOpen && styles.dayPillTextActive]}>{day.slice(0, 3)}</Typography></TouchableOpacity>;
+                })}
+              </View>
+              <Typography variant="bodySm" style={styles.formSectionLabel}>Holiday closures and special hours</Typography>
+              {(editingBranch.scheduleExceptions || []).map((item: any, index: number) => <View key={`${index}-${item.date}`} style={styles.exceptionCard}>
+                <Input label="Date (YYYY-MM-DD)" value={item.date || ''} onChangeText={(val) => setEditingBranch({ ...editingBranch, scheduleExceptions: editingBranch.scheduleExceptions.map((row: any, rowIndex: number) => rowIndex === index ? { ...row, date: val } : row) })} placeholder="2026-12-25" />
+                <Input label="Reason" value={item.reason || ''} onChangeText={(val) => setEditingBranch({ ...editingBranch, scheduleExceptions: editingBranch.scheduleExceptions.map((row: any, rowIndex: number) => rowIndex === index ? { ...row, reason: val } : row) })} placeholder="Holiday / maintenance" />
+                {!item.closed && <View>
+                  <Input label="Opens" value={item.open || editingBranch.openingTime || '06:00 AM'} onChangeText={(val) => setEditingBranch({ ...editingBranch, scheduleExceptions: editingBranch.scheduleExceptions.map((row: any, rowIndex: number) => rowIndex === index ? { ...row, open: val } : row) })} placeholder="06:00 AM" />
+                  <Input label="Closes" value={item.close || editingBranch.closingTime || '10:00 PM'} onChangeText={(val) => setEditingBranch({ ...editingBranch, scheduleExceptions: editingBranch.scheduleExceptions.map((row: any, rowIndex: number) => rowIndex === index ? { ...row, close: val } : row) })} placeholder="10:00 PM" />
+                </View>}
+                <View style={styles.exceptionActions}>
+                  <TouchableOpacity onPress={() => setEditingBranch({ ...editingBranch, scheduleExceptions: editingBranch.scheduleExceptions.map((row: any, rowIndex: number) => rowIndex === index ? { ...row, closed: !row.closed } : row) })} style={[styles.dayPill, item.closed && styles.dayPillActive]}><Typography variant="caption" style={[styles.dayPillText, item.closed && styles.dayPillTextActive]}>{item.closed ? 'Closed' : 'Open as usual'}</Typography></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setEditingBranch({ ...editingBranch, scheduleExceptions: editingBranch.scheduleExceptions.filter((_: any, rowIndex: number) => rowIndex !== index) })}><Typography variant="caption" color="error">Remove</Typography></TouchableOpacity>
+                </View>
+              </View>)}
+              <Button title="Add closure / special date" variant="secondary" onPress={() => setEditingBranch({ ...editingBranch, scheduleExceptions: [...(editingBranch.scheduleExceptions || []), { date: '', closed: true, open: editingBranch.openingTime || '06:00 AM', close: editingBranch.closingTime || '10:00 PM', reason: '' }] })} />
+              <Input label="Amenities (comma separated)" value={(editingBranch.amenities || []).join(', ')} onChangeText={(val) => setEditingBranch({ ...editingBranch, amenities: val.split(',').map((item: string) => item.trim()).filter(Boolean) })} placeholder="Showers, lockers, parking" />
+              <Input label="Equipment (comma separated)" value={(editingBranch.equipments || []).join(', ')} onChangeText={(val) => setEditingBranch({ ...editingBranch, equipments: val.split(',').map((item: string) => item.trim()).filter(Boolean) })} placeholder="Treadmills, free weights" />
 
               <Button
                 title="Save Branch Changes"
@@ -522,6 +590,14 @@ const styles = StyleSheet.create({
   modalForm: {
     gap: theme.spacing.xs,
   },
+  formSectionLabel: { marginTop: 6, marginBottom: 4, fontWeight: '700', color: theme.colors.text },
+  dayPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 10 },
+  dayPill: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: 18, paddingHorizontal: 10, paddingVertical: 7 },
+  dayPillActive: { backgroundColor: theme.colors.primaryText, borderColor: theme.colors.primaryText },
+  dayPillText: { color: theme.colors.textSecondary, fontWeight: '700' },
+  dayPillTextActive: { color: theme.colors.background },
+  exceptionCard: { padding: 10, marginBottom: 10, borderRadius: 12, backgroundColor: theme.colors.bgTertiary },
+  exceptionActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   qrOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.85)',

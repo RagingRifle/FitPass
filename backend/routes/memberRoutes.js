@@ -11,6 +11,8 @@ const {
     getMemberAuditTrail,
     renewMember,
     transferMember,
+    getMemberDivisionConversionOptions,
+    convertMemberDivision,
 } = require('../controllers/memberController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const tenantFilter = require('../middleware/tenantFilter');
@@ -57,11 +59,13 @@ router.get('/expiring-soon', protect, authorize('admin', 'receptionist', 'supera
 router.get('/status', protect, tenantFilter, getMembers); // Optional: redundant with query params but good for clarity
 
 router.get('/:id/audit', protect, authorize('superadmin'), getMemberAuditTrail);
+router.get('/:id/division-conversion', protect, authorize('superadmin'), getMemberDivisionConversionOptions);
+router.post('/:id/division-conversion', protect, authorize('superadmin'), convertMemberDivision);
 router.post('/:id/renew', protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: renewMemberSchema }), renewMember);
 router.put('/:id/transfer', protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: transferMemberSchema }), transferMember);
 
 router.route('/:id')
-    .get(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), getMemberById)
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), getMemberById)
     .put(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: updateMemberSchema }), updateMember)
     .delete(protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), deleteMember);
 

@@ -24,6 +24,7 @@ import {
   LifeBuoy,
   ShieldCheck,
   Clock,
+  MapPin,
   Sparkles,
   CheckCircle2,
   Apple,
@@ -133,6 +134,46 @@ function MemberHeroBanner() {
         </View>
       </View>
     </TouchableOpacity>
+  );
+}
+
+function MemberBranchDetailsCard() {
+  const { data } = useH4Dashboard();
+  const branch = (data?.member as any)?.branch;
+  if (!branch) return null;
+  const today = new Date();
+  const dateKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const daySchedule = branch.weeklySchedule?.[dayName] || branch.weeklySchedule?.[dayName.toLowerCase()];
+  const exception = (branch.scheduleExceptions || []).find((item: any) => item.date?.slice(0, 10) === dateKey);
+  const nextException = (branch.scheduleExceptions || []).filter((item: any) => item.date?.slice(0, 10) > dateKey).sort((a: any, b: any) => a.date.localeCompare(b.date))[0];
+  const hoursLabel = exception
+    ? (exception.closed ? `Closed today${exception.reason ? ` · ${exception.reason}` : ''}` : `${exception.open || branch.openingTime} – ${exception.close || branch.closingTime}${exception.reason ? ` · ${exception.reason}` : ''}`)
+    : (daySchedule?.closed || branch.workingDays?.length && !branch.workingDays.includes(dayName)
+      ? 'Closed today'
+      : `${daySchedule?.open || branch.openingTime || '06:00 AM'} – ${daySchedule?.close || branch.closingTime || '10:00 PM'}`);
+
+  return (
+    <View style={[styles.card, styles.homeBranchCard]}>
+      <View style={styles.homeBranchHeader}>
+        <View style={styles.homeBranchIcon}><MapPin size={16} color="#0F766E" /></View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.homeBranchEyebrow}>YOUR HOME BRANCH</Text>
+          <Text style={styles.homeBranchTitle}>{branch.name || 'H4 Fitness'}</Text>
+        </View>
+      </View>
+      {!!branch.address && <Text style={styles.homeBranchDetail}>{branch.address}</Text>}
+      <View style={styles.homeBranchMetaRow}>
+        <View style={{ flex: 1 }}><Text style={styles.homeBranchMetaLabel}>TODAY</Text><Text style={styles.homeBranchMetaValue}>{hoursLabel}</Text></View>
+        {!!branch.phone && <View style={{ flex: 1 }}><Text style={styles.homeBranchMetaLabel}>CONTACT</Text><Text style={styles.homeBranchMetaValue}>{branch.phone}</Text></View>}
+      </View>
+      {!!branch.shortDescription && <Text style={styles.homeBranchDescription}>{branch.shortDescription}</Text>}
+      {!!branch.description && <Text style={styles.homeBranchDescription}>{branch.description}</Text>}
+      {!!branch.amenities?.length && <Text style={styles.homeBranchDetail}>Amenities · {branch.amenities.join(' · ')}</Text>}
+      {!!branch.equipments?.length && <Text style={styles.homeBranchDetail}>Equipment · {branch.equipments.join(' · ')}</Text>}
+      {!!branch.website && <Text style={styles.homeBranchDetail}>{branch.website}</Text>}
+      {!!nextException && <Text style={styles.homeBranchException}>Next schedule change · {new Date(`${nextException.date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {nextException.closed ? `Closed${nextException.reason ? ` · ${nextException.reason}` : ''}` : `${nextException.open || branch.openingTime} – ${nextException.close || branch.closingTime}`}</Text>}
+    </View>
   );
 }
 
@@ -569,6 +610,7 @@ export function H4Dashboard() {
         showsVerticalScrollIndicator={false}
       >
         <MemberHeroBanner />
+        <MemberBranchDetailsCard />
         <TodayWorkoutSummaryCard />
         <TodayNutritionSummaryCard />
         <HomeStudioClassesSection />
@@ -594,6 +636,17 @@ const styles = StyleSheet.create({
     shadowOpacity: theme.dark ? 0.2 : 0.03,
     shadowRadius: 6,
   },
+  homeBranchCard: { gap: 10, borderLeftWidth: 3, borderLeftColor: '#0F766E' },
+  homeBranchHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  homeBranchIcon: { width: 34, height: 34, borderRadius: 11, backgroundColor: '#E8F4F1', alignItems: 'center', justifyContent: 'center' },
+  homeBranchEyebrow: { fontSize: 9, color: '#75827F', letterSpacing: 1.5, fontWeight: '800' },
+  homeBranchTitle: { fontSize: 16, color: theme.colors.text, fontWeight: '800', marginTop: 2 },
+  homeBranchDetail: { color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  homeBranchMetaRow: { flexDirection: 'row', gap: 12, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.colors.border },
+  homeBranchMetaLabel: { color: '#75827F', fontSize: 9, letterSpacing: 1, fontWeight: '800', marginBottom: 3 },
+  homeBranchMetaValue: { color: theme.colors.text, fontSize: 12, fontWeight: '700' },
+  homeBranchDescription: { color: theme.colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  homeBranchException: { color: '#9A5B17', fontSize: 11, lineHeight: 16, fontWeight: '700' },
 
   //  Premium Minimalist Hero Card 
   heroCard: {

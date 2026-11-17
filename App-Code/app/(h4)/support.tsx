@@ -6,7 +6,7 @@ import { H4Support } from '@/features/h4';
 
 export default function H4SupportScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4Support />
     </SafeAreaView>
   );

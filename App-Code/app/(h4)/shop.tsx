@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_CLIENT } from '@/lib/api-client';
 import { theme } from '@/design-system/theme';
+import { H4TopHeader } from '@/features/h4/components/H4TopHeader';
 
 export default function H4Shop() {
   const [products, setProducts] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export default function H4Shop() {
       .catch(() => Alert.alert('Merchandise unavailable', 'Please try again later.'))
       .finally(() => setLoading(false));
   }, []);
-  return <SafeAreaView style={styles.root}><ScrollView contentContainerStyle={styles.content}>
+  return <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}><H4TopHeader title="H4 Merchandise" showScanBtn={false} /><ScrollView contentContainerStyle={styles.content}>
     <Text style={styles.eyebrow}>H4 FITNESS</Text>
     <Text style={styles.title}>H4 Merchandise</Text>
     <Text style={styles.subtitle}>Browse what’s available. Visit the front desk at your H4 gym to purchase.</Text>

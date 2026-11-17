@@ -38,6 +38,11 @@ const assignTrainer = catchAsync(async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Trainer is already assigned to this member' });
         }
 
+        const currentLoad = await MemberTrainerAssignment.countDocuments({ trainerId, gymId: req.user.gymId });
+        if (currentLoad >= (trainer.trainerMemberLimit || 10)) {
+            return res.status(409).json({ success: false, message: `This trainer has reached the ${trainer.trainerMemberLimit || 10}-member assignment limit.` });
+        }
+
         const assignment = await MemberTrainerAssignment.create({
             memberId,
             trainerId,
@@ -55,6 +60,7 @@ const assignTrainer = catchAsync(async (req, res, next) => {
 const getAssignments = catchAsync(async (req, res, next) => {
     try {
         const query = { gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        if (req.user.role === 'trainer') query.trainerId = req.user.id;
 
         // Strict pagination parameters with hard cap at 100
         const page = Math.max(parseInt(req.query.page) || 1, 1);

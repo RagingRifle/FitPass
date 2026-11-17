@@ -290,6 +290,7 @@ const verifyOTP = catchAsync(async (req, res, next) => {
         gymName: user.gymId?.name || null,
         branchId: user.branchId || null,
         memberId: memberId || null,
+        fitPassPayoutAccess: Boolean(user.fitPassPayoutAccess),
         isVerified: true,
         createdAt: user.createdAt,
         token: generateToken(user._id || user.id),
@@ -397,7 +398,7 @@ const authUser = catchAsync(async (req, res, next) => {
         const userGymName = user.gymId?.name || '';
         const userGymId = user.gymId?._id || user.gymId || '';
         const normalizedGym = userGymName.toUpperCase();
-        const isH4Gym = normalizedGym === 'H4' || H4_GYM_IDS.includes(userGymId);
+        const isH4Gym = normalizedGym === 'H4' || H4_GYM_IDS.includes(String(userGymId));
 
         if (portalType === 'superadmin') {
             if (userRole !== 'superadmin') {
@@ -438,6 +439,18 @@ const authUser = catchAsync(async (req, res, next) => {
                 res.status(403);
                 throw new Error('Access Denied: This portal is restricted to H4 Gym Members.');
             }
+        } else if (portalType === 'h4_trainer') {
+            const isH4Trainer = userRole === 'trainer' && isH4Gym;
+            if (!isH4Trainer) {
+                res.status(403);
+                throw new Error('Access Denied: This portal is for H4 trainers only.');
+            }
+        } else if (portalType === 'fitpass_trainer') {
+            const isFitPassTrainer = userRole === 'trainer' && !isH4Gym;
+            if (!isFitPassTrainer) {
+                res.status(403);
+                throw new Error('Access Denied: This portal is for FitPass partner gym trainers only.');
+            }
         } else if (portalType === 'fitpass' || portalType === 'fitpass_member') {
             const isFitpassMember = userRole === 'member' && !isH4Gym;
             if (!isFitpassMember) {
@@ -467,6 +480,7 @@ const authUser = catchAsync(async (req, res, next) => {
         gymName: user.gymId?.name || 'Unknown Gym',
         branchId: user.branchId || null,
         memberId: user.memberId,
+        fitPassPayoutAccess: Boolean(user.fitPassPayoutAccess),
         token: generateToken(user._id),
     });
 });

@@ -23,6 +23,13 @@ const {
     getFitPassOrders,
     updateFitPassOrderStatus,
 } = require('../controllers/superAdminController');
+const {
+    getFitPassPayoutDashboard,
+    getFitPassPayoutPreview,
+    updateFitPassPayoutSettings,
+    createFitPassBranchPayout,
+    updateFitPassBranchPayout,
+} = require('../controllers/fitPassPayoutController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Super admin routes
@@ -48,14 +55,14 @@ router.route('/plans/:id')
 
 // Dedicated Admin CRUD routes
 router.route('/admins')
-    .get(protect, authorize('superadmin'), getDedicatedAdmins)
-    .post(protect, authorize('superadmin'), createDedicatedAdmin);
+    .get(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), getDedicatedAdmins)
+    .post(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), createDedicatedAdmin);
 
-router.get('/admin-scopes', protect, authorize('superadmin'), getAdminAccountScopes);
+router.get('/admin-scopes', protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), getAdminAccountScopes);
 
 router.route('/admins/:id')
-    .put(protect, authorize('superadmin'), updateDedicatedAdmin)
-    .delete(protect, authorize('superadmin'), deleteDedicatedAdmin);
+    .put(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), updateDedicatedAdmin)
+    .delete(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), deleteDedicatedAdmin);
 
 // ── FitPass SuperAdmin Analytics & Control ──────────────────────────────────
 router.get('/fitpass/overview',
@@ -77,5 +84,11 @@ router.get('/fitpass/orders',
     protect, authorize('superadmin', 'fitpass_admin'), getFitPassOrders);
 router.patch('/fitpass/orders/:orderId',
     protect, authorize('superadmin', 'fitpass_admin'), updateFitPassOrderStatus);
+
+router.get('/fitpass/payouts', protect, authorize('superadmin', 'fitpass_admin'), getFitPassPayoutDashboard);
+router.get('/fitpass/payouts/preview', protect, authorize('superadmin', 'fitpass_admin'), getFitPassPayoutPreview);
+router.put('/fitpass/payouts/settings', protect, authorize('superadmin', 'fitpass_admin'), updateFitPassPayoutSettings);
+router.post('/fitpass/payouts', protect, authorize('superadmin', 'fitpass_admin'), createFitPassBranchPayout);
+router.patch('/fitpass/payouts/:id', protect, authorize('superadmin', 'fitpass_admin'), updateFitPassBranchPayout);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
-import { Activity, Scale, Flame, Award, Calendar, TrendingUp } from '@/components/ui/app-icons';
+import { Activity, Scale, Flame, Calendar, TrendingUp } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { Typography, Card } from '@/components/ui';
 import { API_CLIENT } from '@/lib/api-client';
@@ -10,11 +10,12 @@ interface Assessment {
   _id: string;
   id?: string;
   weight: number;
-  bmi: number;
-  bodyFat: number;
-  muscleMass: number;
-  bmr: number;
-  inBodyScore?: number;
+  bmi?: number | null;
+  bodyFat?: number | null;
+  muscleMass?: number | null;
+  bmr?: number | null;
+  waistCm?: number | null;
+  heightCm?: number | null;
   assessmentDate: string;
 }
 
@@ -60,9 +61,9 @@ export function H4Assessments() {
             <TrendingUp size={18} color="#735B00" strokeWidth={2.5} />
           </View>
           <View style={{ flex: 1 }}>
-            <Typography variant="h2" style={styles.headerTitle}>InBody Analysis</Typography>
+            <Typography variant="h2" style={styles.headerTitle}>Body Composition</Typography>
             <Typography variant="caption" color="secondary" style={styles.headerSub}>
-              Track muscle mass, body fat percentage, and overall composition progress
+              Track weight, calculated BMI, and available device readings
             </Typography>
           </View>
         </View>
@@ -95,7 +96,7 @@ export function H4Assessments() {
                   <TrendingUp size={15} color="#735B00" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>BMI</Typography>
                 </View>
-                <Text style={styles.metricVal}>{latest.bmi}</Text>
+                <Text style={styles.metricVal}>{latest.bmi ?? '—'}</Text>
               </Card>
 
               <Card style={styles.metricCard}>
@@ -104,7 +105,7 @@ export function H4Assessments() {
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>BODY FAT</Typography>
                 </View>
                 <Text style={styles.metricVal}>
-                  {latest.bodyFat} <Text style={styles.metricUnit}>%</Text>
+                  {latest.bodyFat == null ? '—' : <>{latest.bodyFat} <Text style={styles.metricUnit}>%</Text></>}
                 </Text>
               </Card>
 
@@ -114,29 +115,20 @@ export function H4Assessments() {
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>MUSCLE (SMM)</Typography>
                 </View>
                 <Text style={styles.metricVal}>
-                  {latest.muscleMass} <Text style={styles.metricUnit}>kg</Text>
+                  {latest.muscleMass == null ? '—' : <>{latest.muscleMass} <Text style={styles.metricUnit}>kg</Text></>}
                 </Text>
               </Card>
 
               <Card style={styles.metricCard}>
                 <View style={styles.metricHeader}>
-                  <Award size={15} color="#735B00" />
+                  <Activity size={15} color="#735B00" />
                   <Typography variant="caption" color="secondary" style={styles.metricLabel}>BMR</Typography>
                 </View>
                 <Text style={styles.metricVal}>
-                  {latest.bmr} <Text style={styles.metricUnit}>kcal</Text>
+                  {latest.bmr == null ? '—' : <>{latest.bmr} <Text style={styles.metricUnit}>kcal</Text></>}
                 </Text>
               </Card>
 
-              {latest.inBodyScore ? (
-                <View style={[styles.metricCard, styles.scoreCard]}>
-                  <View style={styles.metricHeader}>
-                    <Award size={15} color="#FFFFFF" />
-                    <Typography variant="caption" style={[styles.metricLabel, { color: '#FFFFFF' }]}>INBODY SCORE</Typography>
-                  </View>
-                  <Text style={[styles.metricVal, { color: '#FFFFFF' }]}>{latest.inBodyScore}</Text>
-                </View>
-              ) : null}
             </View>
 
             <Text style={styles.sectionTitle}>Assessment History</Text>
@@ -157,9 +149,6 @@ export function H4Assessments() {
                         <Calendar size={14} color="#735B00" />
                         <Text style={styles.dateText}>{dateStr}</Text>
                       </View>
-                      {item.inBodyScore ? (
-                        <Text style={styles.scoreBadge}>Score: {item.inBodyScore}</Text>
-                      ) : null}
                     </View>
 
                     <View style={styles.cardDivider} />
@@ -171,15 +160,15 @@ export function H4Assessments() {
                       </View>
                       <View style={styles.statCol}>
                         <Text style={styles.statLabel}>BMI</Text>
-                        <Text style={styles.statVal}>{item.bmi}</Text>
+                        <Text style={styles.statVal}>{item.bmi ?? '—'}</Text>
                       </View>
                       <View style={styles.statCol}>
                         <Text style={styles.statLabel}>Body Fat</Text>
-                        <Text style={styles.statVal}>{item.bodyFat}%</Text>
+                        <Text style={styles.statVal}>{item.bodyFat == null ? '—' : `${item.bodyFat}%`}</Text>
                       </View>
                       <View style={styles.statCol}>
                         <Text style={styles.statLabel}>Muscle</Text>
-                        <Text style={styles.statVal}>{item.muscleMass} kg</Text>
+                        <Text style={styles.statVal}>{item.muscleMass == null ? '—' : `${item.muscleMass} kg`}</Text>
                       </View>
                     </View>
                   </Card>

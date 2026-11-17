@@ -1,3 +1,4 @@
+import { Loader } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import API from '../services/api';
 import MemberFilterSelect from '../components/MemberFilterSelect';
@@ -55,7 +56,7 @@ const Sales = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 14, marginBottom: 20 }}>
             <Metric title="Sale events" value={sales.length} /><Metric title="New members" value={sales.filter(r => r.saleType === 'NEW_MEMBER').length} /><Metric title="Renewals & upgrades" value={sales.filter(r => ['RENEWAL','UPGRADE'].includes(r.saleType)).length} /><Metric title="Collections" value={collections.length} /><Metric title="Other payments" value={records.filter(r => r.saleType === 'LEGACY').length} /><Metric title="Collected" value={`₹${revenue.toLocaleString('en-IN')}`} />
         </div>
-        {loading ? <div className="spinner" /> : <>
+        {loading ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}><Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} /></div> : <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 16, marginBottom: 18 }}>
                 <Chart title="Sales, collections, and other payments over time"><ResponsiveContainer width="100%" height="100%"><BarChart data={byMonth}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="month" /><YAxis /><Tooltip /><Bar dataKey="sales" name="New, renewal, and upgrade payments" fill="#818cf8" radius={[4,4,0,0]} /><Bar dataKey="collections" name="Balance collected" fill="#34d399" radius={[4,4,0,0]} /><Bar dataKey="otherPayments" name="Other payments" fill="#94a3b8" radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></Chart>
                 <Chart title="New sales by source / mode"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={bySource} dataKey="value" nameKey="name" outerRadius={92} label>{bySource.map((r,i) => <Cell key={r.name} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /><Legend /></PieChart></ResponsiveContainer></Chart>

@@ -6,7 +6,7 @@ import { H4Profile } from '@/features/h4';
 
 export default function H4ProfileScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4Profile />
     </SafeAreaView>
   );

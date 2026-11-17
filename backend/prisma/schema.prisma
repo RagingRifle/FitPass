@@ -86,6 +86,9 @@ model User {
   // Account is locked (cannot login) until this timestamp passes. Null = not locked.
   lockUntil           DateTime?
   branchId            String?
+  trainerMemberLimit  Int       @default(10)
+  trainerPermissions  Json      @default("{}")
+  fitPassPayoutAccess Boolean   @default(false)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -121,6 +124,7 @@ model Member {
   name                  String
   phone                 String
   email                 String?
+  heightCm              Float?
   planId                String?
   joinDate              DateTime @default(now())
   expiryDate            DateTime?
@@ -224,6 +228,45 @@ model FitPassAuditLog {
   @@index([createdAt])
 }
 
+model FitPassPayoutSettings {
+  id                   String   @id @default("global")
+  defaultRatePerCheckIn Float   @default(50)
+  updatedBy            String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model FitPassBranchPayout {
+  id                  String   @id @default(uuid())
+  gymId               String
+  gymName             String
+  branchId            String
+  branchName          String
+  periodStart         DateTime
+  periodEnd           DateTime
+  checkInCount        Int      @default(0)
+  ratePerCheckIn      Float    @default(50)
+  manualRevenue       Float?
+  grossRevenue        Float    @default(0)
+  paidAmount          Float    @default(0)
+  operatingCosts      Float    @default(0)
+  retainedAmount      Float    @default(0)
+  netProfit           Float    @default(0)
+  paymentReference    String?
+  notes               String?
+  status              String   @default("Unpaid") // Unpaid, Partial, Paid
+  paidAt              DateTime?
+  createdBy           String
+  isDemo              Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([branchId, periodStart, periodEnd])
+  @@index([gymId, periodStart, periodEnd])
+  @@index([branchId, periodStart])
+  @@index([status, periodStart])
+}
+
 
 model Payment {
   id            String   @id @default(uuid())
@@ -285,6 +328,8 @@ model GymClass {
   startTime    String
   endTime      String
   maxSeats     Int      @default(10)
+  isAddOn      Boolean  @default(false)
+  priceCoins   Int      @default(0)
   gymId        String
   branchId     String?
   bookings     String?  // stored as JSON string
@@ -293,6 +338,21 @@ model GymClass {
   updatedAt    DateTime @updatedAt
 
   @@index([gymId, scheduleDate])
+}
+
+model ClassCoinTransaction {
+  id          String   @id @default(uuid())
+  memberId    String
+  classId     String
+  className   String
+  gymId       String
+  branchId    String?
+  amount      Int
+  direction   String   // DEBIT, REFUND, PARTNER_EARNING, PARTNER_EARNING_REVERSAL
+  createdAt   DateTime @default(now())
+
+  @@index([memberId, createdAt(sort: Desc)])
+  @@index([classId])
 }
 
 model Lead {
@@ -339,9 +399,19 @@ model AuditLog {
 model Branch {
   id             String   @id @default(uuid())
   name           String
+  shortDescription String @default("")
+  description    String   @default("")
   address        String   @default("")
   phone          String   @default("")
   email          String   @default("")
+  website        String   @default("")
+  openingTime    String   @default("06:00 AM")
+  closingTime    String   @default("10:00 PM")
+  workingDays    String[] @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
+  weeklySchedule Json     @default("{}")
+  scheduleExceptions Json @default("[]")
+  amenities      String[] @default([])
+  equipments     String[] @default([])
   gymId          String
   managerId      String?
   managerName    String   @default("")
@@ -413,6 +483,7 @@ model MemberTrainerAssignment {
   trainerId    String
   assignedDate DateTime @default(now())
   gymId        String
+  branchId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -583,10 +654,12 @@ model BodyAssessment {
   memberId       String
   trainerId      String?
   weight         Float
-  bmi            Float
-  bodyFat        Float    // PBF
-  muscleMass     Float    // SMM
-  bmr            Float
+  heightCm       Float?
+  bmi            Float?
+  bodyFat        Float?   // PBF, when recorded by an InBody device
+  muscleMass     Float?   // SMM, when recorded by an InBody device
+  bmr            Float?   // Device reading only; not inferred
+  waistCm        Float?
   inBodyScore    Float?
   assessmentDate DateTime @default(now())
   gymId          String
@@ -617,11 +690,35 @@ model TrainerAttendance {
   @@index([trainerId])
 }
 
+model TrainerLeaveRequest {
+  id                 String    @id @default(uuid())
+  trainerId          String
+  startDate          DateTime
+  endDate            DateTime
+  approvedStartDate  DateTime?
+  approvedEndDate    DateTime?
+  reason             String?
+  adminNote          String?
+  status             String    @default("Pending") // Pending, Approved, Rejected
+  reviewedBy         String?
+  reviewedAt         DateTime?
+  gymId              String
+  branchId           String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([gymId, status, createdAt(sort: Desc)])
+  @@index([trainerId, startDate])
+  @@index([gymId, branchId, startDate, endDate])
+}
+
 model TrainerSalary {
   id           String    @id @default(uuid())
   trainerId    String    @unique
   fixedSalary  Float     @default(0)
   commissionPt Float     @default(0) // Rate per PT session
+  salesAmountPerPoint Float @default(1000)
+  incentivePerPoint Float @default(0)
   gymId        String
   branchId     String?
   createdAt    DateTime  @default(now())
@@ -652,6 +749,8 @@ model Payroll {
   year         Int
   fixedSalary  Float     @default(0)
   commissions  Float     @default(0)
+  salesPoints  Int       @default(0)
+  salesIncentive Float   @default(0)
   incentives   Float     @default(0)
   totalAmount  Float
   status       String    @default("Pending") // Pending, Paid

@@ -7,6 +7,7 @@ import ResetFiltersButton from '../components/ResetFiltersButton';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Loader } from 'lucide-react';
 
 const SALE_TYPES = {
     NEW_MEMBER: 'New member',
@@ -137,7 +138,11 @@ const Payments = () => {
     };
 
     const availableYears = Array.from({ length: 11 }, (_, index) => today.getFullYear() - index);
-    if (loading && payments.length === 0) return <div className="spinner" />;
+    if (loading && payments.length === 0) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary)' }} />
+        </div>
+    );
 
     return <div className="fade-in">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
@@ -145,17 +150,17 @@ const Payments = () => {
             <div style={{ display: 'flex', gap: '.75rem' }}><button onClick={() => navigate('/reports')} className="btn btn-secondary">Export</button><button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>+ Record Payment</button></div>
         </div>
 
-        <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(145px,1fr))', gap: 12, marginBottom: 18 }}>
-            <label style={{ display: 'grid', gap: 5 }}>Timeline<select className="input" value={period} onChange={event => setPeriod(event.target.value)}><option value="month">Month</option><option value="year">Year</option><option value="custom">Custom dates</option></select></label>
-            {period !== 'custom' && <label style={{ display: 'grid', gap: 5 }}>Year<select className="input" value={filterYear} onChange={event => setFilterYear(Number(event.target.value))}>{availableYears.map(year => <option key={year}>{year}</option>)}</select></label>}
-            {period === 'month' && <label style={{ display: 'grid', gap: 5 }}>Month<select className="input" value={filterMonth} onChange={event => setFilterMonth(Number(event.target.value))}>{Array.from({ length: 12 }, (_, month) => <option key={month} value={month}>{new Date(2000, month, 1).toLocaleString(undefined, { month: 'long' })}</option>)}</select></label>}
-            {period === 'custom' && <><label style={{ display: 'grid', gap: 5 }}>From<input className="input" type="date" value={fromDate} onChange={event => setFromDate(event.target.value)} /></label><label style={{ display: 'grid', gap: 5 }}>To<input className="input" type="date" value={toDate} onChange={event => setToDate(event.target.value)} /></label></>}
-            <label style={{ display: 'grid', gap: 5 }}>Branch<select className="input" value={filters.branchId} onChange={event => setFilter('branchId', event.target.value)}><option value="">All branches</option>{branches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></label>
-            <label style={{ display: 'grid', gap: 5 }}>Collected by<select className="input" value={filters.staffId} onChange={event => setFilter('staffId', event.target.value)}><option value="">All staff</option>{staff.map(person => <option key={person.id || person._id} value={person.id || person._id}>{person.name}{person.role === 'trainer' ? ' (Trainer)' : ''}</option>)}</select></label>
+        <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '0.85rem', marginBottom: '1.25rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Timeline<select className="input" value={period} onChange={event => setPeriod(event.target.value)}><option value="month">Month</option><option value="year">Year</option><option value="custom">Custom dates</option></select></label>
+            {period !== 'custom' && <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Year<select className="input" value={filterYear} onChange={event => setFilterYear(Number(event.target.value))}>{availableYears.map(year => <option key={year}>{year}</option>)}</select></label>}
+            {period === 'month' && <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Month<select className="input" value={filterMonth} onChange={event => setFilterMonth(Number(event.target.value))}>{Array.from({ length: 12 }, (_, month) => <option key={month} value={month}>{new Date(2000, month, 1).toLocaleString(undefined, { month: 'long' })}</option>)}</select></label>}
+            {period === 'custom' && <><label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>From<input className="input" type="date" value={fromDate} onChange={event => setFromDate(event.target.value)} /></label><label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>To<input className="input" type="date" value={toDate} onChange={event => setToDate(event.target.value)} /></label></>}
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Branch<select className="input" value={filters.branchId} onChange={event => setFilter('branchId', event.target.value)}><option value="">All branches</option>{branches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Collected by<select className="input" value={filters.staffId} onChange={event => setFilter('staffId', event.target.value)}><option value="">All staff</option>{staff.map(person => <option key={person.id || person._id} value={person.id || person._id}>{person.name}{person.role === 'trainer' ? ' (Trainer)' : ''}</option>)}</select></label>
             <MemberFilterSelect label="Member" value={filters.memberId} onChange={memberId => setFilter('memberId', memberId)} />
-            <label style={{ display: 'grid', gap: 5 }}>Payment type<select className="input" value={filters.saleType} onChange={event => setFilter('saleType', event.target.value)}><option value="">All payment types</option>{Object.entries(SALE_TYPES).map(([type, label]) => <option key={type} value={type}>{label}</option>)}</select></label>
-            <label style={{ display: 'grid', gap: 5 }}>Source / mode<select className="input" value={filters.source} onChange={event => setFilter('source', event.target.value)}><option value="">All sources</option>{['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'].map(source => <option key={source}>{source}</option>)}</select></label>
-            <label style={{ display: 'grid', gap: 5 }}>Payment method<select className="input" value={filters.method} onChange={event => setFilter('method', event.target.value)}><option value="">All methods</option>{['Cash', 'UPI', 'Card', 'Bank Transfer', 'Credit Card', 'Razorpay / Online'].map(method => <option key={method}>{method}</option>)}</select></label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Payment type<select className="input" value={filters.saleType} onChange={event => setFilter('saleType', event.target.value)}><option value="">All payment types</option>{Object.entries(SALE_TYPES).map(([type, label]) => <option key={type} value={type}>{label}</option>)}</select></label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source / mode<select className="input" value={filters.source} onChange={event => setFilter('source', event.target.value)}><option value="">All sources</option>{['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'].map(source => <option key={source}>{source}</option>)}</select></label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-muted)', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Payment method<select className="input" value={filters.method} onChange={event => setFilter('method', event.target.value)}><option value="">All methods</option>{['Cash', 'UPI', 'Card', 'Bank Transfer', 'Credit Card', 'Razorpay / Online'].map(method => <option key={method}>{method}</option>)}</select></label>
             <ResetFiltersButton onClick={resetFilters} />
         </div>
 
@@ -206,7 +211,7 @@ const Payments = () => {
 
         <Modal isOpen={!!selectedMemberPayments} onClose={() => setSelectedMemberPayments(null)} title={`Payment History - ${selectedMemberPayments?.memberName}`}>
             {selectedMemberPayments && <p style={{ marginTop: 0, color: 'var(--text-secondary)' }}>{selectedMemberPayments.registrationNumber} {selectedMemberPayments.phone && `· ${selectedMemberPayments.phone}`}</p>}
-            <div style={{ maxHeight: 420, overflowY: 'auto' }}>{historyLoading ? <div className="spinner" /> : selectedMemberPayments?.history.length ? <table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Method</th><th>Collected by</th></tr></thead><tbody>{selectedMemberPayments.history.map(payment => <tr key={payment.id || payment._id}><td>{new Date(payment.date).toLocaleDateString()}</td><td>{SALE_TYPES[payment.saleType] || 'Other payment'}</td><td>₹{Number(payment.amount || 0).toLocaleString('en-IN')}</td><td>{payment.method}</td><td>{payment.staffName || '—'}</td></tr>)}</tbody></table> : <p>No payment records found.</p>}</div>
+            <div style={{ maxHeight: 420, overflowY: 'auto' }}>{historyLoading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader className="spinner" size={32} style={{ color: 'var(--primary)' }} /></div> : selectedMemberPayments?.history.length ? <table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Method</th><th>Collected by</th></tr></thead><tbody>{selectedMemberPayments.history.map(payment => <tr key={payment.id || payment._id}><td>{new Date(payment.date).toLocaleDateString()}</td><td>{SALE_TYPES[payment.saleType] || 'Other payment'}</td><td>₹{Number(payment.amount || 0).toLocaleString('en-IN')}</td><td>{payment.method}</td><td>{payment.staffName || '—'}</td></tr>)}</tbody></table> : <p>No payment records found.</p>}</div>
         </Modal>
     </div>;
 };

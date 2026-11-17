@@ -6,26 +6,33 @@ const PtCommission = require('../models/PtCommission');
 const Payroll = require('../models/Payroll');
 const User = require('../models/User');
 const PtSession = require('../models/PtSession');
+const Payment = require('../models/Payment');
+
+const PAYROLL_EMPLOYEE_ROLES = ['trainer', 'staff', 'receptionist'];
 
 // @desc    Upsert Trainer Salary Configuration
 // @route   POST /api/payroll/salary-structure
 // @access  Private (Admin)
 const upsertSalaryStructure = catchAsync(async (req, res, next) => {
     try {
-        const { trainerId, fixedSalary, commissionPt } = req.body;
+        const { trainerId, fixedSalary, commissionPt, salesAmountPerPoint = 1000, incentivePerPoint = 0 } = req.body;
 
         if (!trainerId) {
             return res.status(400).json({ success: false, message: 'Trainer ID is required' });
         }
+        const numericRates = [fixedSalary, commissionPt, salesAmountPerPoint, incentivePerPoint].map(Number);
+        if (numericRates.some(rate => !Number.isFinite(rate) || rate < 0) || Number(salesAmountPerPoint) <= 0) {
+            return res.status(400).json({ success: false, message: 'Enter valid non-negative salary rates and a sales amount per point greater than zero.' });
+        }
 
         // Validate trainer exists
-        const trainerQuery = { _id: trainerId, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        const trainerQuery = { _id: trainerId, gymId: req.user.gymId, role: { $in: PAYROLL_EMPLOYEE_ROLES }, ...(req.user.branchId && { branchId: req.user.branchId }) };
         if (req.user.branchId) {
             trainerQuery.branchId = req.user.branchId;
         }
         const trainer = await User.findOne(trainerQuery);
-        if (!trainer || trainer.role !== 'trainer') {
-            return res.status(404).json({ success: false, message: 'Trainer not found' });
+        if (!trainer || !PAYROLL_EMPLOYEE_ROLES.includes(trainer.role)) {
+            return res.status(404).json({ success: false, message: 'Staff member not found' });
         }
 
         const salaryQuery = { trainerId, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
@@ -37,6 +44,8 @@ const upsertSalaryStructure = catchAsync(async (req, res, next) => {
         if (salary) {
             salary.fixedSalary = Number(fixedSalary);
             salary.commissionPt = Number(commissionPt);
+            salary.salesAmountPerPoint = Number(salesAmountPerPoint);
+            salary.incentivePerPoint = Number(incentivePerPoint);
             const updated = await salary.save();
             return res.json(updated);
         } else {
@@ -44,6 +53,8 @@ const upsertSalaryStructure = catchAsync(async (req, res, next) => {
                 trainerId,
                 fixedSalary: Number(fixedSalary),
                 commissionPt: Number(commissionPt),
+                salesAmountPerPoint: Number(salesAmountPerPoint),
+                incentivePerPoint: Number(incentivePerPoint),
                 gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
                 branchId: req.user.branchId || null
             });
@@ -74,6 +85,8 @@ const getSalaryStructure = catchAsync(async (req, res, next) => {
                 trainerId,
                 fixedSalary: 0,
                 commissionPt: 0,
+                salesAmountPerPoint: 1000,
+                incentivePerPoint: 0,
                 gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId })
             });
         }
@@ -93,6 +106,11 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Trainer ID, Month (1-12), and Year are required' });
         }
 
+        const employeeQuery = { _id: trainerId, gymId: req.user.gymId, role: { $in: PAYROLL_EMPLOYEE_ROLES }, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        if (req.user.branchId) employeeQuery.branchId = req.user.branchId;
+        const employee = await User.findOne(employeeQuery).lean();
+        if (!employee) return res.status(404).json({ success: false, message: 'Staff member not found in this branch' });
+
         // Get trainer salary config
         const configQuery = { trainerId, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
         if (req.user.branchId) {
@@ -101,10 +119,24 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
         const salaryConfig = await TrainerSalary.findOne(configQuery);
         const fixedSalary = salaryConfig ? salaryConfig.fixedSalary : 0;
         const commissionRate = salaryConfig ? salaryConfig.commissionPt : 0;
+        const salesAmountPerPoint = Math.max(Number(salaryConfig?.salesAmountPerPoint) || 1000, 1);
+        const incentivePerPoint = Math.max(Number(salaryConfig?.incentivePerPoint) || 0, 0);
 
         // Calculate commissions: Sum amount from PtCommission logged in this month & year
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+        const salesQuery = {
+            gymId: req.user.gymId,
+            staffId: trainerId,
+            date: { $gte: startDate, $lte: endDate },
+            ...(req.user.branchId && { branchId: req.user.branchId })
+        };
+        if (req.user.branchId) salesQuery.branchId = req.user.branchId;
+        const salesPayments = await Payment.find(salesQuery).lean();
+        const salesTotal = salesPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        const salesPoints = Math.floor(salesTotal / salesAmountPerPoint);
+        const salesIncentive = Math.round(salesPoints * incentivePerPoint * 100) / 100;
 
         // Fetch commissions matching dates
         const commQuery = {
@@ -156,7 +188,7 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
         }
 
         const finalIncentives = incentives !== undefined ? Number(incentives) : 0;
-        const totalAmount = fixedSalary + finalCommissions + finalIncentives;
+        const totalAmount = fixedSalary + finalCommissions + finalIncentives + salesIncentive;
 
         // Check if payroll record already exists for this month
         const payrollQuery = {
@@ -174,6 +206,8 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
             // Update existing
             payroll.fixedSalary = fixedSalary;
             payroll.commissions = finalCommissions;
+            payroll.salesPoints = salesPoints;
+            payroll.salesIncentive = salesIncentive;
             payroll.incentives = finalIncentives;
             payroll.totalAmount = totalAmount;
             const updated = await payroll.save();
@@ -186,6 +220,8 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
                 year: Number(year),
                 fixedSalary,
                 commissions: finalCommissions,
+                salesPoints,
+                salesIncentive,
                 incentives: finalIncentives,
                 totalAmount,
                 status: 'Pending',
@@ -237,7 +273,7 @@ const getPayrolls = catchAsync(async (req, res, next) => {
             const t = p.trainerId ? trainerMap.get(p.trainerId.toString()) : null;
             return {
                 ...p,
-                trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
+                trainer: t ? { id: t.id || t._id, name: t.name, email: t.email, role: t.role } : null
             };
         });
 
@@ -267,7 +303,7 @@ const updatePayrollStatus = catchAsync(async (req, res, next) => {
 
         if (incentives !== undefined) {
             payroll.incentives = Number(incentives);
-            payroll.totalAmount = payroll.fixedSalary + payroll.commissions + payroll.incentives;
+            payroll.totalAmount = payroll.fixedSalary + payroll.commissions + (payroll.salesIncentive || 0) + payroll.incentives;
         }
 
         if (status) {
@@ -301,8 +337,8 @@ const addCommission = catchAsync(async (req, res, next) => {
             trQuery.branchId = req.user.branchId;
         }
         const trainer = await User.findOne(trQuery);
-        if (!trainer || trainer.role !== 'trainer') {
-            return res.status(404).json({ success: false, message: 'Trainer not found' });
+        if (!trainer || !PAYROLL_EMPLOYEE_ROLES.includes(trainer.role)) {
+            return res.status(404).json({ success: false, message: 'Staff member not found' });
         }
 
         const commission = await PtCommission.create({

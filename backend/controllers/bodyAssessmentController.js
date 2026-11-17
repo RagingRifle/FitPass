@@ -3,6 +3,17 @@ const AppError = require('../utils/appError');
 const BodyAssessment = require('../models/BodyAssessment');
 const Member = require('../models/Member');
 const User = require('../models/User');
+const { trainerCanManage } = require('../utils/trainerAccess');
+const { H4_GYM_IDS } = require('../config/constants');
+
+const isH4Gym = async (gymId) => {
+    if (H4_GYM_IDS.includes(String(gymId))) return true;
+    const Gym = require('../models/Gym');
+    const gym = await Gym.findById(gymId).select('name').lean();
+    return String(gym?.name || '').toLowerCase().includes('h4');
+};
+const toOptionalNumber = (value) => value === undefined || value === null || value === '' ? null : Number(value);
+const roundMetric = (value) => Math.round(value * 10) / 10;
 
 // @desc    Create/Record a new Body Assessment
 // @route   POST /api/body-assessments
@@ -12,18 +23,20 @@ const createAssessment = catchAsync(async (req, res, next) => {
         const {
             memberId,
             weight,
+            heightCm,
             bmi,
             bodyFat,
             muscleMass,
             bmr,
+            waistCm,
             inBodyScore,
             assessmentDate
         } = req.body;
 
-        if (!memberId || weight === undefined || bmi === undefined || bodyFat === undefined || muscleMass === undefined || bmr === undefined) {
+        if (!memberId || weight === undefined || weight === '' || !Number.isFinite(Number(weight)) || Number(weight) <= 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Member ID, Weight, BMI, Body Fat %, Muscle Mass, and BMR are required'
+                message: 'Member ID and a valid weight are required.'
             });
         }
 
@@ -39,6 +52,58 @@ const createAssessment = catchAsync(async (req, res, next) => {
         const member = await Member.findOne(memberQuery);
         if (!member) {
             return res.status(404).json({ success: false, message: 'Member not found' });
+        }
+        if (req.user.role === 'trainer' && !(await trainerCanManage(req, [memberId], 'recordAssessment'))) {
+            return res.status(403).json({ success: false, message: 'You need assessment access and an active assignment to this member.' });
+        }
+
+        if (await isH4Gym(member.gymId)) {
+            let baselineHeight = member.heightCm;
+            if (!baselineHeight) {
+                const initialHeight = Number(heightCm);
+                if (!Number.isFinite(initialHeight) || initialHeight < 80 || initialHeight > 250) {
+                    return res.status(400).json({ success: false, message: 'Enter the member’s height in centimeters for their first assessment.' });
+                }
+                baselineHeight = initialHeight;
+            }
+            const numericWeight = Number(weight);
+            const heightMeters = Number(baselineHeight) / 100;
+            const calculatedBmi = roundMetric(numericWeight / (heightMeters * heightMeters));
+            const pbf = toOptionalNumber(bodyFat);
+            const smm = toOptionalNumber(muscleMass);
+            const deviceBmr = toOptionalNumber(bmr);
+            const waist = toOptionalNumber(waistCm);
+            if (pbf !== null && (!Number.isFinite(pbf) || pbf < 0 || pbf > 75)) return res.status(400).json({ success: false, message: 'Body fat percentage must be between 0 and 75.' });
+            if (smm !== null && (!Number.isFinite(smm) || smm <= 0 || smm > numericWeight)) return res.status(400).json({ success: false, message: 'Skeletal muscle mass must be positive and cannot exceed body weight.' });
+            if (deviceBmr !== null && (!Number.isFinite(deviceBmr) || deviceBmr < 200 || deviceBmr > 6000)) return res.status(400).json({ success: false, message: 'Enter a valid BMR reading from the device.' });
+            if (waist !== null && (!Number.isFinite(waist) || waist < 30 || waist > 250)) return res.status(400).json({ success: false, message: 'Waist measurement must be between 30 and 250 cm.' });
+
+            if (!member.heightCm) {
+                member.heightCm = baselineHeight;
+                await member.save();
+            }
+
+            const targetGymId = member.gymId || req.user.gymId;
+            const assessment = await BodyAssessment.create({
+                memberId,
+                trainerId: req.user.role === 'trainer' ? req.user.id : null,
+                weight: numericWeight,
+                heightCm: Number(baselineHeight),
+                bmi: calculatedBmi,
+                bodyFat: pbf,
+                muscleMass: smm,
+                bmr: deviceBmr,
+                waistCm: waist,
+                inBodyScore: null,
+                assessmentDate: assessmentDate ? new Date(assessmentDate) : new Date(),
+                gymId: targetGymId,
+                branchId: req.user.branchId || member.branchId || null
+            });
+            return res.status(201).json(assessment);
+        }
+
+        if (bmi === undefined || bodyFat === undefined || muscleMass === undefined || bmr === undefined) {
+            return res.status(400).json({ success: false, message: 'BMI, body fat, muscle mass, and BMR are required for this division.' });
         }
 
         const targetGymId = member.gymId || req.user.gymId;
@@ -73,7 +138,9 @@ const getAssessments = catchAsync(async (req, res, next) => {
         if (req.user.role === 'member') {
             query.memberId = req.user.memberId;
         } else if (req.user.role === 'trainer') {
-            query.trainerId = req.user.id;
+            const assigned = await require('../models/MemberTrainerAssignment').find({ trainerId: req.user.id, gymId: req.user.gymId }).select('memberId').lean();
+            const assignedIds = assigned.map((item) => String(item.memberId));
+            query.memberId = req.query.memberId && assignedIds.includes(String(req.query.memberId)) ? String(req.query.memberId) : { $in: req.query.memberId ? [] : assignedIds };
         } else if (req.query.memberId) {
             query.memberId = req.query.memberId;
         }
@@ -138,7 +205,7 @@ const getAssessments = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer/Member
 const getAssessmentById = catchAsync(async (req, res, next) => {
     try {
-        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }), ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) };
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
         }
@@ -179,22 +246,43 @@ const updateAssessment = catchAsync(async (req, res, next) => {
             muscleMass,
             bmr,
             inBodyScore,
+            waistCm,
             assessmentDate
         } = req.body;
 
-        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }), ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) };
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
         }
         const assessment = await BodyAssessment.findOne(query);
 
         if (assessment) {
+            if (req.user.role === 'trainer' && !(await trainerCanManage(req, [assessment.memberId], 'recordAssessment'))) return res.status(403).json({ success: false, message: 'You do not have assessment access to this member.' });
             if (weight !== undefined) assessment.weight = Number(weight);
-            if (bmi !== undefined) assessment.bmi = Number(bmi);
-            if (bodyFat !== undefined) assessment.bodyFat = Number(bodyFat);
-            if (muscleMass !== undefined) assessment.muscleMass = Number(muscleMass);
-            if (bmr !== undefined) assessment.bmr = Number(bmr);
-            if (inBodyScore !== undefined) assessment.inBodyScore = inBodyScore !== null ? Number(inBodyScore) : null;
+            const h4Assessment = await isH4Gym(assessment.gymId);
+            if (h4Assessment) {
+                if (!Number.isFinite(Number(assessment.weight)) || Number(assessment.weight) <= 0) return res.status(400).json({ success: false, message: 'Enter a valid weight.' });
+                const pbf = bodyFat === undefined ? assessment.bodyFat : toOptionalNumber(bodyFat);
+                const smm = muscleMass === undefined ? assessment.muscleMass : toOptionalNumber(muscleMass);
+                const deviceBmr = bmr === undefined ? assessment.bmr : toOptionalNumber(bmr);
+                const waist = waistCm === undefined ? assessment.waistCm : toOptionalNumber(waistCm);
+                if (pbf !== null && pbf !== undefined && (!Number.isFinite(Number(pbf)) || pbf < 0 || pbf > 75)) return res.status(400).json({ success: false, message: 'Body fat percentage must be between 0 and 75.' });
+                if (smm !== null && smm !== undefined && (!Number.isFinite(Number(smm)) || smm <= 0 || smm > Number(assessment.weight))) return res.status(400).json({ success: false, message: 'Skeletal muscle mass must be positive and cannot exceed body weight.' });
+                if (deviceBmr !== null && deviceBmr !== undefined && (!Number.isFinite(Number(deviceBmr)) || deviceBmr < 200 || deviceBmr > 6000)) return res.status(400).json({ success: false, message: 'Enter a valid BMR reading from the device.' });
+                if (waist !== null && waist !== undefined && (!Number.isFinite(Number(waist)) || waist < 30 || waist > 250)) return res.status(400).json({ success: false, message: 'Waist measurement must be between 30 and 250 cm.' });
+                if (bodyFat !== undefined) assessment.bodyFat = pbf;
+                if (muscleMass !== undefined) assessment.muscleMass = smm;
+                if (bmr !== undefined) assessment.bmr = deviceBmr;
+                if (waistCm !== undefined) assessment.waistCm = waist;
+                const heightMeters = Number(assessment.heightCm) / 100;
+                if (heightMeters > 0) assessment.bmi = roundMetric(Number(assessment.weight) / (heightMeters * heightMeters));
+            } else {
+                if (bmi !== undefined) assessment.bmi = Number(bmi);
+                if (bodyFat !== undefined) assessment.bodyFat = Number(bodyFat);
+                if (muscleMass !== undefined) assessment.muscleMass = Number(muscleMass);
+                if (bmr !== undefined) assessment.bmr = Number(bmr);
+                if (inBodyScore !== undefined) assessment.inBodyScore = inBodyScore !== null ? Number(inBodyScore) : null;
+            }
             if (assessmentDate !== undefined) assessment.assessmentDate = assessmentDate ? new Date(assessmentDate) : assessment.assessmentDate;
 
             const updated = await assessment.save();
@@ -210,13 +298,14 @@ const updateAssessment = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer
 const deleteAssessment = catchAsync(async (req, res, next) => {
     try {
-        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }), ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) };
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
         }
         const assessment = await BodyAssessment.findOne(query);
 
         if (assessment) {
+            if (req.user.role === 'trainer' && !(await trainerCanManage(req, [assessment.memberId], 'recordAssessment'))) return res.status(403).json({ success: false, message: 'You do not have assessment access to this member.' });
             await assessment.deleteOne();
             res.json({ message: 'Body assessment removed' });
         } else {

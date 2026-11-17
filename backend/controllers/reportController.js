@@ -3,9 +3,11 @@ const AppError = require('../utils/appError');
 const Payment = require('../models/Payment');
 const Expense = require('../models/Expense');
 const Member = require('../models/Member');
+const Plan = require('../models/Plan');
 const Attendance = require('../models/Attendance');
 const prisma = require('../config/prisma');
 const { jsonToCsv } = require('../utils/csvUtils');
+const { resolveBranchScope, resolveReportFilters } = require('../utils/reportFilters');
 
 // @desc    Download monthly revenue report
 // @route   GET /api/reports/revenue
@@ -15,14 +17,11 @@ const getRevenueReport = catchAsync(async (req, res, next) => {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59);
 
+    const branchId = await resolveBranchScope(req);
     const query = {
-        gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
+        gymId: req.user.gymId, ...(branchId && { branchId }),
         date: { $gte: start, $lte: end }
     };
-    if (req.user.branchId) {
-        query.branchId = req.user.branchId;
-    }
-
     const payments = await Payment.find(query).populate('memberId', 'name');
 
     const data = payments.map(p => ({
@@ -46,14 +45,11 @@ const getExpenseReport = catchAsync(async (req, res, next) => {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59);
 
+    const branchId = await resolveBranchScope(req);
     const query = {
-        gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
+        gymId: req.user.gymId, ...(branchId && { branchId }),
         date: { $gte: start, $lte: end }
     };
-    if (req.user.branchId) {
-        query.branchId = req.user.branchId;
-    }
-
     const expenses = await Expense.find(query);
 
     const data = expenses.map(e => ({
@@ -76,7 +72,9 @@ const getReportSummary = catchAsync(async (req, res, next) => {
     try {
         const year = parseInt(req.query.year) || new Date().getFullYear();
         const gymId = req.user.gymId;
-        const branchId = req.user.branchId || null;
+        const yearStart = new Date(year, 0, 1);
+        const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+        const { branchId, startDate, endDate } = await resolveReportFilters(req, { start: yearStart, end: yearEnd });
 
         const baseQuery = {
             gymId,
@@ -88,31 +86,32 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
         // ─── Year boundaries ──────────────────────────────────────────────
-        const yearStart = new Date(year, 0, 1);
-        const yearEnd   = new Date(year, 11, 31, 23, 59, 59, 999);
+        const rangeStart = startDate;
+        const rangeEnd = endDate;
 
         // ─── Current month boundaries ─────────────────────────────────────
         const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentMonthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
         // ─── Last 90 days ─────────────────────────────────────────────────
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        const monthBuckets = [];
+        for (let cursor = new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1); cursor <= rangeEnd; cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)) {
+            const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+            monthBuckets.push({ key, month: `${MONTH_NAMES[cursor.getMonth()]}${rangeStart.getFullYear() !== rangeEnd.getFullYear() ? ` ${String(cursor.getFullYear()).slice(-2)}` : ''}` });
+        }
 
         // ══════════════════════════════════════════════════════════════════
         // 1. Revenue by month  (Payment)
         // ══════════════════════════════════════════════════════════════════
         const payments = await Payment.find({
             ...baseQuery,
-            date: { $gte: yearStart, $lte: yearEnd },
+            date: { $gte: rangeStart, $lte: rangeEnd },
         });
 
-        const revenueMap = {}; // { 0: 0, 1: 0, … }
-        MONTH_NAMES.forEach((_, i) => { revenueMap[i] = 0; });
+        const revenueMap = Object.fromEntries(monthBuckets.map(({ key }) => [key, 0]));
         payments.forEach((p) => {
-            const m = new Date(p.date).getMonth();
-            revenueMap[m] = (revenueMap[m] || 0) + (p.amount || 0);
+            const date = new Date(p.date);
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            revenueMap[key] = (revenueMap[key] || 0) + (p.amount || 0);
         });
 
         // ══════════════════════════════════════════════════════════════════
@@ -120,21 +119,21 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         // ══════════════════════════════════════════════════════════════════
         const expenses = await Expense.find({
             ...baseQuery,
-            date: { $gte: yearStart, $lte: yearEnd },
+            date: { $gte: rangeStart, $lte: rangeEnd },
         });
 
-        const expenseMap = {};
-        MONTH_NAMES.forEach((_, i) => { expenseMap[i] = 0; });
+        const expenseMap = Object.fromEntries(monthBuckets.map(({ key }) => [key, 0]));
         expenses.forEach((e) => {
-            const m = new Date(e.date).getMonth();
-            expenseMap[m] = (expenseMap[m] || 0) + (e.amount || 0);
+            const date = new Date(e.date);
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            expenseMap[key] = (expenseMap[key] || 0) + (e.amount || 0);
         });
 
-        const revenueByMonth = MONTH_NAMES.map((month, i) => ({
+        const revenueByMonth = monthBuckets.map(({ key, month }) => ({
             month,
-            revenue:  parseFloat(revenueMap[i].toFixed(2)),
-            expenses: parseFloat(expenseMap[i].toFixed(2)),
-            profit:   parseFloat((revenueMap[i] - expenseMap[i]).toFixed(2)),
+            revenue:  parseFloat(revenueMap[key].toFixed(2)),
+            expenses: parseFloat(expenseMap[key].toFixed(2)),
+            profit:   parseFloat((revenueMap[key] - expenseMap[key]).toFixed(2)),
         }));
 
         // ══════════════════════════════════════════════════════════════════
@@ -142,19 +141,19 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         // ══════════════════════════════════════════════════════════════════
         const newMembersAll = await Member.find({
             ...baseQuery,
-            joinDate: { $gte: yearStart, $lte: yearEnd },
+            joinDate: { $gte: rangeStart, $lte: rangeEnd },
         });
 
-        const newMemberMap = {};
-        MONTH_NAMES.forEach((_, i) => { newMemberMap[i] = 0; });
+        const newMemberMap = Object.fromEntries(monthBuckets.map(({ key }) => [key, 0]));
         newMembersAll.forEach((m) => {
-            const idx = new Date(m.joinDate).getMonth();
-            newMemberMap[idx] = (newMemberMap[idx] || 0) + 1;
+            const date = new Date(m.joinDate);
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            newMemberMap[key] = (newMemberMap[key] || 0) + 1;
         });
 
-        const newMembersByMonth = MONTH_NAMES.map((month, i) => ({
+        const newMembersByMonth = monthBuckets.map(({ key, month }) => ({
             month,
-            count: newMemberMap[i],
+            count: newMemberMap[key],
         }));
 
         // ══════════════════════════════════════════════════════════════════
@@ -162,7 +161,7 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         // ══════════════════════════════════════════════════════════════════
         const attendanceRecords = await Attendance.find({
             ...baseQuery,
-            date: { $gte: ninetyDaysAgo },
+            date: { $gte: rangeStart, $lte: rangeEnd },
         });
 
         const dayMap = {};
@@ -183,15 +182,19 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         // 5. Plan popularity  (Member grouped by planId → Prisma plan name)
         // ══════════════════════════════════════════════════════════════════
         const allMembers = await Member.find(baseQuery);
+        const membersInRange = await Member.find({ ...baseQuery, joinDate: { $gte: rangeStart, $lte: rangeEnd } });
 
-        const planCountMap = {}; // { planId: { count, revenue } }
-        allMembers.forEach((m) => {
+        const planCountMap = {}; // { planId: { count, revenue, fallbackName } }
+        membersInRange.forEach((m) => {
             if (!m.planId) return;
             if (!planCountMap[m.planId]) {
-                planCountMap[m.planId] = { count: 0, revenue: 0 };
+                planCountMap[m.planId] = { count: 0, revenue: 0, fallbackName: m.planName || '' };
             }
             planCountMap[m.planId].count   += 1;
             planCountMap[m.planId].revenue += m.planPrice || 0;
+            if (!planCountMap[m.planId].fallbackName && m.planName) {
+                planCountMap[m.planId].fallbackName = m.planName;
+            }
         });
 
         // Sort descending by member count, take top 6
@@ -209,11 +212,30 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         const planNameById = {};
         prismaPlans.forEach((p) => { planNameById[p.id] = p.name; });
 
-        const planPopularity = topPlanIds.map((id) => ({
-            name:    planNameById[id] || id,
-            members: planCountMap[id].count,
-            revenue: parseFloat(planCountMap[id].revenue.toFixed(2)),
-        }));
+        // Check MongoDB Plan for any missing ones
+        const missingIds = topPlanIds.filter((id) => !planNameById[id]);
+        if (missingIds.length > 0) {
+            try {
+                const mongoPlans = await Plan.find({ _id: { $in: missingIds } });
+                mongoPlans.forEach((p) => {
+                    const pid = p.id || String(p._id);
+                    if (p.name) planNameById[pid] = p.name;
+                });
+            } catch (err) {
+                // ignore
+            }
+        }
+
+        const planPopularity = topPlanIds.map((id) => {
+            const rawName = planNameById[id] || planCountMap[id]?.fallbackName;
+            const isIdLike = !rawName && (!id || id.length >= 20 || /^[0-9a-fA-F-]{16,}$/.test(id));
+            const name = rawName || (isIdLike ? 'Custom Membership' : (id || 'Standard Plan'));
+            return {
+                name,
+                members: planCountMap[id].count,
+                revenue: parseFloat(planCountMap[id].revenue.toFixed(2)),
+            };
+        });
 
         // ══════════════════════════════════════════════════════════════════
         // 6. Expense by category  (year-scoped)
@@ -252,25 +274,8 @@ const getReportSummary = catchAsync(async (req, res, next) => {
         const totalRevenue  = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
-        // Revenue this current calendar month
-        const revenueThisMonth = payments
-            .filter((p) => {
-                const d = new Date(p.date);
-                return d >= currentMonthStart && d <= currentMonthEnd;
-            })
-            .reduce((sum, p) => sum + (p.amount || 0), 0);
-
-        // Attendance this current calendar month
-        const attendanceThisMonth = attendanceRecords.filter((a) => {
-            const d = new Date(a.date);
-            return d >= currentMonthStart && d <= currentMonthEnd;
-        }).length;
-
-        // New members this current calendar month
-        const newMembersThisMonth = newMembersAll.filter((m) => {
-            const d = new Date(m.joinDate);
-            return d >= currentMonthStart && d <= currentMonthEnd;
-        }).length;
+        const attendanceThisMonth = attendanceRecords.length;
+        const newMembersThisMonth = newMembersAll.length;
 
         const avgRevenuePerMember = memberStatusSummary.active > 0
             ? parseFloat((totalRevenue / memberStatusSummary.active).toFixed(2))
@@ -296,6 +301,7 @@ const getReportSummary = catchAsync(async (req, res, next) => {
             expenseByCategory,
             memberStatusSummary,
             topMetrics,
+            filters: { startDate: rangeStart, endDate: rangeEnd, branchId: branchId || '' },
         });
     } catch (err) { next(err); }
 });

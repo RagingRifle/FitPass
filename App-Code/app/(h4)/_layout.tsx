@@ -76,13 +76,13 @@ export default function H4Layout() {
       />
 
       {/* Secondary destinations are linked from the More hub. */}
-      <Tabs.Screen name="diets"       options={{ href: null, title: 'Nutrition' }} />
-      <Tabs.Screen name="payments"    options={{ href: null, title: 'Payments' }} />
-      <Tabs.Screen name="classes"     options={{ href: null, title: 'Group Classes' }} />
-      <Tabs.Screen name="pt-sessions" options={{ href: null, title: 'PT Sessions' }} />
-      <Tabs.Screen name="assessments" options={{ href: null, title: 'Body Progress' }} />
-      <Tabs.Screen name="support"     options={{ href: null, title: 'Help & Support' }} />
-      <Tabs.Screen name="shop"        options={{ href: null, title: 'H4 Merchandise' }} />
+      <Tabs.Screen name="diets"       options={{ href: '/(h4)/diets', title: 'Nutrition' }} />
+      <Tabs.Screen name="payments"    options={{ href: '/(h4)/payments', title: 'Payments' }} />
+      <Tabs.Screen name="classes"     options={{ href: '/(h4)/classes', title: 'Group Classes' }} />
+      <Tabs.Screen name="pt-sessions" options={{ href: '/(h4)/pt-sessions', title: 'PT Sessions' }} />
+      <Tabs.Screen name="assessments" options={{ href: '/(h4)/assessments', title: 'Body Progress' }} />
+      <Tabs.Screen name="support"     options={{ href: '/(h4)/support', title: 'Help & Support' }} />
+      <Tabs.Screen name="shop"        options={{ href: '/(h4)/shop', title: 'H4 Merchandise' }} />
     </Tabs>
   );
 }

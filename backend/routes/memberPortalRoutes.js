@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { getMyPlan, getMyAttendance, getMyPayments, createRazorpayOrder, verifyRazorpayPayment, getFitPrimePlans, purchasePlanOrder, purchasePlanVerify, cancelMyPlan, getPartnerGyms, getPartnerGymById, getDashboardData, updateMyProfile, getMyDigitalPass } = require('../controllers/memberPortalController');
+const { getMyPlan, getMyAttendance, getMyPayments, createRazorpayOrder, verifyRazorpayPayment, getFitPrimePlans, getH4Plans, purchasePlanOrder, purchasePlanVerify, cancelMyPlan, getPartnerGyms, getPartnerGymById, getDashboardData, updateMyProfile, getMyDigitalPass } = require('../controllers/memberPortalController');
 const { addGymReview, getGymReviews } = require('../controllers/reviewController');
-const { getMemberClasses, bookClass, cancelBooking } = require('../controllers/classController');
+const { getMemberClasses, getMemberClassWallet, bookClass, cancelBooking } = require('../controllers/classController');
 const { checkIn, getSessionStatus, getSessionHistory } = require('../controllers/sessionController');
 const { protect } = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
@@ -15,6 +15,7 @@ router.get('/digital-pass', getMyDigitalPass);
 router.put('/profile', updateMyProfile);
 router.get('/plan', getMyPlan);
 router.get('/fitprime-plans', getFitPrimePlans);
+router.get('/h4-plans', getH4Plans);
 router.get('/gyms', getPartnerGyms);
 router.get('/gyms/:id', getPartnerGymById);
 router.get('/gyms/:id/reviews', getGymReviews);
@@ -40,6 +41,7 @@ router.post('/sessions/check-in', validate({ body: checkInSchema }), checkIn);
 
 // Class Booking Routes (Member)
 router.get('/classes', getMemberClasses);
+router.get('/class-wallet', getMemberClassWallet);
 router.post('/classes/:id/book', bookClass);
 router.delete('/classes/:id/book', cancelBooking);
 

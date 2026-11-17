@@ -5,6 +5,8 @@ import API from '../../services/api';
 import { dedupeMemberRecords } from '../../utils/memberIdentity';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+const dateInputValue = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const quickLinks = [
   { label: 'FitPass Members', description: 'Manage subscriber accounts and passes', href: '/superadmin/fitpass-members', icon: Users },
   { label: 'FitPass Reports', description: 'Review network activity and trends', href: '/superadmin/fitpass-analytics', icon: Activity },
@@ -15,6 +17,11 @@ const quickLinks = [
 export default function FitPassAdminDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [dateRange, setDateRange] = useState(() => {
+    const end = new Date();
+    const start = new Date(); start.setDate(start.getDate() - 29);
+    return { startDate: dateInputValue(start), endDate: dateInputValue(end) };
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -28,19 +35,20 @@ export default function FitPassAdminDashboard() {
         ...remainingPages.flatMap(page => page.data?.data || []),
       ]);
       const [overview, coinSettings] = await Promise.all([
-        API.get('/superadmin/fitpass/overview'),
+        API.get('/superadmin/fitpass/overview', { params: { ...dateRange, timezoneOffset: new Date().getTimezoneOffset() } }),
         API.get('/store/coin-settings?division=fitpass'),
       ]);
       if (!mounted) return;
+      const overviewData = overview.data?.overview || {};
       setData({
-        accounts: firstPage.data?.meta?.total ?? members.length,
-        activePasses: members.filter(member => !member.isExpired && member.status === 'Active').length,
-        expiredPasses: members.filter(member => member.isExpired || member.status === 'Expired').length,
+        accounts: overviewData.totalMembers ?? firstPage.data?.meta?.total ?? members.length,
+        activePasses: overviewData.activeMembers ?? members.filter(member => !member.isExpired && member.status === 'Active').length,
+        expiredPasses: overviewData.expiredMembers ?? members.filter(member => member.isExpired || member.status === 'Expired').length,
         memberCoinBalance: members.reduce((sum, member) => sum + Number(member.fitpassCoins || 0), 0),
         coinsPerCheckIn: Number(coinSettings.data?.coinsPerSession) || 10,
-        overview: overview.data?.overview || {},
+        overview: overviewData,
         mostVisitedGyms: overview.data?.mostVisitedGyms || [],
-        monthlyTraffic: overview.data?.monthlyTraffic || [],
+        dailyTraffic: overview.data?.dailyTraffic || [],
         planPopularity: overview.data?.planPopularity || [],
       });
     };
@@ -48,7 +56,7 @@ export default function FitPassAdminDashboard() {
       if (mounted) setError(err.response?.data?.message || 'Could not load FitPass network data.');
     });
     return () => { mounted = false; };
-  }, []);
+  }, [dateRange]);
 
   const cards = [
     { title: 'FitPass Accounts', value: data?.accounts ?? '—', detail: 'FitPass member directory', icon: Users, color: '#a78bfa' },
@@ -62,9 +70,9 @@ export default function FitPassAdminDashboard() {
   const sessionsCapacity = Number(data?.overview?.totalSessionsSold || 0);
   const sessionsUsed = Number(data?.overview?.totalSessionsUsed || 0);
   const sessionsRemaining = Number(data?.overview?.totalSessionsRemaining || 0);
-  const monthlyTraffic = (data?.monthlyTraffic || []).map(item => ({
+  const dailyTraffic = (data?.dailyTraffic || []).map(item => ({
     ...item,
-    label: new Date(`${item.month}-02T00:00:00`).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
+    label: new Date(`${item.date}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
   }));
   const planPopularity = data?.planPopularity || [];
 
@@ -73,6 +81,12 @@ export default function FitPassAdminDashboard() {
       <span style={{ color: '#8d6b00', fontSize: 12, fontWeight: 800, letterSpacing: '.12em' }}>FITPASS NETWORK</span>
       <h1 style={{ margin: '8px 0', fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 850 }}>FitPass Dashboard</h1>
       <p style={{ margin: 0, color: '#716b60' }}>FitPass members, partner gym activity, and FitCoins at a glance.</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 12, marginTop: 18, padding: 14, border: '1px solid #e4dccb', borderRadius: 14, background: '#fff' }}>
+        <label style={{ display: 'grid', gap: 5, color: '#716b60', fontSize: 12, fontWeight: 700 }}>FROM<input aria-label="Dashboard start date" type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid #d9d1c3', borderRadius: 8 }} /></label>
+        <label style={{ display: 'grid', gap: 5, color: '#716b60', fontSize: 12, fontWeight: 700 }}>TO<input aria-label="Dashboard end date" type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid #d9d1c3', borderRadius: 8 }} /></label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>{[7, 30, 90].map(days => <button key={days} type="button" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - (days - 1)); setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) }); }} style={{ padding: '8px 11px', borderRadius: 8, border: '1px solid #d9d1c3', background: '#f7f5ef', cursor: 'pointer', fontWeight: 700 }}>{days} days</button>)}</div>
+        <small style={{ color: '#716b60' }}>Member totals and plan uptake use members who joined in this period; check-ins use visit dates. Revenue uses recorded payments for those members. Coin balances and conversion rate are current totals.</small>
+      </div>
     </header>
 
     {error && <div role="alert" style={{ marginBottom: 18, padding: 14, borderRadius: 12, background: '#fff1ed', color: '#9e321f' }}>{error}</div>}
@@ -119,9 +133,9 @@ export default function FitPassAdminDashboard() {
 
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 18, marginBottom: 18 }}>
       <article style={{ padding: 22, border: '1px solid #e4dccb', borderRadius: 16, background: '#fff' }}>
-        <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>Monthly partner check-ins</h2>
-        <p style={{ margin: '0 0 10px', color: '#716b60', fontSize: 13 }}>Successful FitPass visits across the network</p>
-        {monthlyTraffic.length ? <div style={{ width: '100%', height: 260 }}><ResponsiveContainer width="100%" height="100%"><AreaChart data={monthlyTraffic} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+        <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>Daily partner check-ins</h2>
+        <p style={{ margin: '0 0 10px', color: '#716b60', fontSize: 13 }}>Successful FitPass visits in the selected period</p>
+        {dailyTraffic.length ? <div style={{ width: '100%', height: 260 }}><ResponsiveContainer width="100%" height="100%"><AreaChart data={dailyTraffic} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
           <defs><linearGradient id="fitpassTrafficFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.35} /><stop offset="95%" stopColor="#a78bfa" stopOpacity={0.02} /></linearGradient></defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#eee7da" />
           <XAxis dataKey="label" tick={{ fill: '#716b60', fontSize: 11 }} />
@@ -154,7 +168,7 @@ export default function FitPassAdminDashboard() {
       </article>
       <article style={{ padding: 22, border: '1px solid #e4dccb', borderRadius: 16, background: '#fff' }}>
         <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>Most visited partner gyms</h2>
-        <p style={{ margin: '0 0 14px', color: '#716b60', fontSize: 13 }}>Successful FitPass check-ins, all time.</p>
+        <p style={{ margin: '0 0 14px', color: '#716b60', fontSize: 13 }}>Successful FitPass check-ins in the selected period.</p>
         {data?.mostVisitedGyms?.length ? data.mostVisitedGyms.slice(0, 5).map((gym, index) => <div key={gym.gymId} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '11px 0', borderTop: '1px solid #eee7da' }}><span>{index + 1}. {gym.gymName}</span><strong>{gym.count}</strong></div>) : <p style={{ color: '#716b60' }}>{data ? 'No partner check-ins yet.' : 'Loading FitPass data…'}</p>}
       </article>
     </section>

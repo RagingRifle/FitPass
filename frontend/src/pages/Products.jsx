@@ -1,15 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import API from '../services/api';
 import { useToast } from '../components/ui/Toast';
+import { AuthContext } from '../context/AuthContext';
 
 const empty = { name: '', description: '', priceCoins: 12, imageUrl: '', division: 'fitpass', isActive: true, stock: '' };
 
 export default function Products() {
+  const { activeDivision } = useContext(AuthContext);
   const user = JSON.parse(sessionStorage.getItem('user') || 'null');
   const isFitPassAdmin = user?.role === 'fitpass_admin';
+  const isH4Admin = user?.role === 'h4_admin';
+  const isH4GymAdmin = user?.role === 'admin' && (String(user?.gymName || '').toUpperCase() === 'H4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(user?.gymId?._id || user?.gymId || '')));
+  const fixedDivision = isFitPassAdmin ? 'fitpass' : (isH4Admin || isH4GymAdmin) ? 'h4' : null;
   const toast = useToast();
   const [products, setProducts] = useState([]);
-  const [division, setDivision] = useState('fitpass');
+  const [division, setDivision] = useState(fixedDivision || activeDivision || 'fitpass');
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -32,6 +37,14 @@ export default function Products() {
     load();
     API.get(`/store/coin-settings?division=${division}`).then(({ data }) => setCoinsPerSession(data.coinsPerSession)).catch(() => {});
   }, [division]);
+
+  useEffect(() => {
+    if (!fixedDivision && activeDivision && activeDivision !== division) {
+      setDivision(activeDivision);
+      setForm({ ...empty, division: activeDivision });
+      setEditing(null);
+    }
+  }, [activeDivision, fixedDivision, division]);
 
   const saveRate = async () => {
     setSavingRate(true);
@@ -70,8 +83,7 @@ export default function Products() {
 
   return <main className="products-page">
     <header className="products-header">
-      <div><p className="products-eyebrow">STORE MANAGEMENT</p><h1>{isFitPassAdmin ? 'FitPass Product Catalog' : division === 'h4' ? 'H4 Merchandise' : 'Products & FitCoins'}</h1><p>{isFitPassAdmin ? 'Create products, set FitCoin prices, and publish them to the FitPass app and member shop.' : division === 'h4' ? 'Show H4 members available merchandise. Purchases happen in person at an H4 gym.' : 'Manage FitPass products and FitCoin prices.'}</p></div>
-      {!isFitPassAdmin && <div className="products-tabs">{['fitpass', 'h4'].map(d => <button key={d} type="button" onClick={() => { setDivision(d); setForm({ ...empty, division: d }); setEditing(null); }} className={division === d ? 'is-active' : ''}>{d === 'h4' ? 'H4' : 'FitPass'} shop</button>)}</div>}
+      <div><p className="products-eyebrow">STORE MANAGEMENT</p><h1>{division === 'h4' ? 'H4 Merchandise' : 'FitPass Product Catalog'}</h1><p>{division === 'h4' ? 'Show H4 members available merchandise. Purchases happen in person at an H4 gym.' : 'Create products, set FitCoin prices, and publish them to the FitPass app and member shop.'}</p></div>
     </header>
 
     {loadError && <div className="products-load-error" role="alert">{loadError}</div>}

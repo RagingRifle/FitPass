@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
                     setSelectedGymId('');
                     setSelectedBranchId('');
                 }
-            } else if (parsedUser.role === 'h4_admin' || (parsedUser.gymName && parsedUser.gymName.toUpperCase() === 'H4') || parsedUser.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
+            } else if (parsedUser.role === 'h4_admin' || (parsedUser.gymName && parsedUser.gymName.toUpperCase() === 'H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(parsedUser.gymId?._id || parsedUser.gymId || ''))) {
                 division = 'h4';
             } else if (parsedUser.role === 'fitpass_admin') {
                 division = 'fitpass';
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.setItem('token', data.token);
             
             let division = 'fitpass';
-            if (data.role === 'h4_admin' || (data.gymName && data.gymName.toUpperCase() === 'H4') || data.gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd') {
+            if (data.role === 'h4_admin' || (data.gymName && data.gymName.toUpperCase() === 'H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(data.gymId?._id || data.gymId || ''))) {
                 division = 'h4';
             } else if (data.role === 'fitpass_admin') {
                 division = 'fitpass';

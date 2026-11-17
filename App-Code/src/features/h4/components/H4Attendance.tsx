@@ -1,57 +1,16 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { theme } from '@/design-system/theme';
 import { Typography, Card, Skeleton } from '@/components/ui';
 import { useH4Attendance, useH4CheckIn, useH4DigitalPass } from '../api/h4.api';
 import { 
-  CalendarCheck, QrCode, CheckCircle, ShieldCheck, 
-  RotateCw, Key, Flame, Zap, MapPin, ChevronRight, Info
+  CalendarCheck, QrCode, CheckCircle, ShieldCheck,
+  Key, Zap
 } from '@/components/ui/app-icons';
 import { useRouter } from 'expo-router';
 import { H4TopHeader } from './H4TopHeader';
-
-const { width } = Dimensions.get('window');
-
-//  Heatmap Generator 
-// Builds a 12-week (84-day) GitHub-style contribution matrix
-const generateHeatmapGrid = (records: any[]) => {
-  const visitDateSet = new Set(
-    records.map(r => {
-      try {
-        return new Date(r.date).toISOString().split('T')[0];
-      } catch {
-        return '';
-      }
-    }).filter(Boolean)
-  );
-
-  const days = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // 12 weeks = 84 days back
-  for (let i = 83; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const hasWorkout = visitDateSet.has(dateStr);
-    days.push({
-      dateStr,
-      dayOfWeek: d.getDay(), // 0 = Sun, 6 = Sat
-      hasWorkout,
-      isToday: i === 0,
-    });
-  }
-
-  // Chunk into 12 columns of 7 days
-  const columns = [];
-  for (let i = 0; i < days.length; i += 7) {
-    columns.push(days.slice(i, i + 7));
-  }
-
-  return { columns, totalVisits: visitDateSet.size };
-};
+import { AttendanceActivityGrid } from '@/components/attendance/AttendanceActivityGrid';
 
 export function H4Attendance() {
   const router = useRouter();
@@ -60,29 +19,16 @@ export function H4Attendance() {
   const { data: passData, isLoading: isPassLoading, refetch: refetchPass } = useH4DigitalPass();
   const checkInMutation = useH4CheckIn();
 
-  const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Countdown timer for 60-second rotating pass
   useEffect(() => {
-    const initialSeconds = passData?.expiresInSeconds || 60;
-    setSecondsRemaining(initialSeconds);
-
     const timer = setInterval(() => {
-      setSecondsRemaining(prev => {
-        if (prev <= 1) {
-          refetchPass();
-          return 60;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      refetchPass();
+    }, 60_000);
 
     return () => clearInterval(timer);
-  }, [passData, refetchPass]);
-
-  // Heatmap calculations
-  const heatmap = useMemo(() => generateHeatmapGrid(records), [records]);
+  }, [refetchPass]);
 
   // One-tap check-in
   const handleMarkAttendance = async () => {
@@ -208,51 +154,7 @@ export function H4Attendance() {
         )}
 
         {/*  2. GitHub-Style Workout Activity Heatmap  */}
-        <Card style={styles.heatmapCard}>
-          <View style={styles.heatmapHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Flame size={18} color="#171713" />
-              <Typography variant="h3" style={{ color: theme.colors.text }}>
-                Workout Activity Grid
-              </Typography>
-            </View>
-            <Typography variant="caption" style={styles.heatmapCount}>
-              {heatmap.totalVisits} workouts in the last 12 weeks
-            </Typography>
-          </View>
-
-          {/* Grid Scroll */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 8 }}>
-            <View style={styles.gridMatrix}>
-              {heatmap.columns.map((col, colIdx) => (
-                <View key={colIdx} style={styles.gridColumn}>
-                  {col.map((day, dayIdx) => (
-                    <View
-                      key={day.dateStr || dayIdx}
-                      style={[
-                        styles.gridCell,
-                        day.hasWorkout && styles.gridCellActive,
-                        day.isToday && styles.gridCellToday,
-                      ]}
-                    />
-                  ))}
-                </View>
-              ))}
-            </View>
-          </ScrollView>
-
-          {/* Legend */}
-          <View style={styles.legendRow}>
-            <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>Less</Typography>
-            <View style={[styles.legendCell, { backgroundColor: '#C6D7DA' }]} />
-            <View style={[styles.legendCell, { backgroundColor: 'rgba(254, 223, 30, 0.4)' }]} />
-            <View style={[styles.legendCell, { backgroundColor: theme.colors.primary }]} />
-            <Typography variant="caption" color="secondary" style={{ fontSize: 10 }}>More</Typography>
-            <Typography variant="caption" color="secondary" style={{ fontSize: 10, marginLeft: 'auto' }}>
-              Mon  Sun (84 Days)
-            </Typography>
-          </View>
-        </Card>
+        <AttendanceActivityGrid dates={records.map((record: any) => record.date)} />
 
         {/*  3. Unified Check-in History Section  */}
         <View style={styles.sectionHeader}>
@@ -444,45 +346,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.25)',
   },
-
-  // Heatmap Card
-  heatmapCard: {
-    padding: 16,
-    backgroundColor: theme.colors.card,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    borderRadius: 20,
-    gap: 8,
-  },
-  heatmapHeader: { flexDirection: 'column', alignItems: 'flex-start', gap: 5, marginBottom: 2 },
-  heatmapCount: { color: theme.colors.primaryText, fontWeight: '800', fontSize: 11, lineHeight: 15, marginLeft: 24, flexShrink: 1 },
-  gridMatrix: { flexDirection: 'row', gap: 4, paddingVertical: 4 },
-  gridColumn: { gap: 4 },
-  gridCell: {
-    width: 13,
-    height: 13,
-    borderRadius: 3,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: '#C6D7DA',
-  },
-  gridCellActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  gridCellToday: {
-    borderColor: '#FFFFFF',
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 4,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  legendCell: { width: 10, height: 10, borderRadius: 2 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, paddingHorizontal: 4 },
   row: {

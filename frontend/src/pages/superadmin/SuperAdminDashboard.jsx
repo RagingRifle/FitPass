@@ -22,6 +22,7 @@ const formatCurrency = (v) => {
 };
 
 const AMBER_COLORS = ['#FEDF1E', '#D9860F', '#a78bfa', '#34d399', '#f43f5e', '#60a5fa'];
+const dateInputValue = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const CustomTooltipRevenue = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -65,6 +66,11 @@ function SuperAdminDashboard() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchLog, setSearchLog] = useState('');
+    const [dateRange, setDateRange] = useState(() => {
+        const end = new Date();
+        const start = new Date(); start.setDate(start.getDate() - 29);
+        return { startDate: dateInputValue(start), endDate: dateInputValue(end) };
+    });
 
     useEffect(() => {
         if (showFitPassDashboard) {
@@ -73,7 +79,7 @@ function SuperAdminDashboard() {
         }
         const fetchDashboardData = async () => {
             try {
-                const statsData = await getStats();
+                const statsData = await getStats(dateRange);
                 setStats(statsData);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -82,7 +88,7 @@ function SuperAdminDashboard() {
             }
         };
         fetchDashboardData();
-    }, [showFitPassDashboard]);
+    }, [showFitPassDashboard, dateRange]);
 
     const revenueTrendData = useMemo(() => {
         if (!stats?.revenueTrend) return [];
@@ -137,19 +143,19 @@ function SuperAdminDashboard() {
             sub: 'Within 7 days'
         },
         {
-            title: 'New This Month', value: stats?.newMembersThisMonth ?? 0,
+            title: 'New Members in Period', value: stats?.newMembersThisMonth ?? 0,
             icon: <Sparkles size={20} />, color: '#a78bfa',
             sub: 'Fresh joiners'
         },
         {
-            title: 'Monthly Revenue', value: formatCurrency(stats?.monthlyRevenue),
+            title: 'Period Revenue', value: formatCurrency(stats?.monthlyRevenue),
             icon: <IndianRupee size={20} />, color: '#34d399',
-            sub: 'This month collected'
+            sub: 'Collected in selected dates'
         },
         {
-            title: 'Monthly Expenses', value: formatCurrency(stats?.monthlyExpenses),
+            title: 'Period Expenses', value: formatCurrency(stats?.monthlyExpenses),
             icon: <TrendingDown size={20} />, color: '#C62828',
-            sub: 'This month spent'
+            sub: 'Spent in selected dates'
         },
         {
             title: 'Net Profit', value: formatCurrency(stats?.monthlyProfit),
@@ -235,6 +241,13 @@ function SuperAdminDashboard() {
             </div>
 
             {/* ── Quick Actions ──────────────────────────────────────────────── */}
+            {(user?.role === 'h4_admin' || activeDivision === 'h4') && <section aria-label="Dashboard date filter" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 12, padding: 14, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg)' }}>
+                <label style={{ display: 'grid', gap: 5, color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>FROM<input type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} /></label>
+                <label style={{ display: 'grid', gap: 5, color: 'var(--text-secondary)', fontSize: 12, fontWeight: 700 }}>TO<input type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} /></label>
+                <div style={{ display: 'flex', gap: 7 }}>{[7, 30, 90].map(days => <button key={days} type="button" className="btn btn-secondary" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - (days - 1)); setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) }); }}>{days} days</button>)}</div>
+                <small style={{ color: 'var(--text-secondary)' }}>Revenue, expenses, check-ins, and new joins update for this period. Member status remains current.</small>
+            </section>}
+
             <div>
                 <h2 style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', margin: '0 0 1rem' }}>
                     Quick Navigation
@@ -311,14 +324,14 @@ function SuperAdminDashboard() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                         <div>
                             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                Global Revenue Analytics
+                                Revenue in Selected Period
                             </h3>
-                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Last 6 months</p>
+                            <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Revenue by month in the selected date range</p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(240,160,32,0.1)', border: '1px solid rgba(240,160,32,0.2)', borderRadius: 'var(--radius-sm)', padding: '0.35rem 0.75rem' }}>
                             <TrendingUp size={14} color="var(--primary)" />
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>
-                                {formatCurrency(stats?.monthlyRevenue)} this month
+                                {formatCurrency(stats?.monthlyRevenue)} in period
                             </span>
                         </div>
                     </div>
@@ -521,7 +534,7 @@ function SuperAdminDashboard() {
                             Recent Check-ins
                         </h3>
                         <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            {stats?.recentCheckins?.length ?? 0} records this month · Showing {filteredCheckins.length}
+                            {stats?.recentCheckins?.length ?? 0} records in selected period · Showing {filteredCheckins.length}
                         </p>
                     </div>
                     {/* Searchable log filter */}
@@ -555,7 +568,7 @@ function SuperAdminDashboard() {
                 {filteredCheckins.length === 0 ? (
                     <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                         <CalendarCheck size={40} style={{ marginBottom: '0.75rem', opacity: 0.3, display: 'block', margin: '0 auto 0.75rem' }} />
-                        {searchLog ? `No check-ins matching "${searchLog}"` : 'No check-ins recorded this month yet'}
+                        {searchLog ? `No check-ins matching "${searchLog}"` : 'No check-ins recorded in this date range'}
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>

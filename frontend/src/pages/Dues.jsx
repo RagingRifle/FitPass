@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import API from '../services/api';
 import Modal from '../components/Modal';
 import ResetFiltersButton from '../components/ResetFiltersButton';
-import { MessageSquare, DollarSign, Send, CheckCircle } from 'lucide-react';
+import { Loader,  MessageSquare, DollarSign, Send, CheckCircle } from 'lucide-react';
 
 const Dues = () => {
     const [members, setMembers] = useState([]);

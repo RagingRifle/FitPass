@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
 import ResetFiltersButton from '../components/ResetFiltersButton';
-import { LogIn, LogOut, UserPlus, UserCog, UserMinus, IndianRupee, Banknote, TrendingDown, ClipboardList, ClipboardEdit, ClipboardX, CalendarPlus, CalendarMinus, Target, Snowflake, Sun, Building, Settings, QrCode, ShieldAlert, Scale, ScanLine, MapPin, Search, Activity } from 'lucide-react';
+import { Loader,  LogIn, LogOut, UserPlus, UserCog, UserMinus, IndianRupee, Banknote, TrendingDown, ClipboardList, ClipboardEdit, ClipboardX, CalendarPlus, CalendarMinus, Target, Snowflake, Sun, Building, Settings, QrCode, ShieldAlert, Scale, ScanLine, MapPin, Search, Activity } from 'lucide-react';
 
 const ACTION_ICONS = {
     LOGIN: <LogIn size={18} />, LOGOUT: <LogOut size={18} />,
@@ -113,7 +113,11 @@ const AuditLogs = () => {
     const SESSION_ACTIONS = ['CHECK_IN', 'CHECK_IN_BLOCKED', 'SESSION_ADJUSTED'];
     const sessionLogs = logs.filter((l) => SESSION_ACTIONS.includes(l.action));
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     // Filter out any stale/old SESSION_EXPIRED records from UI display logs.
     const displayLogs = logs.filter(l => l.action !== 'SESSION_EXPIRED');

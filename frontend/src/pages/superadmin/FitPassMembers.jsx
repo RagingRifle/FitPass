@@ -5,7 +5,7 @@ import Modal from '../../components/Modal';
 import { useToast } from '../../components/ui/Toast';
 import EmptyState from '../../components/ui/EmptyState';
 import { dedupeMemberRecords } from '../../utils/memberIdentity';
-import { 
+import { Loader,  
     Users, 
     User, 
     Ticket, 
@@ -158,7 +158,11 @@ function FitPassMembers() {
         return matchesSearch;
     });
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     return (
         <div className="fitpass-members-page">

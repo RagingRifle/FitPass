@@ -1,14 +1,16 @@
 import { useState, useEffect, useContext } from 'react';
 import { getStaff, createStaff, updateStaff, deleteStaff } from '../services/apiService';
+import API from '../services/api';
 import Modal from '../components/Modal';
-import ResetFiltersButton from '../components/ResetFiltersButton';
 import { AuthContext } from '../context/AuthContext';
-import { Pencil, Trash2, Eye, EyeOff, ShieldCheck, Users, ToggleLeft, ToggleRight, Sparkles, Check, CheckSquare } from 'lucide-react';
+import { Pencil, Trash2, Eye, EyeOff, ShieldCheck, Users, Search, X, RotateCcw, UserPlus, Dumbbell, Loader } from 'lucide-react';
+import './Staff.css';
 
 const Staff = () => {
-    const { user } = useContext(AuthContext);
-    const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'matrix'
+    const { user, activeDivision } = useContext(AuthContext);
+    const [activeTab, setActiveTab] = useState('directory');
     const [staffList, setStaffList] = useState([]);
+    const [branchList, setBranchList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState(null);
@@ -22,39 +24,49 @@ const Staff = () => {
         name: '',
         email: '',
         password: '',
-        role: 'trainer'
+        role: 'trainer',
+        branchId: user?.branchId || '',
+        trainerMemberLimit: 10,
+        trainerPermissions: { assignWorkout: true, assignDiet: true, recordAssessment: true, scheduleClasses: true, manageClassBookings: true, setClassPricing: true }
     });
     const [error, setError] = useState('');
 
-    // --- Dynamic Permissions Matrix state ---
-    const initialMatrix = {
-        superadmin: {
-            members: true, workouts: true, settings: true, finance: true, classes: true, reports: true
-        },
-        admin: {
-            members: true, workouts: true, settings: true, finance: true, classes: true, reports: true
-        },
-        receptionist: {
-            members: true, workouts: false, settings: false, finance: false, classes: true, reports: false
-        },
-        trainer: {
-            members: true, workouts: true, settings: false, finance: false, classes: true, reports: false
-        },
-        member: {
-            members: false, workouts: true, settings: false, finance: false, classes: false, reports: false
-        }
-    };
-
-    const [matrix, setMatrix] = useState(() => {
-        const saved = localStorage.getItem('cfg_permission_matrix');
-        return saved ? JSON.parse(saved) : initialMatrix;
-    });
-
-    const [matrixMessage, setMatrixMessage] = useState('');
+    const [trainerAssignments, setTrainerAssignments] = useState([]);
+    const [assignmentMembers, setAssignmentMembers] = useState([]);
+    const [assignmentMemberId, setAssignmentMemberId] = useState('');
+    const [assignmentTrainerId, setAssignmentTrainerId] = useState('');
 
     useEffect(() => {
         fetchStaff();
+        API.get('/branches').then(({ data }) => setBranchList(Array.isArray(data) ? data : data.branches || [])).catch(() => setBranchList([]));
     }, []);
+
+    useEffect(() => {
+        if (activeTab !== 'assignments') return;
+        Promise.all([API.get('/trainer-assignments', { params: { limit: 100 } }), API.get('/members', { params: { page: 1, limit: 100 } })]).then(([assignments, members]) => {
+            setTrainerAssignments(assignments.data?.data || []);
+            setAssignmentMembers(Array.isArray(members.data) ? members.data : members.data?.data || []);
+        }).catch(() => setError('Could not load trainer assignments or members.'));
+    }, [activeTab]);
+
+    const submitTrainerAssignment = async (event) => {
+        event.preventDefault();
+        setError('');
+        try {
+            await API.post('/trainer-assignments', { memberId: assignmentMemberId, trainerId: assignmentTrainerId });
+            setAssignmentMemberId('');
+            setAssignmentTrainerId('');
+            const { data } = await API.get('/trainer-assignments', { params: { limit: 100 } });
+            setTrainerAssignments(data?.data || []);
+        } catch (err) { setError(err.response?.data?.message || 'Could not assign this member to the trainer.'); }
+    };
+
+    const removeTrainerAssignment = async (assignmentId) => {
+        try {
+            await API.delete(`/trainer-assignments/${assignmentId}`);
+            setTrainerAssignments((items) => items.filter((item) => String(item.id || item._id) !== String(assignmentId)));
+        } catch (err) { setError(err.response?.data?.message || 'Could not remove this trainer assignment.'); }
+    };
 
     const fetchStaff = async () => {
         try {
@@ -76,7 +88,10 @@ const Staff = () => {
                 name: staff.name,
                 email: staff.email,
                 password: '',
-                role: staff.role
+                role: staff.role,
+                branchId: staff.branchId || '',
+                trainerMemberLimit: staff.trainerMemberLimit || 10,
+                trainerPermissions: staff.trainerPermissions || { assignWorkout: true, assignDiet: true, recordAssessment: true, scheduleClasses: true, manageClassBookings: true, setClassPricing: true }
             });
         } else {
             setEditingStaff(null);
@@ -84,7 +99,10 @@ const Staff = () => {
                 name: '',
                 email: '',
                 password: '',
-                role: 'trainer'
+                role: 'trainer',
+                branchId: user?.branchId || '',
+                trainerMemberLimit: 10,
+                trainerPermissions: { assignWorkout: true, assignDiet: true, recordAssessment: true, scheduleClasses: true, manageClassBookings: true, setClassPricing: true }
             });
         }
         setIsModalOpen(true);
@@ -125,22 +143,6 @@ const Staff = () => {
         }
     };
 
-    const toggleMatrixPermission = (role, moduleKey) => {
-        if (role === 'superadmin') return; // Superadmin permissions are immutable/locked
-        const updated = {
-            ...matrix,
-            [role]: {
-                ...matrix[role],
-                [moduleKey]: !matrix[role][moduleKey]
-            }
-        };
-        setMatrix(updated);
-        localStorage.setItem('cfg_permission_matrix', JSON.stringify(updated));
-        
-        setMatrixMessage('Permission configuration synced locally!');
-        setTimeout(() => setMatrixMessage(''), 2500);
-    };
-
     const filteredStaff = staffList.filter(s => {
         const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || 
                               s.email.toLowerCase().includes(search.toLowerCase());
@@ -148,74 +150,68 @@ const Staff = () => {
         return matchesSearch && matchesRole;
     });
 
+    const trainerCount = staffList.filter(person => person.role === 'trainer').length;
+    const adminCount = staffList.filter(person => person.role === 'admin').length;
+
     return (
-        <div className="fade-in">
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="fade-in staff-page">
+            <header className="staff-page__header">
                 <div>
-                    <h2 style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <ShieldCheck color="var(--primary)" /> Staff & Access Matrix
-                    </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                        Configure dynamic role capabilities and manage gym staff member logins.
-                    </p>
+                    <div className="staff-page__eyebrow"><span /> TEAM OPERATIONS</div>
+                    <h1 className="staff-page__title"><span className="staff-page__title-icon"><ShieldCheck size={19} /></span> Staff & access</h1>
+                    <p className="staff-page__subtitle">Manage your team, balance trainer workloads, and set member care permissions.</p>
                 </div>
-                {activeTab === 'directory' && (
-                    <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-                         Add New Staff
-                    </button>
-                )}
-            </div>
+                {activeTab === 'directory' && <button className="staff-page__add" onClick={() => handleOpenModal()}><UserPlus size={17} /> Add staff member</button>}
+            </header>
+
+            <section className="staff-page__stats" aria-label="Staff summary">
+                <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--ink"><Users size={17} /></span><div><strong>{staffList.length}</strong><span>Team members</span></div></div>
+                <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--yellow"><Dumbbell size={17} /></span><div><strong>{trainerCount}</strong><span>Trainers</span></div></div>
+                <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--sand"><ShieldCheck size={17} /></span><div><strong>{adminCount}</strong><span>Administrators</span></div></div>
+            </section>
 
             {/* TAB SELECTOR */}
-            <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: '12px', marginBottom: '2rem', border: '1px solid var(--border)', maxWidth: 'max-content' }}>
-                <button 
-                    className={`btn ${activeTab === 'directory' ? 'btn-primary' : ''}`} 
-                    style={{ background: activeTab === 'directory' ? '' : 'none', border: 'none', color: activeTab === 'directory' ? '' : 'var(--text-secondary)' }}
-                    onClick={() => setActiveTab('directory')}
-                >
-                    Staff Directory ({staffList.length})
-                </button>
-                <button 
-                    className={`btn ${activeTab === 'matrix' ? 'btn-primary' : ''}`} 
-                    style={{ background: activeTab === 'matrix' ? '' : 'none', border: 'none', color: activeTab === 'matrix' ? '' : 'var(--text-secondary)' }}
-                    onClick={() => setActiveTab('matrix')}
-                >
-                    Permission Matrix
-                </button>
+            <div className="staff-page__tabs" role="tablist" aria-label="Staff management views">
+                <button className={activeTab === 'directory' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'directory'} onClick={() => setActiveTab('directory')}>Directory <span>{staffList.length}</span></button>
+                <button className={activeTab === 'assignments' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')}>Trainer assignments</button>
+                <button className={activeTab === 'matrix' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'matrix'} onClick={() => setActiveTab('matrix')}>Role access</button>
             </div>
+
+            {error && !isModalOpen && <div className="staff-page__error" role="alert">{error}</div>}
+
+            {activeTab === 'assignments' && <div className="card" style={{ padding: '1.5rem' }}>
+                <h3>Member to trainer assignments</h3>
+                <p style={{ color: 'var(--text-secondary)' }}>FitPass members receive trainer access only after an administrator assigns them. H4 branch members are assigned automatically as capacity allows.</p>
+                <form onSubmit={submitTrainerAssignment} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+                    <select className="input" value={assignmentMemberId} onChange={e => setAssignmentMemberId(e.target.value)} required style={{ flex: 1, minWidth: 220 }}><option value="">Select member</option>{assignmentMembers.map(member => <option key={member.id || member._id} value={member.id || member._id}>{member.name} · {member.phone}</option>)}</select>
+                    <select className="input" value={assignmentTrainerId} onChange={e => setAssignmentTrainerId(e.target.value)} required style={{ flex: 1, minWidth: 220 }}><option value="">Select trainer</option>{staffList.filter(person => person.role === 'trainer').map(person => <option key={person.id || person._id} value={person.id || person._id}>{person.name} · {trainerAssignments.filter(item => String(item.trainerId) === String(person.id || person._id)).length}/{person.trainerMemberLimit || 10}</option>)}</select>
+                    <button className="btn btn-primary" type="submit">Assign trainer</button>
+                </form>
+                <div className="table-container"><table className="table"><thead><tr><th>Member</th><th>Trainer</th><th>Assigned</th><th></th></tr></thead><tbody>{trainerAssignments.map(item => <tr key={item.id || item._id}><td>{item.member?.name || item.memberId}</td><td>{item.trainer?.name || item.trainerId}</td><td>{new Date(item.assignedDate).toLocaleDateString()}</td><td><button className="btn btn-danger" onClick={() => removeTrainerAssignment(item.id || item._id)}>Remove</button></td></tr>)}{trainerAssignments.length === 0 && <tr><td colSpan="4">No trainer assignments yet.</td></tr>}</tbody></table></div>
+            </div>}
 
             {/* Directory Tab */}
             {activeTab === 'directory' && (
                 <>
                     {/* Filter Bar */}
-                    <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <input 
-                            className="form-control" 
-                            style={{ flex: 1, minWidth: '200px', marginBottom: 0 }}
-                            placeholder="Search by name or email..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                        <select 
-                            className="form-control" 
-                            style={{ width: '180px', marginBottom: 0 }}
-                            value={roleFilter}
-                            onChange={e => setRoleFilter(e.target.value)}
-                        >
+                    <div className="staff-page__toolbar">
+                        <label className="staff-page__search"><Search size={18} /><input aria-label="Search staff by name or email" placeholder="Search staff by name or email" value={search} onChange={e => setSearch(e.target.value)} />{search && <button type="button" aria-label="Clear search" onClick={() => setSearch('')}><X size={16} /></button>}</label>
+                        <label className="staff-page__role-filter"><span>Role</span><select aria-label="Filter staff by role" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
                             <option value="">All Roles</option>
                             <option value="trainer">Trainer</option>
                             <option value="receptionist">Receptionist</option>
                             <option value="admin">Admin</option>
-                        </select>
-                        <ResetFiltersButton onClick={() => { setSearch(''); setRoleFilter(''); }} />
+                        </select></label>
+                        <button className="staff-page__reset" type="button" onClick={() => { setSearch(''); setRoleFilter(''); }}><RotateCcw size={15} /> Reset</button>
                     </div>
 
                     {loading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><div className="spinner"></div></div>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}>
+                            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+                        </div>
                     ) : (
-                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-                            <table className="table">
+                        <div className="staff-page__table-wrap">
+                            <table className="staff-page__table">
                                 <thead>
                                     <tr>
                                         <th>Staff ID</th>
@@ -231,40 +227,26 @@ const Staff = () => {
                                         filteredStaff.map((staff, idx) => (
                                             <tr key={staff._id || staff.id}>
                                                 <td>
-                                                    <span style={{ fontFamily: 'monospace', fontWeight: '700', fontSize: '0.85rem', color: 'var(--primary, #f59e0b)', background: 'rgba(245, 158, 11, 0.08)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                                    <span className="staff-page__staff-id">
                                                         {staff.displayId || staff.empid || `EMP${1001 + idx}`}
                                                     </span>
                                                 </td>
-                                                <td style={{ fontWeight: '600' }}>{staff.name}</td>
-                                                <td>{staff.email}</td>
+                                                <td><span className="staff-page__person"><span className={`staff-page__avatar staff-page__avatar--${staff.role}`}>{staff.name?.trim()?.charAt(0)?.toUpperCase() || '?'}</span><strong>{staff.name}</strong></span></td>
+                                                <td><span className="staff-page__email"><span>{staff.email}</span></span></td>
                                                 <td>
-                                                    <span className={`badge`} style={{
-                                                        padding: '0.25rem 0.6rem',
-                                                        borderRadius: '6px',
-                                                        fontSize: '0.75rem',
-                                                        fontWeight: '700',
-                                                        textTransform: 'uppercase',
-                                                        background: staff.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 
-                                                                    staff.role === 'trainer' ? 'rgba(99, 102, 241, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                                        color: staff.role === 'admin' ? '#ef4444' : 
-                                                               staff.role === 'trainer' ? '#6366f1' : '#f59e0b'
-                                                    }}>
+                                                    <span className={`staff-page__role staff-page__role--${staff.role}`}>
                                                         {staff.role}
                                                     </span>
                                                 </td>
-                                                <td>{new Date(staff.createdAt).toLocaleDateString('en-IN')}</td>
+                                                <td><span className="staff-page__date">{new Date(staff.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></td>
                                                 <td>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <button 
-                                                            className="btn" 
-                                                            style={{ padding: '0.4rem', border: '1px solid var(--border)', color: 'var(--text-secondary)', background: 'var(--bg-secondary)' }}
+                                                    <div className="staff-page__actions">
+                                                        <button className="staff-page__action" aria-label={`Edit ${staff.name}`} title="Edit staff member"
                                                             onClick={() => handleOpenModal(staff)}
                                                         >
                                                             <Pencil size={14} />
                                                         </button>
-                                                        <button 
-                                                            className="btn btn-danger" 
-                                                            style={{ padding: '0.4rem' }}
+                                                        <button className="staff-page__action staff-page__action--delete" aria-label={`Remove ${staff.name}`}
                                                             onClick={() => handleDelete(staff)}
                                                             disabled={staff._id === user?._id || staff.id === user?.id}
                                                             title={staff._id === user?._id || staff.id === user?.id ? 'Cannot delete yourself' : ''}
@@ -277,10 +259,10 @@ const Staff = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="5">
-                                                <div className="empty-state" style={{ textAlign: 'center', padding: '3rem' }}>
-                                                    <h3>No staff members found</h3>
-                                                    <p>Try adjusting your search query or role filter.</p>
+                                            <td colSpan="6">
+                                                <div className="staff-page__empty">
+                                                    <span><Users size={22} /></span><h3>No team members match</h3>
+                                                    <p>Try another name or role, or reset the filters.</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -294,94 +276,12 @@ const Staff = () => {
 
             {/* Matrix Tab */}
             {activeTab === 'matrix' && (
-                <div className="fade-in">
-                    {matrixMessage && (
-                        <div style={{
-                            background: 'rgba(46, 125, 50, 0.1)', border: '1px solid var(--success)',
-                            color: 'var(--success)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', fontWeight: '600'
-                        }}>
-                            <Check size={15} /> {matrixMessage}
-                        </div>
-                    )}
-
-                    <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <div>
-                                <h3 style={{ margin: 0 }}>System Modules Permission Matrix</h3>
-                                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>Configure granular feature access for each default user group.</p>
-                            </div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: '700', padding: '0.3rem 0.6rem', borderRadius: '20px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                                Immutable Superadmin Mode Active
-                            </span>
-                        </div>
-
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="table" style={{ width: '100%', textAlign: 'center' }}>
-                                <thead>
-                                    <tr>
-                                        <th style={{ textAlign: 'left' }}>System Capability</th>
-                                        <th>Superadmin</th>
-                                        <th>Admin</th>
-                                        <th>Receptionist</th>
-                                        <th>Trainer</th>
-                                        <th>Member</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {[
-                                        { key: 'members', label: 'Manage Member Profiles & Statuses' },
-                                        { key: 'workouts', label: 'Assign Workout & Diet Programs' },
-                                        { key: 'settings', label: 'Modify Branding & Cooldown Settings' },
-                                        { key: 'finance', label: 'Access Financials, Dues & Taxes' },
-                                        { key: 'classes', label: 'Manage Classes & Timetables' },
-                                        { key: 'reports', label: 'Generate Audits & Executive Reports' }
-                                    ].map(mod => (
-                                        <tr key={mod.key}>
-                                            <td style={{ textAlign: 'left', fontWeight: '700', fontSize: '0.875rem' }}>{mod.label}</td>
-                                            
-                                            {/* Superadmin always true */}
-                                            <td>
-                                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                                    <CheckSquare size={20} color="var(--primary)" style={{ opacity: 0.8 }} />
-                                                </div>
-                                            </td>
-
-                                            {/* Roles editable */}
-                                            {['admin', 'receptionist', 'trainer', 'member'].map(role => {
-                                                const hasAccess = matrix[role][mod.key];
-                                                return (
-                                                    <td key={role}>
-                                                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => toggleMatrixPermission(role, mod.key)}
-                                                                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                                                            >
-                                                                {hasAccess ? (
-                                                                    <CheckSquare size={20} color="var(--primary)" />
-                                                                ) : (
-                                                                    <div style={{ width: '20px', height: '20px', border: '2px solid var(--border)', borderRadius: '4px' }} />
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Features Matrix Info */}
-                    <div className="card" style={{ padding: '2rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                        <div style={{ flex: 1, minWidth: '260px' }}>
-                            <h4 style={{ margin: '0 0 0.5rem 0' }}> Dynamic Permission Control</h4>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', margin: 0 }}>
-                                Custom checks are intercepted at the route layer. Setting changes made in this dashboard immediately block access to pages and hide their sidebar icons across the entire organization.
-                            </p>
-                        </div>
+                <div className="staff-page__access-guide">
+                    <div className="staff-page__guide-heading"><div><span className="staff-page__eyebrow"><span /> PRESET ACCESS</span><h2>Access follows the role</h2><p>Core permissions are assigned by role. Trainer workloads and coaching permissions can be adjusted per staff member.</p></div></div>
+                    <div className="staff-page__role-cards">
+                        <article><span className="staff-page__role-mark staff-page__role-mark--admin"><ShieldCheck size={18} /></span><h3>Administrator</h3><p>Manage branch members, staff, operations, and reporting within the assigned organization scope.</p></article>
+                        <article><span className="staff-page__role-mark staff-page__role-mark--trainer"><Dumbbell size={18} /></span><h3>Trainer</h3><p>Work with assigned members. Managers set a member cap and enable workout, diet, and assessment tasks.</p></article>
+                        <article><span className="staff-page__role-mark staff-page__role-mark--desk"><Users size={18} /></span><h3>Receptionist</h3><p>Support member check-ins and front desk tasks without access to administrative settings.</p></article>
                     </div>
                 </div>
             )}
@@ -411,6 +311,7 @@ const Staff = () => {
                                 placeholder="John Doe"
                             />
                         </div>
+                        {formData.role === 'trainer' && !user?.branchId && <div className="input-group"><label>Assigned branch *</label><select className="input" value={formData.branchId || ''} onChange={e => setFormData({ ...formData, branchId: e.target.value })} required><option value="">Choose a branch</option>{branchList.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
 
                         <div className="input-group">
                             <label>Email Address *</label>
@@ -461,6 +362,16 @@ const Staff = () => {
                             </select>
                         </div>
                     </div>
+
+                    {formData.role === 'trainer' && <section style={{ marginTop: 16, padding: 16, border: '1px solid var(--border)', borderRadius: 10 }}>
+                        <h4 style={{ marginTop: 0 }}>Trainer workload and access</h4>
+                        <label className="input-group">Maximum assigned members
+                            <input className="input" type="number" min="1" max="100" value={formData.trainerMemberLimit} onChange={e => setFormData({ ...formData, trainerMemberLimit: Number(e.target.value) })} />
+                        </label>
+                        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 12 }}>
+                            {Object.entries({ assignWorkout: 'Assign workout plans', assignDiet: 'Assign diet plans', recordAssessment: 'Record body assessments', scheduleClasses: 'Schedule classes', manageClassBookings: 'Manage class rosters and attendance', ...(activeDivision === 'fitpass' ? { setClassPricing: 'Set FitCoin add-on prices' } : {}) }).map(([key, label]) => <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><input type="checkbox" checked={formData.trainerPermissions?.[key] !== false} onChange={e => setFormData({ ...formData, trainerPermissions: { ...formData.trainerPermissions, [key]: e.target.checked } })} />{label}</label>)}
+                        </div>
+                    </section>}
 
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
                         {editingStaff ? 'Save Changes' : 'Create Account'}

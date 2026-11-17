@@ -4,9 +4,10 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build": "prisma generate && prisma db push --accept-data-loss",
+    "start": "prisma db push && node server.js",
+    "dev": "prisma db push && nodemon server.js",
+    "db:sync": "prisma db push",
+    "build": "prisma generate && prisma db push",
     "postinstall": "prisma generate",
     "test": "jest"
   },

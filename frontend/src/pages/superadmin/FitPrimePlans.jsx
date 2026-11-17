@@ -3,7 +3,7 @@ import API from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import Modal from '../../components/Modal';
 import { Link } from 'react-router-dom';
-import { 
+import { Loader,  
     Ticket, 
     Plus, 
     Pencil, 
@@ -165,7 +165,11 @@ function FitPrimePlans() {
         String(p.sessions ?? p.duration ?? '').includes(searchTerm)
     );
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     return (
         <div className="fitprime-plans-page">

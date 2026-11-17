@@ -28,6 +28,10 @@ async function resolveMember(req, requestedMemberId) {
     const gymId = getGymId(req);
     const memberId = req.user.role === 'member' ? req.user.memberId : requestedMemberId;
     if (!gymId || !memberId) return null;
+    if (req.user.role === 'trainer') {
+        const assigned = await prisma.memberTrainerAssignment.findFirst({ where: { trainerId: req.user.id, memberId: String(memberId), gymId } });
+        if (!assigned) return null;
+    }
     return prisma.member.findFirst({
         where: {
             id: String(memberId),

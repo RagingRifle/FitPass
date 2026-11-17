@@ -25,6 +25,8 @@ const createClassSchema = z.object({
     endTime: z.string().min(1, 'End time is required'),
     maxSeats: z.coerce.number().min(1, 'Capacity must be at least 1'),
     bookingDeadline: z.string().optional(),
+    isAddOn: z.boolean().optional(),
+    priceCoins: z.coerce.number().int().min(0).max(100000).optional(),
     branchId: z.string().optional().nullable(),
     branchIds: z.array(z.string()).optional(),
     gymId: z.string().optional()
@@ -35,16 +37,16 @@ const bookClassSchema = z.object({
 });
 
 router.route('/')
-    .get(protect, authorize('superadmin', 'admin', 'trainer', 'receptionist'), tenantFilter, getClasses)
-    .post(protect, authorize('superadmin', 'admin', 'trainer'), validate({ body: createClassSchema }), createClass);
+    .get(protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), tenantFilter, getClasses)
+    .post(protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'h4_admin'), validate({ body: createClassSchema }), createClass);
 
-router.delete('/:id', protect, authorize('superadmin', 'admin'), deleteClass);
-router.get('/:id/bookings', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist'), getClassBookings);
-router.post('/:id/book', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist'), validate({ body: bookClassSchema }), adminBookClass);
-router.delete('/:id/bookings/:memberId', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist'), adminCancelBooking);
+router.delete('/:id', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'h4_admin'), deleteClass);
+router.get('/:id/bookings', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), getClassBookings);
+router.post('/:id/book', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), validate({ body: bookClassSchema }), adminBookClass);
+router.delete('/:id/bookings/:memberId', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), adminCancelBooking);
 
 // Attendee verification via QR scan or manual roster toggle
-router.post('/:id/verify-attendee', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist'), verifyClassAttendee);
-router.put('/:id/attendees/:memberId', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist'), toggleAttendeeStatus);
+router.post('/:id/verify-attendee', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), verifyClassAttendee);
+router.put('/:id/attendees/:memberId', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), toggleAttendeeStatus);
 
 module.exports = router;

@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import Modal from '../components/Modal';
 import ResetFiltersButton from '../components/ResetFiltersButton';
-import { Pencil, Trash2, UserPlus, X } from 'lucide-react';
+import { Pencil, Trash2, UserPlus, X, Loader } from 'lucide-react';
 
 const STATUSES = ['New', 'Contacted', 'Interested', 'Converted', 'Lost'];
 const SOURCES = ['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'];
 
 const STATUS_COLORS = {
-    New: { bg: 'var(--primary-muted)', text: 'var(--primary-color)' },
-    Contacted: { bg: 'rgba(245,158,11,0.15)', text: '#f59e0b' },
+    New: { bg: 'var(--primary-muted)', text: '#92700A' },
+    Contacted: { bg: 'rgba(245,158,11,0.15)', text: '#92700A' },
     Interested: { bg: 'rgba(14,165,233,0.15)', text: '#0ea5e9' },
     Converted: { bg: 'rgba(16,185,129,0.15)', text: '#10b981' },
     Lost: { bg: 'rgba(107,114,128,0.15)', text: '#6b7280' },
@@ -124,7 +124,11 @@ const Leads = () => {
 
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+    <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+  </div>
+);
 
     return (
         <div>
@@ -165,7 +169,7 @@ const Leads = () => {
             {Array.isArray(summary?.sourceCounts) && summary.sourceCounts.length > 0 && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                     {summary.sourceCounts.map(s => (
-                        <span key={s._id} style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: '600' }}>
+                        <span key={s._id} style={{ background: 'var(--primary-light)', color: '#92700A', padding: '0.3rem 0.75rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: '600' }}>
                             {s._id}: {s.count}
                         </span>
                     ))}
@@ -217,7 +221,7 @@ const Leads = () => {
                                 <tr key={lead._id}>
                                     <td style={{ fontWeight: '600' }}>{lead.name}</td>
                                     <td>{lead.phone}</td>
-                                    <td><span style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem' }}>{lead.source}</span></td>
+                                    <td><span style={{ background: 'var(--primary-light)', color: '#92700A', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem' }}>{lead.source}</span></td>
                                     <td>{staff.find(s => String(s._id || s.id) === String(lead.assignedTo))?.name || lead.assignedTo || '—'}</td>
                                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{lead.interestedPlan || '—'}</td>
                                     <td>

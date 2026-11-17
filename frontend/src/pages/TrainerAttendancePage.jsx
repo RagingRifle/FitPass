@@ -1,9 +1,9 @@
 import { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { getTrainerAttendance, markTrainerLeave, trainerCheckIn, trainerCheckOut, getStaff } from '../services/apiService';
+import { getTrainerAttendance, markTrainerLeave, trainerCheckIn, trainerCheckOut, getStaff, getTrainerLeaveRequests, createTrainerLeaveRequest, reviewTrainerLeaveRequest } from '../services/apiService';
 import API from '../services/api';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Clock, CheckCircle2, Users, Activity, Play, Square, CalendarDays, Palmtree, ChevronDown } from 'lucide-react';
+import { Loader,  Clock, CheckCircle2, Users, Activity, Play, Square, CalendarDays, Palmtree, ChevronDown } from 'lucide-react';
 import ResetFiltersButton from '../components/ResetFiltersButton';
 
 const todayLocal = () => {
@@ -37,6 +37,9 @@ const TrainerAttendancePage = () => {
     const [activeLog, setActiveLog] = useState(null);
     const [leaveDate, setLeaveDate] = useState(todayLocal());
     const [leaveReason, setLeaveReason] = useState('');
+    const [leaveEndDate, setLeaveEndDate] = useState(todayLocal());
+    const [leaveRequests, setLeaveRequests] = useState([]);
+    const [leaveEdits, setLeaveEdits] = useState({});
     const [busy, setBusy] = useState(false);
 
     const dateRange = useMemo(() => {
@@ -53,6 +56,16 @@ const TrainerAttendancePage = () => {
             API.get('/branches').then(({ data }) => setBranches(Array.isArray(data) ? data : (data?.branches || []))).catch(() => setBranches([]));
         }
     }, [isAdmin]);
+
+    const fetchLeaveRequests = useCallback(async () => {
+        if (!isAdmin && !isTrainer) return;
+        try {
+            const rows = await getTrainerLeaveRequests(isAdmin ? 'Pending' : '');
+            setLeaveRequests(Array.isArray(rows) ? rows : []);
+        } catch (error) { console.error('Could not load trainer leave requests:', error); }
+    }, [isAdmin, isTrainer]);
+
+    useEffect(() => { fetchLeaveRequests(); }, [fetchLeaveRequests]);
 
     useEffect(() => {
         if (isTrainer && user?.id) setSelectedTrainerId(user.id);
@@ -153,6 +166,29 @@ const TrainerAttendancePage = () => {
         } catch (error) { alert(error.response?.data?.message || 'Could not mark leave'); }
         finally { setBusy(false); }
     };
+    const handleSubmitLeaveRequest = async event => {
+        event.preventDefault();
+        setBusy(true);
+        try {
+            await createTrainerLeaveRequest({ startDate: leaveDate, endDate: leaveEndDate, reason: leaveReason, timezoneOffset: new Date().getTimezoneOffset() });
+            setLeaveReason('');
+            await fetchLeaveRequests();
+            alert('Leave request sent to your branch admin.');
+        } catch (error) { alert(error.response?.data?.message || 'Could not submit leave request'); }
+        finally { setBusy(false); }
+    };
+    const handleReviewLeaveRequest = async (request, status) => {
+        const editedDates = leaveEdits[request.id] || {};
+        try {
+            await reviewTrainerLeaveRequest(request.id, {
+                status,
+                startDate: editedDates.startDate || new Date(request.startDate).toISOString().slice(0, 10),
+                endDate: editedDates.endDate || new Date(request.endDate).toISOString().slice(0, 10),
+                timezoneOffset: new Date().getTimezoneOffset()
+            });
+            await Promise.all([fetchLeaveRequests(), fetchLogs()]);
+        } catch (error) { alert(error.response?.data?.message || 'Could not review leave request'); }
+    };
     const resetFilters = () => {
         setSelectedTrainerId(isTrainer ? user?.id || '' : '');
         setSelectedBranchId(user?.branchId || '');
@@ -176,6 +212,33 @@ const TrainerAttendancePage = () => {
             </form>}
         </div>
 
+        {isTrainer && <div className="card" style={{ marginBottom: '1.25rem' }}>
+            <h3 style={{ marginTop: 0 }}>Request leave</h3>
+            <form onSubmit={handleSubmitLeaveRequest} style={{ display: 'flex', alignItems: 'end', gap: '.75rem', flexWrap: 'wrap' }}>
+                <label style={{ display: 'grid', gap: 5, fontSize: '.8rem' }}>From<input className="input" type="date" required value={leaveDate} onChange={event => { setLeaveDate(event.target.value); if (event.target.value > leaveEndDate) setLeaveEndDate(event.target.value); }} /></label>
+                <label style={{ display: 'grid', gap: 5, fontSize: '.8rem' }}>To<input className="input" type="date" min={leaveDate} required value={leaveEndDate} onChange={event => setLeaveEndDate(event.target.value)} /></label>
+                <label style={{ display: 'grid', gap: 5, fontSize: '.8rem', flex: '1 1 220px' }}>Reason<input className="input" maxLength={500} value={leaveReason} onChange={event => setLeaveReason(event.target.value)} placeholder="Optional note for your admin" /></label>
+                <button className="btn btn-primary" type="submit" disabled={busy}><Palmtree size={16} /> Send request</button>
+            </form>
+            <div style={{ marginTop: '1rem' }}><strong style={{ fontSize: '.9rem' }}>My leave requests</strong>
+                {leaveRequests.length ? <div style={{ display: 'grid', gap: '.5rem', marginTop: '.6rem' }}>{leaveRequests.map(request => <div key={request.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', padding: '.65rem .8rem', border: '1px solid var(--border-color)', borderRadius: 8 }}><span>{new Date(request.startDate).toISOString().slice(0, 10)} – {new Date(request.endDate).toISOString().slice(0, 10)}{request.status === 'Approved' && request.approvedStartDate && request.approvedEndDate ? ` · Approved ${new Date(request.approvedStartDate).toISOString().slice(0, 10)} – ${new Date(request.approvedEndDate).toISOString().slice(0, 10)}` : ''}{request.reason ? ` · ${request.reason}` : ''}</span><strong style={{ color: request.status === 'Approved' ? '#15803d' : request.status === 'Rejected' ? '#b91c1c' : '#a16207' }}>{request.status}</strong></div>)}</div> : <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem', margin: '.5rem 0 0' }}>No requests submitted yet.</p>}
+            </div>
+        </div>}
+
+        {isAdmin && <div className="card" style={{ marginBottom: '1.25rem' }}>
+            <h3 style={{ marginTop: 0 }}>Leave requests awaiting review</h3>
+            {leaveRequests.length ? <div style={{ display: 'grid', gap: '.75rem' }}>{leaveRequests.map(request => {
+                const dates = leaveEdits[request.id] || { startDate: new Date(request.startDate).toISOString().slice(0, 10), endDate: new Date(request.endDate).toISOString().slice(0, 10) };
+                return <div key={request.id} style={{ display: 'flex', alignItems: 'end', flexWrap: 'wrap', gap: '.65rem', padding: '.75rem', border: '1px solid var(--border-color)', borderRadius: 10 }}>
+                    <div style={{ flex: '1 1 180px' }}><strong>{request.trainer?.name || 'Trainer'}</strong><div style={{ fontSize: '.82rem', color: 'var(--text-secondary)' }}>{request.reason || 'No reason provided'}</div></div>
+                    <label style={{ display: 'grid', gap: 4, fontSize: '.78rem' }}>Approve from<input className="input" type="date" value={dates.startDate} onChange={event => setLeaveEdits(current => ({ ...current, [request.id]: { ...dates, startDate: event.target.value } }))} /></label>
+                    <label style={{ display: 'grid', gap: 4, fontSize: '.78rem' }}>Through<input className="input" type="date" min={dates.startDate} value={dates.endDate} onChange={event => setLeaveEdits(current => ({ ...current, [request.id]: { ...dates, endDate: event.target.value } }))} /></label>
+                    <button className="btn btn-primary" type="button" onClick={() => handleReviewLeaveRequest(request, 'Approved')}>Approve dates</button>
+                    <button className="btn btn-secondary" type="button" onClick={() => handleReviewLeaveRequest(request, 'Rejected')}>Reject</button>
+                </div>;
+            })}</div> : <p style={{ color: 'var(--text-secondary)' }}>No pending leave requests.</p>}
+        </div>}
+
         <div className="card" style={{ display: 'flex', alignItems: 'end', gap: '.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
             <label style={{ display: 'grid', gap: 5, minWidth: 160 }}>Time period<select className="input" value={period} onChange={event => setPeriod(event.target.value)}><option value="month">Month</option><option value="year">Year</option><option value="custom">Custom dates</option></select></label>
             {period !== 'custom' && <label style={{ display: 'grid', gap: 5, minWidth: 145 }}>Year<select className="input" value={filterYear} onChange={event => setFilterYear(Number(event.target.value))}>{availableYears.map(year => <option key={year} value={year}>{year}</option>)}</select></label>}
@@ -186,7 +249,7 @@ const TrainerAttendancePage = () => {
             <ResetFiltersButton onClick={resetFilters} />
         </div>
 
-        {loading ? <div className="spinner" /> : <>
+        {loading ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}><Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} /></div> : <>
             {(isTrainer || (isAdmin && selectedTrainerId)) && <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem' }}><Clock size={28} color={isCheckedIn ? '#10b981' : 'var(--text-secondary)'} /><div><strong>{isCheckedIn ? 'Shift in progress' : 'No active shift'}</strong><div style={{ color: 'var(--text-secondary)', fontSize: '.85rem' }}>{isCheckedIn ? `Started ${formatTime(activeLog?.checkInTime)}` : 'You can start another shift after each checkout.'}</div></div></div>
                 {isCheckedIn ? <button className="btn btn-danger" disabled={busy} onClick={handleCheckOut}><Square size={16} /> Check out shift</button> : <button className="btn btn-primary" disabled={busy} onClick={handleCheckIn}><Play size={16} /> Check in shift</button>}

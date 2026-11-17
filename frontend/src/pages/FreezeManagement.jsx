@@ -1,3 +1,4 @@
+import { Loader } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import API from '../services/api';
 import Modal from '../components/Modal';
@@ -78,7 +79,11 @@ const FreezeManagement = () => {
         return { background: 'rgba(239,68,68,0.15)', color: '#ef4444' };
     };
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     return (
         <div>

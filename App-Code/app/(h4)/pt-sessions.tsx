@@ -6,7 +6,7 @@ import { H4PTSessions } from '@/features/h4';
 
 export default function H4PTSessionsScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4PTSessions />
     </SafeAreaView>
   );

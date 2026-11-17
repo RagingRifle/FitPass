@@ -30,7 +30,7 @@ interface AuthState {
   initializeAuth: () => Promise<void>;
   checkUser: (email: string) => Promise<{ status: 'new' | 'exists'; message: string; role?: string }>;
   verifyOTP: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>;
-  login: (email: string, password: string, portal?: 'staff' | 'h4' | 'fitpass') => Promise<{ success: boolean; message?: string }>;
+  login: (email: string, password: string, portal?: 'staff' | 'h4' | 'h4_trainer' | 'fitpass' | 'fitpass_trainer') => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   changeSelectedGym: (gymId: string) => Promise<void>;
   changeSelectedBranch: (branchId: string) => Promise<void>;
@@ -153,6 +153,12 @@ export const useAuth = create<AuthState>((set, get) => {
             if (!isH4) {
               throw new Error('Access Denied: This portal is restricted to H4 Gym Members.');
             }
+          } else if (portal === 'h4_trainer') {
+            const isH4Trainer = userRole === 'trainer' && (userGymName.toUpperCase().includes('H4') || H4_GYM_IDS.includes(userGymId));
+            if (!isH4Trainer) throw new Error('Access Denied: This portal is for H4 trainers only.');
+          } else if (portal === 'fitpass_trainer') {
+            const isFitpassTrainer = userRole === 'trainer' && !(userGymName.toUpperCase().includes('H4') || H4_GYM_IDS.includes(userGymId));
+            if (!isFitpassTrainer) throw new Error('Access Denied: This portal is for FitPass partner gym trainers only.');
           } else if (portal === 'fitpass') {
             const isFitpass = isAdministrative || (userRole === 'member' && (userGymName.toUpperCase() !== 'H4' && !H4_GYM_IDS.includes(userGymId)));
             if (!isFitpass) {

@@ -27,7 +27,8 @@ import {
 import { Skeleton } from '@/components/ui';
 import { theme } from '@/design-system/theme';
 import { fontFamilies } from '@/design-system/tokens';
-import { useSessionStatus, usePartnerGyms } from '../api/fitpass.api';
+import { useRecentSessionActivity, useSessionStatus, usePartnerGyms } from '../api/fitpass.api';
+import { AttendanceActivityGrid } from '@/components/attendance/AttendanceActivityGrid';
 import { useAuth } from '@/features/auth';
 import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -390,6 +391,7 @@ function AllPartnerGyms() {
 // ─── Root Dashboard ────────────────────────────────────────────────────────
 export function FitPassDashboard({ onScanQR }: { onScanQR: () => void }) {
   const router = useRouter();
+  const { data: recentActivity } = useRecentSessionActivity();
   return (
     <ScrollView
       style={styles.root}
@@ -398,8 +400,12 @@ export function FitPassDashboard({ onScanQR }: { onScanQR: () => void }) {
     >
       <Header onScanQR={onScanQR} />
       <PassCard />
+      <AttendanceActivityGrid dates={(recentActivity?.data ?? []).map(item => item.startedAt || item.date).filter((date): date is string => Boolean(date))} />
       <TouchableOpacity onPress={() => router.push('/(fitpass)/shop')} activeOpacity={0.85} style={{ backgroundColor: '#FEDF1E', padding: 16, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ color: '#171713', fontWeight: '900', fontSize: 16 }}>Shop with FitPass coins</Text><ChevronRight size={20} color="#171713" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/(fitpass)/classes' as any)} activeOpacity={0.85} style={{ backgroundColor: '#EAE6FF', padding: 16, borderRadius: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View><Text style={{ color: '#4935A1', fontWeight: '900', fontSize: 16 }}>Coach-led classes</Text><Text style={{ color: '#625A7E', fontSize: 11, marginTop: 3 }}>Book yoga, Zumba, PT and more with FitCoins</Text></View><ChevronRight size={20} color="#4935A1" />
       </TouchableOpacity>
       <PopularFitPassGyms />
       <AllPartnerGyms />

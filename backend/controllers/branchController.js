@@ -5,6 +5,28 @@ const Member = require('../models/Member');
 const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { logAudit } = require('../utils/auditLogger');
+const { z } = require('zod');
+
+const branchDetailsSchema = z.object({
+    name: z.string().min(1).max(160).optional(),
+    shortDescription: z.string().max(300).optional(),
+    description: z.string().max(5000).optional(),
+    address: z.string().max(500).optional(),
+    phone: z.string().max(40).optional(),
+    email: z.string().email().or(z.literal('')).optional(),
+    website: z.string().max(300).optional(),
+    managerName: z.string().max(160).optional(),
+    openingTime: z.string().max(20).optional(),
+    closingTime: z.string().max(20).optional(),
+    workingDays: z.array(z.string().max(20)).max(7).optional(),
+    weeklySchedule: z.record(z.string(), z.object({ closed: z.boolean().optional(), open: z.string().max(20).optional(), close: z.string().max(20).optional() })).optional(),
+    scheduleExceptions: z.array(z.object({ date: z.string().max(20), closed: z.boolean(), open: z.string().max(20).optional(), close: z.string().max(20).optional(), reason: z.string().max(300).optional() })).max(100).optional(),
+    amenities: z.array(z.string().max(100)).max(50).optional(),
+    equipments: z.array(z.string().max(100)).max(50).optional(),
+    fitPassEnabled: z.boolean().optional(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
+});
 
 // Public branch directory used only to let staff choose their workplace at sign in.
 const getPublicBranches = catchAsync(async (req, res, next) => {
@@ -22,7 +44,8 @@ const getPublicBranches = catchAsync(async (req, res, next) => {
 const getBranches = catchAsync(async (req, res, next) => {
     try {
         const query = {};
-        if (req.user.gymId && req.user.gymId !== 'SYSTEM') {
+        const isH4BranchAdmin = req.user.role === 'h4_admin' && req.user.userBranchId;
+        if (!isH4BranchAdmin && req.user.gymId && req.user.gymId !== 'SYSTEM') {
             query.gymId = req.user.gymId;
         }
 
@@ -45,7 +68,11 @@ const getBranches = catchAsync(async (req, res, next) => {
             return { ...b, memberCount, totalRevenue: revenueAgg[0]?.total || 0 };
         }));
 
-        res.json(enriched);
+        const gymIds = [...new Set(enriched.map((branch) => String(branch.gymId || '')).filter(Boolean))];
+        const gyms = gymIds.length ? await require('../config/prisma').gym.findMany({ where: { id: { in: gymIds } }, select: { id: true, name: true } }) : [];
+        const gymNames = new Map(gyms.map((gym) => [String(gym.id), gym.name]));
+
+        res.json(enriched.map((branch) => ({ ...branch, gymName: gymNames.get(String(branch.gymId || '')) || '' })));
     } catch (err) { next(err); }
 });
 
@@ -56,11 +83,14 @@ const createBranch = catchAsync(async (req, res, next) => {
         if (!isHQAdmin && req.user.userBranchId) {
             return res.status(403).json({ message: 'Branch administrators cannot create branches' });
         }
-        const { name, address, phone, email, managerName, fitPassEnabled, latitude, longitude } = req.body;
+        const parsed = branchDetailsSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
+        const { name, address, phone, email, managerName, fitPassEnabled, latitude, longitude, ...details } = parsed.data;
         if (!name) return res.status(400).json({ message: 'Branch name is required' });
 
         const branch = await Branch.create({
             name,
+            ...details,
             address,
             phone,
             email,
@@ -100,18 +130,20 @@ const createBranch = catchAsync(async (req, res, next) => {
 // @route   PUT /api/branches/:id
 const updateBranch = catchAsync(async (req, res, next) => {
     try {
-        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
-            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
-        if (!isHQAdmin && req.user.userBranchId) {
-            return res.status(403).json({ message: 'Branch administrators cannot modify branches' });
+        const isH4BranchAdmin = req.user.role === 'h4_admin' && req.user.userBranchId;
+        if (isH4BranchAdmin && String(req.params.id) !== String(req.user.userBranchId)) {
+            return res.status(403).json({ message: 'Branch admins can only edit their assigned branch.' });
         }
         const filter = { _id: req.params.id };
-        if (req.user.gymId && req.user.gymId !== 'SYSTEM') {
+        if (isH4BranchAdmin) filter._id = req.user.userBranchId;
+        if (!isH4BranchAdmin && req.user.gymId && req.user.gymId !== 'SYSTEM') {
             filter.gymId = req.user.gymId;
         }
+        const parsed = branchDetailsSchema.safeParse(req.body);
+        if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0].message });
         const branch = await Branch.findOneAndUpdate(
             filter,
-            req.body,
+            parsed.data,
             { new: true }
         );
         if (!branch) return res.status(404).json({ message: 'Branch not found' });

@@ -26,6 +26,8 @@ function NavigationGuard() {
     const inSuperadmin = segmentsList[0] === '(superadmin)';
     const inFitpass = segmentsList[0] === '(fitpass)';
     const inH4 = segmentsList[0] === '(h4)';
+    const inH4Trainer = segmentsList[0] === '(h4-trainer)';
+    const inFitPassTrainer = segmentsList[0] === '(fitpass-trainer)';
     const onPortalSelection = inSuperadmin && segmentsList[1] === 'portal-selection';
 
     if (!token) {
@@ -42,6 +44,14 @@ function NavigationGuard() {
     const isMember = role === 'member';
 
     if (isStaff) {
+      if (role === 'trainer' && activeDivision === 'h4') {
+        if (!inH4Trainer) router.replace('/(h4-trainer)/dashboard');
+        return;
+      }
+      if (role === 'trainer' && activeDivision === 'fitpass') {
+        if (!inFitPassTrainer) router.replace('/(fitpass-trainer)/dashboard');
+        return;
+      }
       // Staff/admin portal
       if (activeDivision === null) {
         if (!onPortalSelection) router.replace('/(superadmin)/portal-selection');

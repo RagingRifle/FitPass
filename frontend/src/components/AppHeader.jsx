@@ -18,6 +18,7 @@ const PAGE_TITLES = {
     '/reports': 'Business Reports',
     '/freeze': 'Freeze Management',
     '/classes': 'Class Scheduling',
+    '/fitpass-classes': 'FitPass Class Add-ons',
     '/analytics': 'Performance Analytics',
     '/branches': 'Multi-Branch Management',
     '/audit': 'System Audit Logs',

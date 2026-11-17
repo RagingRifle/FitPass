@@ -7,7 +7,7 @@ import ResetFiltersButton from '../components/ResetFiltersButton';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { 
     Apple, Calendar, User, Plus, Trash2, Edit3, Search, 
-    Flame, Cookie, Zap, Droplet, Sparkles, CheckCircle2, Circle, X
+    Flame, Cookie, Zap, Droplet, Sparkles, CheckCircle2, Circle, X, Loader
 } from 'lucide-react';
 
 const DietPlans = () => {
@@ -619,8 +619,8 @@ const DietPlans = () => {
                             <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Average meal adherence</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length ? `${Math.round(progressLogs.reduce((sum, log) => sum + (log.mealCount ? log.completedMeals / log.mealCount : 0), 0) / progressLogs.length * 100)}%` : '—'}</h2></div>
                             <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Average daily water</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length ? `${(progressLogs.reduce((sum, log) => sum + Number(log.waterCups || 0), 0) / progressLogs.length).toFixed(1)} cups` : '—'}</h2></div>
                         </div>
-                        <div className="card" style={{ marginBottom: 16 }}><h3 style={{ marginTop: 0 }}>Nutrition consistency by day</h3>{progressLoading ? <div className="spinner" /> : nutritionTrendData.length ? <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><LineChart data={nutritionTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis yAxisId="left" domain={[0, 100]} /><YAxis yAxisId="right" orientation="right" /><Tooltip /><Line yAxisId="left" type="monotone" dataKey="adherence" name="Meals completed (%)" stroke="#34d399" strokeWidth={3} /><Line yAxisId="right" type="monotone" dataKey="water" name="Water cups" stroke="#38bdf8" strokeWidth={2} /></LineChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>No nutrition logs match these filters.</p>}</div>
-                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}><table><thead><tr><th>Date</th><th>Member ID</th><th>Name</th><th>Phone</th><th>Diet plan</th><th>Meals</th><th>Calories</th><th>Protein</th><th>Water</th><th>Recorded by</th><th>Branch</th></tr></thead><tbody>{progressLogs.map(log => <tr key={log.id}><td>{new Date(log.loggedAt).toLocaleDateString()}</td><td>{log.member?.displayId || log.memberId}</td><td>{log.member?.name || 'Member'}</td><td>{log.member?.phone || '—'}</td><td>{log.plan?.name || log.planName}</td><td>{log.completedMeals}/{log.mealCount}</td><td>{log.calories} kcal</td><td>{log.protein} g</td><td>{log.waterCups} cups</td><td>{log.recordedBy?.name || '—'}</td><td>{log.branch?.name || '—'}</td></tr>)}{!progressLoading && !progressLogs.length && <tr><td colSpan="11" style={{ textAlign: 'center', padding: 24 }}>No nutrition history for this date range.</td></tr>}</tbody></table></div>
+                        <div className="card" style={{ marginBottom: 16 }}><h3 style={{ marginTop: 0 }}>Nutrition consistency by day</h3>{progressLoading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader className="spinner" size={36} style={{ color: 'var(--primary-color)' }} /></div> : nutritionTrendData.length ? <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><LineChart data={nutritionTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis yAxisId="left" domain={[0, 100]} /><YAxis yAxisId="right" orientation="right" /><Tooltip /><Line yAxisId="left" type="monotone" dataKey="adherence" name="Meals completed (%)" stroke="#34d399" strokeWidth={3} /><Line yAxisId="right" type="monotone" dataKey="water" name="Water cups" stroke="#38bdf8" strokeWidth={2} /></LineChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>No nutrition logs match these filters.</p>}</div>
+                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}><table><thead><tr><th>Date</th><th>Member ID</th><th>Name</th><th>Phone</th><th>Diet plan</th><th>Meals</th><th>Calories</th><th>Protein</th><th>Water</th><th>Recorded by</th><th>Branch</th></tr></thead><tbody>{progressLogs.map(log => <tr key={log.id}><td>{new Date(log.loggedAt).toLocaleDateString()}</td><td>{(() => { const code = log.member?.displayId || log.member?.registrationNumber; if (code && !code.includes('-') && code.length < 15) return code; if (log.memberId && (!log.memberId.includes('-') || log.memberId.length < 15)) return log.memberId; return '—'; })()}</td><td>{log.member?.name || 'Member'}</td><td>{log.member?.phone || '—'}</td><td>{log.plan?.name || log.planName}</td><td>{log.completedMeals}/{log.mealCount}</td><td>{log.calories} kcal</td><td>{log.protein} g</td><td>{log.waterCups} cups</td><td>{log.recordedBy?.name || '—'}</td><td>{log.branch?.name || '—'}</td></tr>)}{!progressLoading && !progressLogs.length && <tr><td colSpan="11" style={{ textAlign: 'center', padding: 24 }}>No nutrition history for this date range.</td></tr>}</tbody></table></div>
                     </div> : <>
                     <div className="diet-plan-search-row">
                         <div className="diet-search-field">
@@ -636,7 +636,7 @@ const DietPlans = () => {
                     </div>
 
                     {loading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><div className="spinner"></div></div>
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} /></div>
                     ) : filteredPlans.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-secondary)' }}>
                             <Apple size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
@@ -659,11 +659,13 @@ const DietPlans = () => {
                                                     <h3 style={{ marginTop: '0.25rem', marginBottom: '0.5rem', fontSize: '1.15rem' }}>{plan.name}</h3>
                                                 </div>
                                                 <div className="diet-plan-card-actions">
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEdit(plan)} aria-label={`Edit ${plan.name}`} title="Edit plan">
+                                                    <button type="button" className="diet-card-add-members" onClick={() => handleAddMembersToPlan(plan)}>
+                                                        <Plus size={13} /> Add members
+                                                    </button>
+                                                    <button className="btn btn-secondary" style={{ width: 32, height: 32, padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => handleEdit(plan)} aria-label={`Edit ${plan.name}`} title="Edit plan">
                                                         <Edit3 size={14} />
                                                     </button>
-                                                    <button type="button" className="diet-card-add-members" onClick={() => handleAddMembersToPlan(plan)}><Plus size={14} /> Add members</button>
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%', color: '#C62828' }} onClick={() => handleDelete(plan.id || plan._id)} aria-label={`Delete ${plan.name}`} title="Delete plan">
+                                                    <button className="btn btn-secondary" style={{ width: 32, height: 32, padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C62828' }} onClick={() => handleDelete(plan.id || plan._id)} aria-label={`Delete ${plan.name}`} title="Delete plan">
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
@@ -679,34 +681,117 @@ const DietPlans = () => {
                                                 </div>
                                             )}
 
-                                            {plan.members?.length > 0 && <div style={{ margin: '0 0 1rem', display: 'grid', gap: 5 }}>
-                                                {plan.members.slice(0, 4).map(member => <div key={member.id || member._id} style={{ fontSize: '.78rem', color: 'var(--text-secondary)' }}><strong style={{ color: 'var(--text-primary)' }}>{member.registrationNumber || member.displayId || member.id}</strong> · {member.name} · {member.phone || 'No phone'}</div>)}
-                                                {plan.members.length > 4 && <small style={{ color: 'var(--text-secondary)' }}>+{plan.members.length - 4} more members</small>}
-                                            </div>}
-
-                                            <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '1rem', border: '1px solid var(--border)' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>
-                                                    <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>Daily Meals:</span>
-                                                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--primary)' }}>{totalCals} kcal</span>
-                                                </div>
-                                                {plan.meals && plan.meals.length > 0 ? (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                        {plan.meals.slice(0, 3).map((meal, i) => (
-                                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                                                                <span style={{ fontWeight: '600' }}>{meal.time} - {meal.name}</span>
-                                                                <span style={{ color: 'var(--text-secondary)' }}>{meal.calories} kcal</span>
+                                            {plan.members?.length > 0 && (
+                                                <div style={{ margin: '0 0 1rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    {plan.members.slice(0, 4).map((member) => {
+                                                        const memberCode = member.registrationNumber || member.displayId;
+                                                        const hasShortCode = memberCode && !String(memberCode).includes('-') && String(memberCode).length < 15;
+                                                        return (
+                                                            <div 
+                                                                key={member.id || member._id} 
+                                                                style={{ 
+                                                                    fontSize: '0.82rem', 
+                                                                    display: 'flex', 
+                                                                    alignItems: 'center', 
+                                                                    gap: '8px',
+                                                                    padding: '5px 9px',
+                                                                    background: 'var(--bg-secondary)',
+                                                                    borderRadius: '8px',
+                                                                    border: '1px solid var(--border)'
+                                                                }}
+                                                            >
+                                                                <User size={13} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+                                                                <span style={{ fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                    {member.name || 'Member'}
+                                                                </span>
+                                                                {hasShortCode && (
+                                                                    <span style={{ 
+                                                                        fontSize: '0.7rem', 
+                                                                        fontWeight: 700, 
+                                                                        color: '#766A4B',
+                                                                        background: '#F5EFE1',
+                                                                        padding: '1px 6px',
+                                                                        borderRadius: '4px',
+                                                                        flexShrink: 0
+                                                                    }}>
+                                                                        {memberCode}
+                                                                    </span>
+                                                                )}
+                                                                {member.phone && member.phone !== 'No phone' && (
+                                                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginLeft: 'auto', flexShrink: 0 }}>
+                                                                        {member.phone}
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        ))}
-                                                        {plan.meals.length > 3 && (
-                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '0.25rem' }}>
-                                                                + {plan.meals.length - 3} more meals
+                                                        );
+                                                    })}
+                                                    {plan.members.length > 4 && (
+                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, paddingLeft: '4px' }}>
+                                                            +{plan.members.length - 4} more members assigned
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {(() => {
+                                                const validMeals = (plan.meals || []).filter(
+                                                    (m) => m && (m.name?.trim() || m.items?.trim() || Number(m.calories) > 0)
+                                                );
+                                                const totalValidCals = validMeals.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
+
+                                                return (
+                                                    <div style={{ 
+                                                        background: 'var(--bg-secondary)', 
+                                                        borderRadius: '12px', 
+                                                        padding: '0.85rem 1rem', 
+                                                        border: '1px solid var(--border)' 
+                                                    }}>
+                                                        <div style={{ 
+                                                            display: 'flex', 
+                                                            justifyContent: 'space-between', 
+                                                            alignItems: 'center', 
+                                                            borderBottom: '1px solid var(--border)', 
+                                                            paddingBottom: '0.45rem', 
+                                                            marginBottom: '0.5rem' 
+                                                        }}>
+                                                            <span style={{ fontWeight: '700', fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                                                                Daily Meals:
+                                                            </span>
+                                                            <span style={{ fontSize: '0.82rem', fontWeight: '800', color: totalValidCals > 0 ? '#92700A' : 'var(--text-muted)' }}>
+                                                                {totalValidCals > 0 ? `${totalValidCals} kcal` : '—'}
+                                                            </span>
+                                                        </div>
+
+                                                        {validMeals.length > 0 ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                                                                {validMeals.slice(0, 3).map((meal, i) => {
+                                                                    const mealTitle = meal.name?.trim() || meal.items?.trim() || `Meal ${i + 1}`;
+                                                                    const mealCals = Number(meal.calories) || 0;
+                                                                    return (
+                                                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', alignItems: 'center' }}>
+                                                                            <span style={{ fontWeight: '600', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
+                                                                                {meal.time?.trim() ? `${meal.time.trim()} · ` : ''}{mealTitle}
+                                                                            </span>
+                                                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', flexShrink: 0 }}>
+                                                                                {mealCals > 0 ? `${mealCals} kcal` : '—'}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                                {validMeals.length > 3 && (
+                                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'right', marginTop: '0.15rem' }}>
+                                                                        + {validMeals.length - 3} more meals
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.25rem 0' }}>
+                                                                No meals configured yet
                                                             </div>
                                                         )}
                                                     </div>
-                                                ) : (
-                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No meals configured.</span>
-                                                )}
-                                            </div>
+                                                );
+                                            })()}
                                         </div>
                                         
                                         {plan.trainer && (

@@ -3,10 +3,11 @@ import { getStats, getMembers } from '../services/apiService';
 import { AuthContext } from '../context/AuthContext';
 import API from '../services/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
-import { Users, CheckCircle2, AlertTriangle, Clock, Sparkles, IndianRupee, TrendingDown, TrendingUp, Megaphone, Check, QrCode, Calendar, Phone, ChevronDown } from 'lucide-react';
+import { Users, CheckCircle2, AlertTriangle, Clock, Sparkles, IndianRupee, TrendingDown, TrendingUp, Megaphone, Check, QrCode, Calendar, Phone, ChevronDown, Loader } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const COLORS = ['var(--primary-color)', 'var(--accent-color)', '#a855f7', '#d946ef', '#f43f5e'];
+const dateInputValue = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const LiveSessionTimer = ({ expiresAt }) => {
     const [timeLeft, setTimeLeft] = useState('');
@@ -45,6 +46,9 @@ const LiveSessionTimer = ({ expiresAt }) => {
 
 const Dashboard = () => {
     const { user, activeDivision, selectedGymId, changeSelectedGym, selectedBranchId, changeSelectedBranch } = useContext(AuthContext);
+    const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
+    const userGymId = user?.gymId?._id || user?.gymId || '';
+    const isH4User = user?.role === 'h4_admin' || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
     const [stats, setStats] = useState(null);
     const [expiringMembers, setExpiringMembers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -54,6 +58,11 @@ const Dashboard = () => {
     const [announceSuccess, setAnnounceSuccess] = useState(false);
     const [showQR, setShowQR] = useState(false);
     const [gymList, setGymList] = useState([]);
+    const [dateRange, setDateRange] = useState(() => {
+        const end = new Date();
+        const start = new Date(); start.setDate(start.getDate() - 29);
+        return { startDate: dateInputValue(start), endDate: dateInputValue(end) };
+    });
 
     useEffect(() => {
         const fetchGymsAndBranches = async () => {
@@ -89,7 +98,7 @@ const Dashboard = () => {
             setLoading(true);
             try {
                 const [statsData, membersData] = await Promise.all([
-                    getStats(),
+                    getStats(isH4User ? dateRange : {}),
                     getMembers('Active')
                 ]);
                 setStats(statsData);
@@ -112,7 +121,7 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
-    }, [activeDivision, selectedGymId, selectedBranchId]);
+    }, [activeDivision, selectedGymId, selectedBranchId, dateRange, isH4User]);
 
     const formatTrendData = (trend) => {
         if (!trend) return [];
@@ -139,11 +148,8 @@ const Dashboard = () => {
     };
 
     if (loading) return (
-        <div className="kpi-grid" style={{ marginBottom: '1.75rem' }}>
-            <div className="kpi-card" style={{ '--kpi-color': '#e2e8f0', '--kpi-bg': 'var(--bg-tertiary)' }}>
-                <div className="skeleton" style={{ width: 100, height: 12, borderRadius: 6 }} />
-                <div className="skeleton" style={{ width: 80, height: 32, borderRadius: 8, marginTop: 12 }} />
-            </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
         </div>
     );
 
@@ -155,18 +161,14 @@ const Dashboard = () => {
         { title: 'Active Members', value: stats?.activeMembers || 0, icon: <CheckCircle2 size={22} />, color: 'var(--success-color)' },
         { title: 'Expired Members', value: stats?.expiredMembers || 0, icon: <AlertTriangle size={22} />, color: '#ef4444' },
         { title: 'Expiring Soon', value: stats?.expiringSoonCount || 0, icon: <Clock size={22} />, color: '#f59e0b' },
-        { title: 'New This Month', value: stats?.newMembersThisMonth || 0, icon: <Sparkles size={22} />, color: 'var(--accent-color)' },
-        { title: 'Monthly Revenue', value: `₹${(stats?.monthlyRevenue || 0).toLocaleString()}`, icon: <IndianRupee size={22} />, color: '#10b981' },
-        { title: 'Monthly Expenses', value: `₹${(stats?.monthlyExpenses || 0).toLocaleString()}`, icon: <TrendingDown size={22} />, color: '#ef4444' },
-        { title: 'Monthly Profit', value: `₹${(stats?.monthlyProfit || 0).toLocaleString()}`, icon: <TrendingUp size={22} />, color: '#10b981' },
+        { title: 'New Members in Period', value: stats?.newMembersThisMonth || 0, icon: <Sparkles size={22} />, color: 'var(--accent-color)' },
+        { title: 'Period Revenue', value: `₹${(stats?.monthlyRevenue || 0).toLocaleString()}`, icon: <IndianRupee size={22} />, color: '#10b981' },
+        { title: 'Period Expenses', value: `₹${(stats?.monthlyExpenses || 0).toLocaleString()}`, icon: <TrendingDown size={22} />, color: '#ef4444' },
+        { title: 'Period Profit', value: `₹${(stats?.monthlyProfit || 0).toLocaleString()}`, icon: <TrendingUp size={22} />, color: '#10b981' },
     ] : [
         { title: 'Active Members', value: activeLiveSessions.length, icon: <CheckCircle2 size={22} />, color: 'var(--success-color)' },
         { title: 'Total Check-Ins Today', value: (stats?.todayAttendanceCount || 0) + (stats?.todaySessionsCount || 0), icon: <CheckCircle2 size={22} />, color: 'var(--warning-color)' },
     ];
-
-    const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
-    const userGymId = user?.gymId?._id || user?.gymId || '';
-    const isH4User = user?.role === 'h4_admin' || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
 
     return (
         <div className="fade-in">
@@ -180,14 +182,14 @@ const Dashboard = () => {
                                     <div style={{
                                         display: 'inline-flex',
                                         alignItems: 'center',
-                                        background: '#FBF6EC',
-                                        border: '1px solid #E5D5C0',
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--border)',
                                         borderRadius: '20px',
                                         padding: '0.35rem 1rem',
-                                        color: '#231D14',
-                                        fontWeight: 700,
+                                        color: 'var(--text-primary)',
+                                        fontWeight: 600,
                                         fontSize: '0.875rem',
-                                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+                                        boxShadow: 'var(--shadow-sm)'
                                     }}>
                                         {gymList.find(b => (b._id || b.id) === user.branchId)?.name || 'H4 Branch'}
                                     </div>
@@ -196,11 +198,11 @@ const Dashboard = () => {
                                         position: 'relative',
                                         display: 'inline-flex',
                                         alignItems: 'center',
-                                        background: '#FBF6EC',
-                                        border: '1px solid #E5D5C0',
+                                        background: 'var(--bg-secondary)',
+                                        border: '1px solid var(--border)',
                                         borderRadius: '20px',
                                         padding: '0.25rem 0.75rem 0.25rem 1rem',
-                                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+                                        boxShadow: 'var(--shadow-sm)',
                                         cursor: 'pointer'
                                     }}>
                                         <select
@@ -211,8 +213,8 @@ const Dashboard = () => {
                                                 background: 'transparent',
                                                 border: 'none',
                                                 outline: 'none',
-                                                color: '#231D14',
-                                                fontWeight: 700,
+                                                color: 'var(--text-primary)',
+                                                fontWeight: 600,
                                                 fontSize: '0.875rem',
                                                 paddingRight: '1.6rem',
                                                 cursor: 'pointer',
@@ -249,7 +251,7 @@ const Dashboard = () => {
                                                 </>
                                             )}
                                         </select>
-                                        <ChevronDown size={15} style={{ position: 'absolute', right: '0.65rem', color: '#6D6154', pointerEvents: 'none' }} />
+                                        <ChevronDown size={15} style={{ position: 'absolute', right: '0.65rem', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                                     </div>
                                 )}
                             </div>
@@ -272,6 +274,13 @@ const Dashboard = () => {
                     </div>
                 )}
             </div>
+
+            {isH4User && <section aria-label="Dashboard date filter" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', margin: '0 0 1.5rem', padding: '0.75rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 3, color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>FROM<input type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} /></label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 3, color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>TO<input type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} /></label>
+                <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>{[7, 30, 90].map(days => <button key={days} type="button" className="btn btn-secondary" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - (days - 1)); setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) }); }}>{days} days</button>)}</div>
+                <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 'auto' }}>Revenue, expenses, check-ins, and new joins update for this period. Member status remains current.</small>
+            </section>}
 
             {/* QR Code Modal */}
             {showQR && (
@@ -317,7 +326,7 @@ const Dashboard = () => {
                 <>
                     <div className="charts-grid" style={{ marginBottom: '2.5rem', marginTop: '2.5rem' }}>
                         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-                            <h3 style={{ marginBottom: '2rem' }}>Monthly Revenue Analytics</h3>
+                            <h3 style={{ marginBottom: '2rem' }}>Revenue in Selected Period</h3>
                             <div style={{ width: '100%', height: 300 }}>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <AreaChart data={formatTrendData(stats?.revenueTrend)}>
@@ -545,7 +554,7 @@ const Dashboard = () => {
                 )}
 
                 <div className="card" style={{ gridColumn: '1 / -1' }}>
-                    <h3 style={{ marginBottom: '1.5rem' }}>Recent Check-ins (This Month)</h3>
+                    <h3 style={{ marginBottom: '1.5rem' }}>Recent Check-ins in Selected Period</h3>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
                         History of members who have visited your gym recently.
                     </p>
@@ -592,7 +601,7 @@ const Dashboard = () => {
                         <div className="empty-state">
                             <div className="empty-state-icon"></div>
                             <h3>No Recent Activity</h3>
-                            <p>No members have checked in this month yet.</p>
+                            <p>No members checked in during this date range.</p>
                         </div>
                     )}
                 </div>

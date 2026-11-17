@@ -39,6 +39,7 @@ const BodyAssessments = lazy(() => import('./pages/BodyAssessments'));
 const TrainerAttendancePage = lazy(() => import('./pages/TrainerAttendancePage'));
 const PayrollPage = lazy(() => import('./pages/PayrollPage'));
 const FitPassAnalyticsPage = lazy(() => import('./pages/FitPassAnalyticsPage'));
+const FitPassBranchPayouts = lazy(() => import('./pages/superadmin/FitPassBranchPayouts'));
 const FitPassOrders = lazy(() => import('./pages/superadmin/FitPassOrders'));
 const WorkoutPlans = lazy(() => import('./pages/WorkoutPlans'));
 const DietPlans = lazy(() => import('./pages/DietPlans'));
@@ -120,10 +121,21 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/h4/admins" element={<ProtectedRoute roles={['h4_admin']}><Layout><AdminManagement /></Layout></ProtectedRoute>} />
+        <Route path="/fitpass/admins" element={<ProtectedRoute roles={['fitpass_admin']}><Layout><AdminManagement /></Layout></ProtectedRoute>} />
+
         <Route path="/superadmin/fitpass-analytics" element={
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>
             <Layout>
               <FitPassAnalyticsPage />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/superadmin/fitpass-payouts" element={
+          <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>
+            <Layout>
+              <FitPassBranchPayouts />
             </Layout>
           </ProtectedRoute>
         } />
@@ -228,6 +240,14 @@ function App() {
           </ProtectedRoute>
         } />
 
+        <Route path="/fitpass-classes" element={
+          <ProtectedRoute roles={['admin', 'partner', 'trainer', 'fitpass_admin', 'superadmin']}>
+            <Layout>
+              <Classes />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
         <Route path="/member-classes" element={
           <ProtectedRoute roles={['member']}>
             <Layout>
@@ -308,7 +328,7 @@ function App() {
         } />
 
         <Route path="/staff" element={
-          <ProtectedRoute roles={['admin', 'h4_admin']}>
+          <ProtectedRoute roles={['admin', 'h4_admin', 'partner']}>
             <Layout>
               <Staff />
             </Layout>

@@ -85,12 +85,12 @@ const getMyPlan = catchAsync(async (req, res, next) => {
   const authenticatedGymName = req.user?.gymName || req.user?.gymId?.name || '';
   const authenticatedUserIsH4 = H4_GYM_IDS.includes(authenticatedGymId)
     || authenticatedGymName.toLowerCase().includes('h4');
-  const assignedGymId = authenticatedUserIsH4 ? authenticatedGymId : member.gymId;
-  const homeGym = assignedGymId
-    ? await prisma.gym.findUnique({ where: { id: assignedGymId } }).catch(() => null)
-    : null;
   const homeBranch = member.branchId
     ? await prisma.branch.findUnique({ where: { id: member.branchId } }).catch(() => null)
+    : null;
+  const assignedGymId = homeBranch?.gymId || (authenticatedUserIsH4 ? authenticatedGymId : member.gymId);
+  const homeGym = assignedGymId
+    ? await prisma.gym.findUnique({ where: { id: assignedGymId } }).catch(() => null)
     : null;
   const isH4Member = authenticatedUserIsH4
     || H4_GYM_IDS.includes(member.gymId)
@@ -104,11 +104,16 @@ const getMyPlan = catchAsync(async (req, res, next) => {
     ...(!isH4Member ? { fitpassCoins: member.fitpassCoins ?? 0 } : {}),
     planId: plan || member.planId,
     isH4Member,
-    homeGym: homeGym ? {
-      ...homeGym,
-      _id: homeGym.id,
+    homeGym: homeGym || homeBranch ? {
+      ...(homeGym || {}),
+      ...(homeBranch || {}),
+      _id: homeBranch?.id || homeGym?.id,
+      id: homeBranch?.id || homeGym?.id,
+      name: homeBranch?.name || homeGym?.name,
       branchName: homeBranch?.name || null,
       branchAddress: homeBranch?.address || null,
+      address: homeBranch?.address || homeGym?.address || '',
+      phone: homeBranch?.phone || homeGym?.phone || '',
     } : null,
   });
 });
@@ -133,6 +138,27 @@ const getFitPrimePlans = catchAsync(async (req, res, next) => {
     displayCoins: plan.displayCoins !== false,
     displayCheckIns: plan.displayCheckIns !== false,
   })));
+});
+
+const getH4Plans = catchAsync(async (req, res) => {
+  const member = await resolveMember(req);
+  if (req.user?.role !== 'member' || !member) return res.status(403).json({ message: 'H4 plans are available to linked H4 members only.' });
+  const gym = H4_GYM_IDS.includes(String(member.gymId))
+    ? { name: 'H4' }
+    : await prisma.gym.findUnique({ where: { id: member.gymId } }).catch(() => null);
+  if (!gym?.name?.toLowerCase().includes('h4')) return res.status(403).json({ message: 'H4 plans are available to H4 members only.' });
+  const allH4Gyms = await prisma.gym.findMany({ where: { name: { contains: 'h4', mode: 'insensitive' } }, select: { id: true } }).catch(() => []);
+  const h4GymIds = [...new Set([...H4_GYM_IDS, member.gymId, ...allH4Gyms.map(item => item.id)])];
+  const plans = await prisma.plan.findMany({
+    where: {
+      AND: [
+        { gymId: { in: h4GymIds } },
+        { OR: [{ branchId: null }, { gymId: member.gymId, branchId: member.branchId || '__NO_BRANCH__' }] },
+      ],
+    },
+    orderBy: { price: 'asc' },
+  });
+  return res.json(plans);
 });
 
 // @desc    Get all active partner gyms
@@ -602,12 +628,16 @@ const purchasePlanOrder = catchAsync(async (req, res, next) => {
 
     const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
 
-    if (!plan || plan.gymId !== 'SYSTEM') {
-        return res.status(404).json({ message: 'Plan not found' });
-    }
-
     const member = await resolveMember(req);
-    if (isH4Account(req) || (member && member.gymId !== 'SYSTEM')) {
+    const memberGym = member ? await prisma.gym.findUnique({ where: { id: member.gymId } }).catch(() => null) : null;
+    const memberIsH4 = Boolean(member && (H4_GYM_IDS.includes(String(member.gymId)) || memberGym?.name?.toLowerCase().includes('h4')));
+    const planGym = plan ? (H4_GYM_IDS.includes(String(plan.gymId)) ? { name: 'H4' } : await prisma.gym.findUnique({ where: { id: plan.gymId } }).catch(() => null)) : null;
+    const isH4Plan = Boolean(plan && memberIsH4 && planGym?.name?.toLowerCase().includes('h4') && (plan.branchId ? plan.gymId === member.gymId && plan.branchId === member.branchId : true));
+    const isFitPassPlan = Boolean(plan && plan.gymId === 'SYSTEM' && !isH4Account(req) && (!member || member.gymId === 'SYSTEM'));
+    if (!isH4Plan && !isFitPassPlan) {
+        return res.status(404).json({ message: 'Plan not found or unavailable to this membership.' });
+    }
+    if (!isH4Plan && (isH4Account(req) || (member && member.gymId !== 'SYSTEM'))) {
         return res.status(403).json({ message: 'FitPass plans are only available to FitPass members.' });
     }
 
@@ -637,12 +667,57 @@ const purchasePlanOrder = catchAsync(async (req, res, next) => {
 const purchasePlanVerify = catchAsync(async (req, res, next) => {
     const { test_order_id, planId, mock_token } = req.body;
     const plan = planId ? await prisma.plan.findUnique({ where: { id: planId } }) : null;
-    if (!plan || plan.gymId !== 'SYSTEM') {
-        return res.status(404).json({ success: false, message: 'FitPass plan not found' });
-    }
-
     const userId = String(req.user?._id || req.user?.id || '');
     let member = await resolveMember(req);
+    const memberGym = member ? await prisma.gym.findUnique({ where: { id: member.gymId } }).catch(() => null) : null;
+    const memberIsH4 = Boolean(member && (H4_GYM_IDS.includes(String(member.gymId)) || memberGym?.name?.toLowerCase().includes('h4')));
+    const planGym = plan ? (H4_GYM_IDS.includes(String(plan.gymId)) ? { name: 'H4' } : await prisma.gym.findUnique({ where: { id: plan.gymId } }).catch(() => null)) : null;
+    const isH4Plan = Boolean(plan && memberIsH4 && planGym?.name?.toLowerCase().includes('h4') && (plan.branchId ? plan.gymId === member.gymId && plan.branchId === member.branchId : true));
+    if (isH4Plan) {
+        const isAuthentic = Boolean(test_order_id?.startsWith('order_mock_') && verifyMockOrderToken(mock_token, {
+            orderId: test_order_id,
+            userId,
+            planId: plan.id,
+            amount: Math.round(plan.price * 100),
+        }));
+        if (!isAuthentic) return res.status(400).json({ success: false, message: 'Payment verification failed' });
+        const transactionId = `mock_${test_order_id}`;
+        const previousPayment = await prisma.payment.findFirst({ where: { transactionId } });
+        if (previousPayment) return res.status(200).json({ success: true, message: 'Payment was already applied', plan, expiryDate: member.expiryDate });
+        const now = new Date();
+        const activeExpiry = member.expiryDate && new Date(member.expiryDate) > now ? new Date(member.expiryDate) : now;
+        const duration = Math.max(1, Number(plan.duration) || 30);
+        const nextExpiry = new Date(activeExpiry);
+        const unit = String(plan.durationUnit || 'days').toLowerCase();
+        if (unit.startsWith('month')) nextExpiry.setMonth(nextExpiry.getMonth() + duration);
+        else nextExpiry.setDate(nextExpiry.getDate() + duration);
+        const updatedMember = await prisma.$transaction(async (tx) => {
+            const saved = await tx.member.update({
+                where: { id: member.id },
+                data: {
+                    planId: plan.id,
+                    planPrice: plan.price,
+                    paidAmount: plan.price,
+                    status: 'Active',
+                    expiryDate: nextExpiry,
+                    ...(member.joinDate ? {} : { joinDate: now }),
+                },
+            });
+            await tx.payment.create({ data: {
+                memberId: saved.id,
+                gymId: member.gymId,
+                branchId: member.branchId || null,
+                amount: plan.price,
+                method: 'Test Purchase (No Payment)',
+                date: now,
+                transactionId,
+            } });
+            return saved;
+        });
+        await prisma.user.update({ where: { id: userId }, data: { memberId: updatedMember.id, role: 'member' } }).catch(() => {});
+        return res.status(200).json({ success: true, message: 'H4 plan purchased successfully', plan, expiryDate: updatedMember.expiryDate });
+    }
+    if (!plan || plan.gymId !== 'SYSTEM') return res.status(404).json({ success: false, message: 'FitPass plan not found' });
     if (isH4Account(req) || (member && member.gymId !== 'SYSTEM')) {
         return res.status(403).json({ success: false, message: 'FitPass plans are only available to FitPass members.' });
     }
@@ -803,7 +878,7 @@ const getDashboardData = catchAsync(async (req, res, next) => {
 
     const memberId = member.id;
 
-    const [gyms, sessions, attendances, auditLogs, payments, plan] = await Promise.all([
+    const [gyms, sessions, attendances, auditLogs, payments, plan, branch] = await Promise.all([
         prisma.gym.findMany({ where: { status: 'Active', id: { not: 'SYSTEM' } } }).catch(() => []),
         prisma.sessionCheckIn.findMany({
             where: { memberId },
@@ -826,6 +901,7 @@ const getDashboardData = catchAsync(async (req, res, next) => {
             take: 10,
         }).catch(() => []),
         member.planId ? prisma.plan.findUnique({ where: { id: member.planId } }).catch(() => null) : null,
+        member.branchId ? prisma.branch.findUnique({ where: { id: member.branchId } }).catch(() => null) : null,
     ]);
 
     const gymMap = new Map();
@@ -925,6 +1001,9 @@ const getDashboardData = catchAsync(async (req, res, next) => {
             email: member.email,
             phone: member.phone,
             status: member.status,
+            gymName: branch?.name || memberGymName,
+            gymId: branch?.gymId || member.gymId,
+            branch: branch || null,
             paidAmount: member.paidAmount || (plan ? plan.price : 0),
             planPrice: member.planPrice || (plan ? plan.price : 0),
         },
@@ -1035,6 +1114,7 @@ module.exports = {
     createRazorpayOrder,
     verifyRazorpayPayment,
     getFitPrimePlans,
+    getH4Plans,
     purchasePlanOrder,
     purchasePlanVerify,
     cancelMyPlan,

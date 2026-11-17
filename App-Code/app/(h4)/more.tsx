@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/app-icons';
 import { useRouter } from 'expo-router';
 import { theme } from '@/design-system/theme';
+import { H4TopHeader } from '@/features/h4/components/H4TopHeader';
 
 const MORE_LINKS = [
   { title: 'H4 merchandise', detail: 'Browse products and ask at the gym to buy', route: '/(h4)/shop', Icon: Package },
@@ -27,7 +28,8 @@ export default function H4MoreScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
+      <H4TopHeader title="More" showScanBtn={false} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.eyebrow}>H4 FITNESS</Text>
         <Text style={styles.title}>More for your routine</Text>
@@ -37,7 +39,7 @@ export default function H4MoreScreen() {
           {MORE_LINKS.map(({ title, detail, route, Icon }) => (
             <Pressable
               key={title}
-              onPress={() => router.push(route as any)}
+              onPress={() => router.navigate(route as any)}
               style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
               accessibilityRole="button"
               accessibilityLabel={`${title}. ${detail}`}
@@ -57,7 +59,7 @@ export default function H4MoreScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.background },
-  content: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 112 },
+  content: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 112 },
   eyebrow: { color: theme.colors.primaryText, fontSize: 11, fontWeight: '800', letterSpacing: 1.8 },
   title: { color: theme.colors.text, fontSize: 27, lineHeight: 33, fontWeight: '800', marginTop: 8 },
   subtitle: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 5, marginBottom: 22 },

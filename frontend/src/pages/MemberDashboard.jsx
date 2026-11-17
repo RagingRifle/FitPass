@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 import PasswordInput from '../components/ui/PasswordInput';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
-import { Activity, ArrowUpRight, CalendarDays, Flame, MapPin, Sparkles } from 'lucide-react';
+import { Loader,  Activity, ArrowUpRight, CalendarDays, Clock3, Flame, MapPin, Phone, Sparkles } from 'lucide-react';
 import './fitpass.css';
 import './member-dashboard.css';
 import './member-featured.css';
@@ -48,6 +48,7 @@ const MemberDashboard = () => {
     const [filterStartDate, setFilterStartDate] = useState('');
     const [filterEndDate, setFilterEndDate] = useState('');
     const [fitPassPlans, setFitPassPlans] = useState([]);
+    const [h4Plans, setH4Plans] = useState([]);
     const [renewalModalOpen, setRenewalModalOpen] = useState(false);
     const [selectedRenewalPlan, setSelectedRenewalPlan] = useState(null);
 
@@ -78,6 +79,17 @@ const MemberDashboard = () => {
             setAttendance(attRes.data);
             setPayments(payRes.data);
             const isH4Member = memberPlan?.isH4Member === true;
+            if (isH4Member) {
+                try {
+                    const { data } = await API.get('/member-portal/h4-plans');
+                    setH4Plans(Array.isArray(data) ? data : data?.data || []);
+                } catch (e) {
+                    console.error('Error fetching H4 plans:', e);
+                    setH4Plans([]);
+                }
+            } else {
+                setH4Plans([]);
+            }
             if (isH4Member && memberPlan.homeGym) {
                 setGyms([{ ...memberPlan.homeGym, name: memberPlan.homeGym.branchName || memberPlan.homeGym.name, address: memberPlan.homeGym.branchAddress || memberPlan.homeGym.address }]);
             }
@@ -277,7 +289,7 @@ const MemberDashboard = () => {
                     mock_token: order.mock_token,
                     planId,
                 });
-                toast.success('Pass renewed. Your coin balance and expiry have been updated.');
+            toast.success(isH4Member ? 'H4 membership updated.' : 'Pass renewed. Your coin balance and expiry have been updated.');
                 setRenewalModalOpen(false);
                 setSelectedRenewalPlan(null);
                 await fetchMemberData();
@@ -295,7 +307,7 @@ const MemberDashboard = () => {
                     key,
                     amount: order.amount,
                     currency: order.currency,
-                    name: 'FitPass',
+                    name: isH4Member ? 'H4' : 'FitPass',
                     description: `${selectedRenewalPlan.name} membership`,
                     order_id: order.id,
                     prefill: { name: plan?.name, email: plan?.email, contact: plan?.phone },
@@ -310,13 +322,17 @@ const MemberDashboard = () => {
                 checkout.open();
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || error.message || 'Could not renew your FitPass.');
+            toast.error(error.response?.data?.message || error.message || `Could not renew your ${isH4Member ? 'H4 membership' : 'FitPass'}.`);
         } finally {
             if (!externalCheckout) setPaying(false);
         }
     };
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     const daysLeft = plan ? Math.ceil((new Date(plan.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
     // H4 access follows the member's assigned gym, even if the plan was linked
@@ -414,10 +430,17 @@ const MemberDashboard = () => {
                 <div className="member-panel-heading"><div><small>{isFitPrimeMember ? 'THE FITPASS NETWORK' : 'YOUR H4 MEMBERSHIP'}</small><h2>{isFitPrimeMember ? 'Places to move next' : 'Your assigned gym'}</h2></div>{isFitPrimeMember && <a href="/explore-gyms">Explore all gyms <ArrowUpRight size={15}/></a>}</div>
                 <div className="member-featured-grid">{gyms.slice(0, 3).map((gym) => {
                     const image = gym.images?.[0] || gym.imageUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=80';
+                    const today = new Date();
+                    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                    const todayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+                    const todaySchedule = gym.weeklySchedule?.[todayName] || gym.weeklySchedule?.[todayName.toLowerCase()];
+                    const exception = gym.scheduleExceptions?.find(item => item.date?.slice(0, 10) === todayKey);
+                    const nextException = (gym.scheduleExceptions || []).filter(item => item.date?.slice(0, 10) > todayKey).sort((a, b) => a.date.localeCompare(b.date))[0];
+                    const hoursLabel = exception?.closed ? `Closed today${exception.reason ? ` · ${exception.reason}` : ''}` : exception ? `${exception.open || gym.openingTime} – ${exception.close || gym.closingTime}${exception.reason ? ` · ${exception.reason}` : ''}` : todaySchedule?.closed || (gym.workingDays?.length && !gym.workingDays.includes(todayName)) ? 'Closed today' : `${todaySchedule?.open || gym.openingTime || '06:00 AM'} – ${todaySchedule?.close || gym.closingTime || '10:00 PM'}`;
                     const content = <>
                         <img src={image} alt={gym.name || (isFitPrimeMember ? 'FitPass partner gym' : 'H4 gym')} loading="lazy"/>
                         <span className="member-featured-overlay"/>
-                        <span className="member-featured-content"><small><MapPin size={12}/> {isFitPrimeMember ? 'FITPASS PARTNER' : 'ASSIGNED H4 GYM'}</small><b>{gym.name}</b><span>{gym.address || gym.branchAddress || (isFitPrimeMember ? 'Explore this gym' : 'Your home gym')}</span></span>
+                        <span className="member-featured-content"><small><MapPin size={12}/> {isFitPrimeMember ? 'FITPASS PARTNER' : 'ASSIGNED H4 GYM'}</small><b>{gym.name}</b><span>{gym.address || gym.branchAddress || (isFitPrimeMember ? 'Explore this gym' : 'Your home gym')}</span>{!isFitPrimeMember && <span style={{ display: 'grid', gap: 4, marginTop: 5 }}><small><Clock3 size={12} /> Today: {hoursLabel}</small>{gym.phone && <small><Phone size={12} /> {gym.phone}</small>}{gym.shortDescription && <small>{gym.shortDescription}</small>}{gym.description && <small>{gym.description}</small>}{gym.amenities?.length > 0 && <small>Amenities · {gym.amenities.join(' · ')}</small>}{gym.website && <small>{gym.website}</small>}{nextException && <small>Next schedule change · {new Date(`${nextException.date.slice(0, 10)}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {nextException.closed ? `Closed${nextException.reason ? ` · ${nextException.reason}` : ''}` : `${nextException.open || gym.openingTime} – ${nextException.close || gym.closingTime}`}</small>}</span>}</span>
                         {isFitPrimeMember && <ArrowUpRight className="member-featured-arrow" size={18}/>}
                     </>;
                     return isFitPrimeMember
@@ -469,13 +492,13 @@ const MemberDashboard = () => {
                             </>
                         )}
                     </div>
-                    {isFitPrimeMember && (
+                    {(isFitPrimeMember || isH4Member) && (
                         <button
                             type="button"
                             className="btn btn-primary fitpass-renew-trigger"
                             onClick={() => { setSelectedRenewalPlan(null); setRenewalModalOpen(true); }}
                         >
-                            Renew or change pass <ArrowUpRight size={16} />
+                            {isH4Member ? 'Renew or change H4 plan' : 'Renew or change pass'} <ArrowUpRight size={16} />
                         </button>
                     )}
                 </div>
@@ -727,14 +750,14 @@ const MemberDashboard = () => {
                         <button type="button" className="fitpass-renewal-close" aria-label="Close renewal" onClick={() => {
                             if (!paying) { setRenewalModalOpen(false); setSelectedRenewalPlan(null); }
                         }}>×</button>
-                        <span className="fitpass-renewal-kicker">FITPASS MEMBERSHIP</span>
-                        <h2 id="fitpass-renewal-title">{selectedRenewalPlan ? 'Review your pass' : 'Renew your pass'}</h2>
+                        <span className="fitpass-renewal-kicker">{isH4Member ? 'H4 MEMBERSHIP' : 'FITPASS MEMBERSHIP'}</span>
+                        <h2 id="fitpass-renewal-title">{selectedRenewalPlan ? 'Review your plan' : `Renew your ${isH4Member ? 'H4 membership' : 'pass'}`}</h2>
                         {selectedRenewalPlan ? (
                             <>
                                 <div className="fitpass-renewal-summary">
                                     <strong>{selectedRenewalPlan.name}</strong>
                                     <span>₹{Number(selectedRenewalPlan.price).toLocaleString('en-IN')}</span>
-                                    <small>{selectedRenewalPlan.coinAllowance ?? (Number(selectedRenewalPlan.sessions || 10) * Number(selectedRenewalPlan.coinsPerSession || sessionStatus?.coinsPerSession || 10))} FitPass coins · up to {Number(selectedRenewalPlan.sessions) || 10} check-ins · {selectedRenewalPlan.duration || 30} {selectedRenewalPlan.durationUnit || 'days'}</small>
+                                    <small>{isH4Member ? `${selectedRenewalPlan.duration || 30} ${selectedRenewalPlan.durationUnit || 'days'} of H4 membership` : `${selectedRenewalPlan.coinAllowance ?? (Number(selectedRenewalPlan.sessions || 10) * Number(selectedRenewalPlan.coinsPerSession || sessionStatus?.coinsPerSession || 10))} FitPass coins · up to ${Number(selectedRenewalPlan.sessions) || 10} check-ins · ${selectedRenewalPlan.duration || 30} ${selectedRenewalPlan.durationUnit || 'days'}`}</small>
                                 </div>
                                 <p className="fitpass-demo-note">
                                     {usesMockFitPassGateway
@@ -742,7 +765,7 @@ const MemberDashboard = () => {
                                         : 'Secure checkout by Razorpay. Your pass renews after Razorpay confirms the payment.'}
                                 </p>
                                 <div className="fitpass-renewal-actions">
-                                    <button type="button" className="btn btn-secondary" disabled={paying} onClick={() => setSelectedRenewalPlan(null)}>Back to passes</button>
+                                    <button type="button" className="btn btn-secondary" disabled={paying} onClick={() => setSelectedRenewalPlan(null)}>Back to plans</button>
                                     <button type="button" className="btn btn-primary" disabled={paying} onClick={handleFitPassRenewal}>
                                         {paying ? 'Processing…' : `${usesMockFitPassGateway ? 'Confirm demo payment' : 'Continue to payment'} · ₹${Number(selectedRenewalPlan.price).toLocaleString('en-IN')}`}
                                     </button>
@@ -750,14 +773,17 @@ const MemberDashboard = () => {
                             </>
                         ) : (
                             <>
-                                <p className="fitpass-renewal-copy">Choose a FitPass coin plan. Any unspent balance carries forward when you renew early.</p>
+                                <p className="fitpass-renewal-copy">{isH4Member ? 'Choose an H4 membership plan to extend your access.' : 'Choose a FitPass coin plan. Any unspent balance carries forward when you renew early.'}</p>
                                 <div className="fitpass-renewal-options">
-                                    {fitPassPlans.map((fitPassPlan) => (
+                                    {(isH4Member ? h4Plans : fitPassPlans).map((fitPassPlan) => (
                                         <button type="button" key={fitPassPlan.id || fitPassPlan._id} className="fitpass-renewal-option" onClick={() => setSelectedRenewalPlan(fitPassPlan)}>
-                                            <span><strong>{fitPassPlan.name}</strong><small>{fitPassPlan.coinAllowance ?? (Number(fitPassPlan.sessions || 10) * Number(fitPassPlan.coinsPerSession || sessionStatus?.coinsPerSession || 10))} FitPass coins · up to {Number(fitPassPlan.sessions) || 10} check-ins · {fitPassPlan.duration || 30} {fitPassPlan.durationUnit || 'days'}</small></span>
+                                            <span><strong>{fitPassPlan.name}</strong><small>{isH4Member ? `${fitPassPlan.duration || 30} ${fitPassPlan.durationUnit || 'days'} of H4 membership` : `${fitPassPlan.coinAllowance ?? (Number(fitPassPlan.sessions || 10) * Number(fitPassPlan.coinsPerSession || sessionStatus?.coinsPerSession || 10))} FitPass coins · up to ${Number(fitPassPlan.sessions) || 10} check-ins · ${fitPassPlan.duration || 30} ${fitPassPlan.durationUnit || 'days'}`}</small></span>
                                             <b>₹{Number(fitPassPlan.price).toLocaleString('en-IN')} <ArrowUpRight size={16} /></b>
                                         </button>
                                     ))}
+                                    {(isH4Member ? h4Plans : fitPassPlans).length === 0 && (
+                                        <p className="fitpass-renewal-copy">No plans are available right now. Please contact your H4 gym.</p>
+                                    )}
                                 </div>
                             </>
                         )}

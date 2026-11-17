@@ -2,10 +2,21 @@ import { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
-import { Pencil, Trash2, QrCode } from 'lucide-react';
+import { Pencil, Trash2, QrCode, Loader } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 
-const emptyForm = { name: '', address: '', phone: '', email: '', managerName: '', fitPassEnabled: true };
+const BRANCH_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const defaultWeeklySchedule = () => Object.fromEntries(BRANCH_DAYS.map(day => [day, { open: '06:00 AM', close: '10:00 PM', closed: day === 'Sunday' }]));
+const toTimeInput = (value) => {
+    if (!value) return '06:00';
+    if (/^\d{2}:\d{2}$/.test(value)) return value;
+    const match = String(value).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return '06:00';
+    let hours = Number(match[1]) % 12;
+    if (match[3].toUpperCase() === 'PM') hours += 12;
+    return `${String(hours).padStart(2, '0')}:${match[2]}`;
+};
+const emptyForm = { name: '', shortDescription: '', description: '', address: '', phone: '', email: '', website: '', managerName: '', openingTime: '06:00 AM', closingTime: '10:00 PM', workingDays: BRANCH_DAYS.slice(0, 6), weeklySchedule: defaultWeeklySchedule(), scheduleExceptions: [], amenitiesText: '', equipmentsText: '', fitPassEnabled: true };
 
 const Branches = () => {
     const { activeDivision, changeActiveDivision, selectedGymId, changeSelectedGym, user, selectedBranchId } = useContext(AuthContext);
@@ -49,10 +60,20 @@ const Branches = () => {
         setEditBranch(b);
         setFormData({
             name: b.name,
+            shortDescription: b.shortDescription || '',
+            description: b.description || '',
             address: b.address || '',
             phone: b.phone || '',
             email: b.email || '',
+            website: b.website || '',
             managerName: b.managerName || '',
+            openingTime: b.openingTime || '06:00 AM',
+            closingTime: b.closingTime || '10:00 PM',
+            workingDays: b.workingDays || BRANCH_DAYS.slice(0, 6),
+            weeklySchedule: { ...defaultWeeklySchedule(), ...(b.weeklySchedule || {}) },
+            scheduleExceptions: Array.isArray(b.scheduleExceptions) ? b.scheduleExceptions : [],
+            amenitiesText: (b.amenities || []).join(', '),
+            equipmentsText: (b.equipments || []).join(', '),
             fitPassEnabled: b.fitPassEnabled !== undefined ? b.fitPassEnabled : true
         });
         setError('');
@@ -64,10 +85,20 @@ const Branches = () => {
         setSubmitting(true);
         setError('');
         try {
+            const workingDays = BRANCH_DAYS.filter(day => !formData.weeklySchedule?.[day]?.closed);
+            const firstOpenDay = workingDays[0];
+            const payload = {
+                ...formData,
+                openingTime: firstOpenDay ? formData.weeklySchedule[firstOpenDay]?.open : formData.openingTime,
+                closingTime: firstOpenDay ? formData.weeklySchedule[firstOpenDay]?.close : formData.closingTime,
+                workingDays,
+                amenities: formData.amenitiesText.split(',').map(value => value.trim()).filter(Boolean),
+                equipments: formData.equipmentsText.split(',').map(value => value.trim()).filter(Boolean),
+            };
             if (editBranch) {
-                await API.put(`/branches/${editBranch._id}`, formData);
+                await API.put(`/branches/${editBranch._id || editBranch.id}`, payload);
             } else {
-                await API.post('/branches', formData);
+                await API.post('/branches', payload);
             }
             setIsModalOpen(false);
             fetchBranches();
@@ -92,9 +123,27 @@ const Branches = () => {
         } catch { setBranchMembers([]); }
     };
 
-    if (loading) return <div className="spinner"></div>;
+    const updateDaySchedule = (day, patch) => setFormData(current => ({
+        ...current,
+        weeklySchedule: {
+            ...current.weeklySchedule,
+            [day]: { ...(current.weeklySchedule?.[day] || {}), ...patch },
+        },
+    }));
+    const updateException = (index, patch) => setFormData(current => ({
+        ...current,
+        scheduleExceptions: current.scheduleExceptions.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item),
+    }));
 
-    const canManageBranches = !selectedBranchId || user?.role === 'superadmin' || user?.role === 'h4_admin';
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
+
+    const isH4BranchAdmin = user?.role === 'h4_admin' && Boolean(user?.branchId);
+    const canCreateBranches = (!selectedBranchId || user?.role === 'superadmin' || user?.role === 'h4_admin') && !isH4BranchAdmin;
+    const canEditBranches = !selectedBranchId || user?.role === 'superadmin' || user?.role === 'h4_admin';
     const totalMembers = branches.reduce((s, b) => s + (b.memberCount || 0), 0);
     const totalRevenue = branches.reduce((s, b) => s + (b.totalRevenue || 0), 0);
 
@@ -107,7 +156,7 @@ const Branches = () => {
                         {branches.length} branch(es) · {totalMembers} members · ₹{totalRevenue.toLocaleString()} total revenue
                     </p>
                 </div>
-                {canManageBranches && <button className="btn btn-primary" onClick={openCreate}>+ Add Branch</button>}
+                {canCreateBranches && <button className="btn btn-primary" onClick={openCreate}>+ Add Branch</button>}
             </div>
 
             {branches.length === 0 ? (
@@ -116,29 +165,24 @@ const Branches = () => {
                         <div className="empty-state-icon"></div>
                         <h3>No branches yet</h3>
                         <p>Create your first branch to start organising members by location.</p>
-                        {canManageBranches && <button className="btn btn-primary" onClick={openCreate} style={{ marginTop: '1rem' }}>+ Add First Branch</button>}
+                        {canCreateBranches && <button className="btn btn-primary" onClick={openCreate} style={{ marginTop: '1rem' }}>+ Add First Branch</button>}
                     </div>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                     {branches.map(branch => (
-                        <div key={branch._id} className="glass" style={{ borderRadius: '16px', padding: '1.5rem', borderTop: '4px solid var(--primary-color)' }}>
+                        <div key={branch._id} className="card" style={{ borderRadius: 'var(--radius-card)', padding: '1.5rem', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                 <div>
                                     <h3 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem', fontWeight: '800' }}> {branch.name}</h3>
                                     {branch.managerName && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}> {branch.managerName}</p>}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
-                                    <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.72rem', fontWeight: '700' }}>
+                                    <span style={{ background: 'rgba(30, 142, 62, 0.08)', color: '#1E8E3E', border: '1px solid rgba(30, 142, 62, 0.2)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '700' }}>
                                         Active
                                     </span>
                                     <span style={{
-                                        background: branch.fitPassEnabled ? 'rgba(249,115,22,0.15)' : 'rgba(239,68,68,0.1)',
-                                        color: branch.fitPassEnabled ? '#f97316' : '#ef4444',
-                                        padding: '0.2rem 0.6rem',
-                                        borderRadius: '8px',
-                                        fontSize: '0.72rem',
-                                        fontWeight: '700'
+                                        background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '600'
                                     }}>
                                         {branch.fitPassEnabled ? ' FitPass' : ' No FitPass'}
                                     </span>
@@ -149,22 +193,24 @@ const Branches = () => {
                                 {branch.address && <span> {branch.address}</span>}
                                 {branch.phone && <span> {branch.phone}</span>}
                                 {branch.email && <span> {branch.email}</span>}
+                                <span>Hours: {branch.openingTime || '06:00 AM'} – {branch.closingTime || '10:00 PM'}</span>
+                                {branch.workingDays?.length > 0 && <span>Open {branch.workingDays.join(', ')}</span>}
                             </div>
 
                             {/* Stats */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                                <div style={{ background: 'var(--primary-light)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '1.25rem', color: 'var(--primary-color)' }}>{branch.memberCount || 0}</div>
+                                <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
+                                    <div style={{ fontWeight: '800', fontSize: '1.25rem', color: 'var(--text-primary)' }}>{branch.memberCount || 0}</div>
                                     <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Members</div>
                                 </div>
-                                <div style={{ background: 'rgba(16,185,129,0.08)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#10b981' }}>₹{(branch.totalRevenue || 0).toLocaleString()}</div>
+                                <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
+                                    <div style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-primary)' }}>₹{(branch.totalRevenue || 0).toLocaleString()}</div>
                                     <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Revenue</div>
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <button onClick={() => viewMembers(branch)} className="btn btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', background: 'var(--primary-light)', color: 'var(--primary-color)' }}>
+                                <button onClick={() => viewMembers(branch)} className="btn btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: 'var(--text-primary)' }}>
                                      Members
                                 </button>
                                 {branch.fitPassEnabled && (
@@ -172,14 +218,12 @@ const Branches = () => {
                                         <QrCode size={16} />
                                     </button>
                                 )}
-                                {canManageBranches && (
+                                {canEditBranches && (
                                     <>
                                         <button onClick={() => openEdit(branch)} className="btn" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-secondary)', background: 'transparent' }}>
                                             <Pencil size={16} />
                                         </button>
-                                        <button onClick={() => handleDelete(branch)} className="btn btn-danger" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', borderRadius: '8px' }}>
-                                            <Trash2 size={16} />
-                                        </button>
+                                        {!isH4BranchAdmin && <button onClick={() => handleDelete(branch)} className="btn btn-danger" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', borderRadius: '8px' }}><Trash2 size={16} /></button>}
                                     </>
                                 )}
                             </div>
@@ -197,8 +241,20 @@ const Branches = () => {
                         <input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="e.g. Downtown Branch" />
                     </div>
                     <div className="input-group">
+                        <label>Short description</label>
+                        <input className="input" value={formData.shortDescription} onChange={e => setFormData({ ...formData, shortDescription: e.target.value })} maxLength={300} placeholder="A quick introduction to this branch" />
+                    </div>
+                    <div className="input-group">
+                        <label>Branch details</label>
+                        <textarea className="input" rows={3} value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} maxLength={5000} placeholder="Services, access instructions, and other member information" />
+                    </div>
+                    <div className="input-group">
                         <label>Address</label>
                         <input className="input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Full address" />
+                    </div>
+                    <div className="input-group">
+                        <label>Website</label>
+                        <input className="input" type="url" value={formData.website} onChange={e => setFormData({ ...formData, website: e.target.value })} placeholder="https://example.com" />
                     </div>
                     <div className="form-grid">
                         <div className="input-group">
@@ -213,6 +269,36 @@ const Branches = () => {
                     <div className="input-group">
                         <label>Branch Manager</label>
                         <input className="input" value={formData.managerName} onChange={e => setFormData({ ...formData, managerName: e.target.value })} placeholder="Manager's name" />
+                    </div>
+                    <section style={{ marginTop: '1.25rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 12 }}>
+                        <h3 style={{ margin: '0 0 .35rem' }}>Opening hours</h3>
+                        <p style={{ margin: '0 0 1rem', color: 'var(--text-secondary)', fontSize: '.82rem' }}>Set regular hours for each day. Mark closed days, then add holiday or special-hour exceptions below.</p>
+                        <div style={{ display: 'grid', gap: '.65rem' }}>
+                            {BRANCH_DAYS.map(day => {
+                                const schedule = formData.weeklySchedule?.[day] || { open: '06:00 AM', close: '10:00 PM', closed: false };
+                                return <div key={day} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, .7fr) 1fr 1fr auto', alignItems: 'center', gap: '.6rem' }}>
+                                    <strong style={{ fontSize: '.85rem' }}>{day}</strong>
+                                    <input className="input" aria-label={`${day} opening time`} type="time" value={toTimeInput(schedule.open)} disabled={schedule.closed} onChange={e => updateDaySchedule(day, { open: e.target.value })} />
+                                    <input className="input" aria-label={`${day} closing time`} type="time" value={toTimeInput(schedule.close)} disabled={schedule.closed} onChange={e => updateDaySchedule(day, { close: e.target.value })} />
+                                    <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: '.8rem' }}><input type="checkbox" checked={Boolean(schedule.closed)} onChange={e => updateDaySchedule(day, { closed: e.target.checked })} /> Closed</label>
+                                </div>;
+                            })}
+                        </div>
+                    </section>
+                    <section style={{ marginTop: '1rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}><div><h3 style={{ margin: 0 }}>Holidays and special hours</h3><small style={{ color: 'var(--text-secondary)' }}>Date-specific closures or adjusted opening hours.</small></div><button type="button" className="btn btn-secondary" onClick={() => setFormData({ ...formData, scheduleExceptions: [...formData.scheduleExceptions, { date: '', closed: true, reason: '' }] })}>+ Add date</button></div>
+                        {formData.scheduleExceptions.map((exception, index) => <div key={`${index}-${exception.date}`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto auto', alignItems: 'center', gap: '.5rem', marginTop: '.75rem' }}>
+                            <input className="input" type="date" value={exception.date || ''} onChange={e => updateException(index, { date: e.target.value })} required />
+                            <input className="input" type="time" aria-label="Special opening time" value={toTimeInput(exception.open)} disabled={exception.closed} onChange={e => updateException(index, { open: e.target.value })} />
+                            <input className="input" type="time" aria-label="Special closing time" value={toTimeInput(exception.close)} disabled={exception.closed} onChange={e => updateException(index, { close: e.target.value })} />
+                            <input className="input" placeholder="Reason (optional)" value={exception.reason || ''} onChange={e => updateException(index, { reason: e.target.value })} />
+                            <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: '.8rem' }}><input type="checkbox" checked={Boolean(exception.closed)} onChange={e => updateException(index, { closed: e.target.checked })} /> Closed</label>
+                            <button type="button" className="btn btn-danger" onClick={() => setFormData({ ...formData, scheduleExceptions: formData.scheduleExceptions.filter((_, itemIndex) => itemIndex !== index) })}>Remove</button>
+                        </div>)}
+                    </section>
+                    <div className="form-grid" style={{ marginTop: '1rem' }}>
+                        <div className="input-group"><label>Amenities (comma separated)</label><input className="input" value={formData.amenitiesText} onChange={e => setFormData({ ...formData, amenitiesText: e.target.value })} placeholder="Showers, lockers, parking" /></div>
+                        <div className="input-group"><label>Equipment (comma separated)</label><input className="input" value={formData.equipmentsText} onChange={e => setFormData({ ...formData, equipmentsText: e.target.value })} placeholder="Treadmills, free weights" /></div>
                     </div>
                     <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
                         <input

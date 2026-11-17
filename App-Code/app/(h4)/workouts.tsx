@@ -6,7 +6,7 @@ import { H4Workouts } from '@/features/h4';
 
 export default function H4WorkoutsScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4Workouts />
     </SafeAreaView>
   );

@@ -68,6 +68,7 @@ export default function FitPassLayout() {
       <Tabs.Screen name="history"  options={{ href: null }} />
       <Tabs.Screen name="diets"    options={{ href: null }} />
       <Tabs.Screen name="gym/[id]" options={{ href: null }} />
+      <Tabs.Screen name="classes" options={{ href: null }} />
     </Tabs>
     </>
   );

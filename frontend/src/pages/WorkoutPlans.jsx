@@ -5,8 +5,7 @@ import { useToast } from '../context/ToastContext';
 import MemberFilterSelect from '../components/MemberFilterSelect';
 import ResetFiltersButton from '../components/ResetFiltersButton';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { 
-    Dumbbell, Calendar, User, Plus, Trash2, Edit3, Search, 
+import { Loader,  Dumbbell, Calendar, User, Plus, Trash2, Edit3, Search, 
     CheckCircle2, FolderHeart, ArrowRight, PlayCircle, Award, Sparkles, CheckSquare, Square, X
 } from 'lucide-react';
 
@@ -486,7 +485,7 @@ const WorkoutPlans = () => {
 
             {/* loading state */}
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><div className="spinner"></div></div>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} /></div>
             ) : (
                 <>
                     {/* TAB Content: ASSIGNED PLANS */}
@@ -513,67 +512,188 @@ const WorkoutPlans = () => {
                                 </div>
                             ) : (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                                    {filteredPlans.map((plan) => (
-                                        <div className="card" key={plan.id || plan._id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                                    <div>
-                                                        <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '0.05em' }}>
-                                                            {plan.members?.length > 1 ? `${plan.members.length} assigned members` : (plan.member?.name ? `Member: ${plan.member.name}` : 'No Member Linked')}
-                                                        </span>
-                                                        {(plan.members?.length ? plan.members : [plan.member].filter(Boolean)).map(member => <div key={member.id || member._id} style={{ fontSize: '.75rem', color: 'var(--text-secondary)', marginTop: 3 }}><strong style={{ color: 'var(--text-primary)' }}>{member.registrationNumber || member.displayId || 'Member ID pending'}</strong> · {member.name} · {member.phone || 'No phone'}</div>)}
-                                                        <h3 style={{ marginTop: '0.25rem', marginBottom: '0.5rem', fontSize: '1.15rem' }}>{plan.name}</h3>
-                                                        <small style={{ color: 'var(--text-secondary)' }}>Assigned {new Date(plan.createdAt).toLocaleDateString()}</small>
-                                                    </div>
-                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                        <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEditPlan(plan)}>
-                                                            <Edit3 size={14} />
-                                                        </button>
-                                                        <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%', color: '#C62828' }} onClick={() => handleDeletePlan(plan.id || plan._id)}>
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                    {filteredPlans.map((plan) => {
+                                        const assignedMembers = (plan.members?.length ? plan.members : [plan.member].filter(Boolean));
+                                        const assignedCount = assignedMembers.length;
 
-                                                {plan.startDate && (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                                                        <Calendar size={14} />
-                                                        <span>
-                                                            {new Date(plan.startDate).toLocaleDateString()} 
-                                                            {plan.endDate && ` to ${new Date(plan.endDate).toLocaleDateString()}`}
-                                                        </span>
+                                        return (
+                                            <div className="card" key={plan.id || plan._id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem 1.4rem', borderRadius: '14px', border: '1px solid var(--border)', background: '#FFFFFF', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+                                                <div>
+                                                    {/* Header row: Plan title + action buttons */}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.85rem' }}>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em', wordBreak: 'break-word' }}>
+                                                                {plan.name}
+                                                            </h3>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                                                <Calendar size={13} style={{ color: '#92700A', flexShrink: 0 }} />
+                                                                <span>
+                                                                    {plan.startDate ? (
+                                                                        <>
+                                                                            {new Date(plan.startDate).toLocaleDateString()}
+                                                                            {plan.endDate && ` to ${new Date(plan.endDate).toLocaleDateString()}`}
+                                                                        </>
+                                                                    ) : (
+                                                                        `Assigned ${new Date(plan.createdAt || Date.now()).toLocaleDateString()}`
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                                            <button 
+                                                                className="btn btn-secondary" 
+                                                                style={{ width: 34, height: 34, padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                                                                onClick={() => handleEditPlan(plan)}
+                                                                title="Edit plan"
+                                                            >
+                                                                <Edit3 size={14} />
+                                                            </button>
+                                                            <button 
+                                                                className="btn btn-secondary" 
+                                                                style={{ width: 34, height: 34, padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C62828' }} 
+                                                                onClick={() => handleDeletePlan(plan.id || plan._id)}
+                                                                title="Delete plan"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                )}
 
-                                                <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '1rem', border: '1px solid var(--border)' }}>
-                                                    <div style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Weekly Schedule:</div>
-                                                    {plan.exercises && plan.exercises.length > 0 ? (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                            {plan.exercises.slice(0, 3).map((ex, i) => (
-                                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                                                                    <span style={{ fontWeight: '600' }}>{ex.day}: {ex.name}</span>
-                                                                    <span style={{ color: 'var(--text-secondary)' }}>{ex.sets}x{ex.reps} {ex.weight && `(${ex.weight}kg)`}</span>
-                                                                </div>
-                                                            ))}
-                                                            {plan.exercises.length > 3 && (
-                                                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '0.25rem' }}>
-                                                                    + {plan.exercises.length - 3} more exercises
-                                                                </div>
+                                                    {/* Assigned Members Section */}
+                                                    <div style={{ marginBottom: '1rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                                                            <span className="diet-assigned-heading">
+                                                                Assigned Members <i>{assignedCount}</i>
+                                                            </span>
+                                                        </div>
+                                                        {assignedMembers.length > 0 ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                                {assignedMembers.slice(0, 3).map((member) => {
+                                                                    const memberCode = member.registrationNumber || member.displayId;
+                                                                    const hasShortCode = memberCode && !String(memberCode).includes('-') && String(memberCode).length < 15;
+                                                                    return (
+                                                                        <div 
+                                                                            key={member.id || member._id} 
+                                                                            style={{ 
+                                                                                fontSize: '0.82rem', 
+                                                                                display: 'flex', 
+                                                                                alignItems: 'center', 
+                                                                                gap: '8px',
+                                                                                padding: '6px 10px',
+                                                                                background: 'var(--bg-secondary)',
+                                                                                borderRadius: '8px',
+                                                                                border: '1px solid var(--border)'
+                                                                            }}
+                                                                        >
+                                                                            <User size={13} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
+                                                                            <span style={{ fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                                {member.name || 'Member'}
+                                                                            </span>
+                                                                            {hasShortCode && (
+                                                                                <span style={{ 
+                                                                                    fontSize: '0.7rem', 
+                                                                                    fontWeight: 800, 
+                                                                                    color: '#766A4B',
+                                                                                    background: '#F5EFE1',
+                                                                                    padding: '1px 6px',
+                                                                                    borderRadius: '4px',
+                                                                                    flexShrink: 0
+                                                                                }}>
+                                                                                    {memberCode}
+                                                                                </span>
+                                                                            )}
+                                                                            {member.phone && member.phone !== 'No phone' && (
+                                                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginLeft: 'auto', flexShrink: 0 }}>
+                                                                                    {member.phone}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                                {assignedMembers.length > 3 && (
+                                                                    <div style={{ fontSize: '0.75rem', color: '#92700A', fontWeight: 700, paddingLeft: '4px' }}>
+                                                                        +{assignedMembers.length - 3} more members assigned
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '0.2rem 0' }}>
+                                                                No members assigned yet
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Weekly Schedule Box */}
+                                                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '0.85rem 1rem', border: '1px solid var(--border)' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                            <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Weekly Schedule:</span>
+                                                            {plan.exercises?.length > 0 && (
+                                                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                                    {plan.exercises.length} {plan.exercises.length === 1 ? 'exercise' : 'exercises'}
+                                                                </span>
                                                             )}
                                                         </div>
-                                                    ) : (
-                                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No exercises defined.</span>
-                                                    )}
+                                                        {plan.exercises && plan.exercises.length > 0 ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                                                                {plan.exercises.slice(0, 3).map((ex, i) => {
+                                                                    const hasSets = ex.sets !== undefined && ex.sets !== null && ex.sets !== '' && ex.sets !== 0;
+                                                                    const hasReps = ex.reps !== undefined && ex.reps !== null && ex.reps !== '' && ex.reps !== 0;
+                                                                    let volume = '';
+                                                                    if (hasSets && hasReps) volume = `${ex.sets} × ${ex.reps}`;
+                                                                    else if (hasSets) volume = `${ex.sets} sets`;
+                                                                    else if (hasReps) volume = `${ex.reps} reps`;
+
+                                                                    const weight = ex.weight ? `(${ex.weight}kg)` : '';
+                                                                    const spec = [volume, weight].filter(Boolean).join(' ');
+
+                                                                    return (
+                                                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', gap: '8px' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                                                                                {ex.day && (
+                                                                                    <span style={{ 
+                                                                                        fontSize: '0.68rem', 
+                                                                                        fontWeight: 800, 
+                                                                                        color: '#92700A', 
+                                                                                        background: '#FFF8DE', 
+                                                                                        padding: '2px 6px', 
+                                                                                        borderRadius: '5px',
+                                                                                        whiteSpace: 'nowrap'
+                                                                                    }}>
+                                                                                        {ex.day}
+                                                                                    </span>
+                                                                                )}
+                                                                                <span style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                                    {ex.name}
+                                                                                </span>
+                                                                            </div>
+                                                                            {spec && (
+                                                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                                                                    {spec}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                                {plan.exercises.length > 3 && (
+                                                                    <div style={{ fontSize: '0.75rem', color: '#92700A', fontWeight: 700, textAlign: 'right', marginTop: '0.25rem' }}>
+                                                                        + {plan.exercises.length - 3} more exercises
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No exercises defined.</span>
+                                                        )}
+                                                    </div>
                                                 </div>
+                                                {plan.trainer && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid var(--border)', marginTop: '1.25rem', paddingTop: '0.75rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                                        <User size={12} />
+                                                        <span>Assigned by: {plan.trainer.name}</span>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {plan.trainer && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid var(--border)', marginTop: '1.25rem', paddingTop: '0.75rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                                                    <User size={12} />
-                                                    <span>Assigned by: {plan.trainer.name}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -590,37 +710,75 @@ const WorkoutPlans = () => {
                                 </div>
                             ) : (
                                 templates.map((temp) => (
-                                    <div className="card" key={temp.id || temp._id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div className="card" key={temp.id || temp._id} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '1.25rem 1.4rem', borderRadius: '14px', border: '1px solid var(--border)', background: '#FFFFFF', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
                                         <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                                <div>
-                                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{temp.name}</h3>
-                                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>{temp.description || 'No description provided'}</p>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.85rem' }}>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{temp.name}</h3>
+                                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>{temp.description || 'Global routine preset'}</p>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                    <button className="btn btn-primary workout-template-assign" onClick={() => handleAssignTemplate(temp)}>
-                                                        <ArrowRight size={15} /> Assign
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                                    <button className="btn btn-primary workout-template-assign" onClick={() => handleAssignTemplate(temp)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0 10px', height: '34px', fontSize: '0.8rem', fontWeight: 800 }}>
+                                                        <ArrowRight size={14} /> Assign
                                                     </button>
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%' }} onClick={() => handleEditTemplate(temp)}>
+                                                    <button className="btn btn-secondary" style={{ width: 34, height: 34, padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => handleEditTemplate(temp)} title="Edit template">
                                                         <Edit3 size={14} />
                                                     </button>
-                                                    <button className="btn btn-secondary" style={{ padding: '0.4rem', borderRadius: '50%', color: '#C62828' }} onClick={() => handleDeleteTemplate(temp.id || temp._id)}>
+                                                    <button className="btn btn-secondary" style={{ width: 34, height: 34, padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C62828' }} onClick={() => handleDeleteTemplate(temp.id || temp._id)} title="Delete template">
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '1rem', border: '1px solid var(--border)' }}>
+                                            <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '0.85rem 1rem', border: '1px solid var(--border)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                                    <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Exercise Routine:</span>
+                                                    {temp.exercises?.length > 0 && (
+                                                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                            {temp.exercises.length} {temp.exercises.length === 1 ? 'exercise' : 'exercises'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 {temp.exercises && temp.exercises.length > 0 ? (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                        {temp.exercises.slice(0, 3).map((ex, i) => (
-                                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem' }}>
-                                                                <span style={{ fontWeight: '600' }}>{ex.day}: {ex.name}</span>
-                                                                <span style={{ color: 'var(--text-secondary)' }}>{ex.sets}x{ex.reps}</span>
-                                                            </div>
-                                                        ))}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                                                        {temp.exercises.slice(0, 3).map((ex, i) => {
+                                                            const hasSets = ex.sets !== undefined && ex.sets !== null && ex.sets !== '' && ex.sets !== 0;
+                                                            const hasReps = ex.reps !== undefined && ex.reps !== null && ex.reps !== '' && ex.reps !== 0;
+                                                            let volume = '';
+                                                            if (hasSets && hasReps) volume = `${ex.sets} × ${ex.reps}`;
+                                                            else if (hasSets) volume = `${ex.sets} sets`;
+                                                            else if (hasReps) volume = `${ex.reps} reps`;
+
+                                                            return (
+                                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', gap: '8px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                                                                        {ex.day && (
+                                                                            <span style={{ 
+                                                                                fontSize: '0.68rem', 
+                                                                                fontWeight: 800, 
+                                                                                color: '#92700A', 
+                                                                                background: '#FFF8DE', 
+                                                                                padding: '2px 6px', 
+                                                                                borderRadius: '5px',
+                                                                                whiteSpace: 'nowrap'
+                                                                            }}>
+                                                                                {ex.day}
+                                                                            </span>
+                                                                        )}
+                                                                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                            {ex.name}
+                                                                        </span>
+                                                                    </div>
+                                                                    {volume && (
+                                                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                                                            {volume}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
                                                         {temp.exercises.length > 3 && (
-                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+                                                            <div style={{ fontSize: '0.75rem', color: '#92700A', fontWeight: 700, textAlign: 'right', marginTop: '0.25rem' }}>
                                                                 + {temp.exercises.length - 3} more exercises
                                                             </div>
                                                         )}
@@ -650,8 +808,8 @@ const WorkoutPlans = () => {
                             <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Exercises completed</small><h2 style={{ margin: '4px 0' }}>{progressLogs.reduce((sum, log) => sum + Number(log.completedExercises || 0), 0)}</h2></div>
                             <div className="card"><small style={{ color: 'var(--text-secondary)' }}>Average session completion</small><h2 style={{ margin: '4px 0' }}>{progressLogs.length ? `${Math.round(progressLogs.reduce((sum, log) => sum + (log.totalExercises ? log.completedExercises / log.totalExercises : 0), 0) / progressLogs.length * 100)}%` : '—'}</h2></div>
                         </div>
-                        <div className="card" style={{ marginBottom: 16 }}><h3 style={{ marginTop: 0 }}>Training consistency by date</h3>{progressLoading ? <div className="spinner" /> : workoutTrendData.length ? <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={workoutTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Bar dataKey="sessions" name="Sessions" fill="#818cf8" radius={[4, 4, 0, 0]} /><Bar dataKey="exercises" name="Exercises completed" fill="#34d399" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>No workout logs match these filters.</p>}</div>
-                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}><table><thead><tr><th>Date</th><th>Member ID</th><th>Name</th><th>Phone</th><th>Workout</th><th>Day</th><th>Exercises</th><th>Recorded by</th><th>Branch</th></tr></thead><tbody>{progressLogs.map(log => <tr key={log.id}><td>{new Date(log.loggedAt).toLocaleDateString()}</td><td>{log.member?.displayId || log.memberId}</td><td>{log.member?.name || 'Member'}</td><td>{log.member?.phone || '—'}</td><td>{log.plan?.name || log.planName}</td><td>{log.trainingDay || '—'}</td><td>{log.completedExercises}/{log.totalExercises}</td><td>{log.recordedBy?.name || '—'}</td><td>{log.branch?.name || '—'}</td></tr>)}{!progressLoading && !progressLogs.length && <tr><td colSpan="9" style={{ textAlign: 'center', padding: 24 }}>No workout records for this date range.</td></tr>}</tbody></table></div>
+                        <div className="card" style={{ marginBottom: 16 }}><h3 style={{ marginTop: 0 }}>Training consistency by date</h3>{progressLoading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader className="spinner" size={36} style={{ color: 'var(--primary-color)' }} /></div> : workoutTrendData.length ? <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={workoutTrendData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" /><YAxis /><Tooltip /><Bar dataKey="sessions" name="Sessions" fill="#818cf8" radius={[4, 4, 0, 0]} /><Bar dataKey="exercises" name="Exercises completed" fill="#34d399" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div> : <p style={{ color: 'var(--text-secondary)' }}>No workout logs match these filters.</p>}</div>
+                        <div className="card" style={{ padding: 0, overflowX: 'auto' }}><table><thead><tr><th>Date</th><th>Member ID</th><th>Name</th><th>Phone</th><th>Workout</th><th>Day</th><th>Exercises</th><th>Recorded by</th><th>Branch</th></tr></thead><tbody>{progressLogs.map(log => <tr key={log.id}><td>{new Date(log.loggedAt).toLocaleDateString()}</td><td>{(() => { const code = log.member?.displayId || log.member?.registrationNumber; if (code && !code.includes('-') && code.length < 15) return code; if (log.memberId && (!log.memberId.includes('-') || log.memberId.length < 15)) return log.memberId; return '—'; })()}</td><td>{log.member?.name || 'Member'}</td><td>{log.member?.phone || '—'}</td><td>{log.plan?.name || log.planName}</td><td>{log.trainingDay || '—'}</td><td>{log.completedExercises}/{log.totalExercises}</td><td>{log.recordedBy?.name || '—'}</td><td>{log.branch?.name || '—'}</td></tr>)}{!progressLoading && !progressLogs.length && <tr><td colSpan="9" style={{ textAlign: 'center', padding: 24 }}>No workout records for this date range.</td></tr>}</tbody></table></div>
                     </div>}
 
                     {/* TAB Content: MEMBER WORKOUT TRACKER */}

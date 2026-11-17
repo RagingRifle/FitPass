@@ -2,6 +2,22 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const TrainerAttendance = require('../models/TrainerAttendance');
 const User = require('../models/User');
+const prisma = require('../config/prisma');
+
+const parseDateOnly = value => {
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const [, year, month, day] = match.map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+    return date;
+};
+
+const eachDate = (start, end) => {
+    const dates = [];
+    for (let date = new Date(start); date <= end; date.setUTCDate(date.getUTCDate() + 1)) dates.push(new Date(date));
+    return dates;
+};
 
 // @desc    Check In Trainer
 // @route   POST /api/trainer-attendance/checkin
@@ -197,9 +213,126 @@ const markTrainerLeave = catchAsync(async (req, res, next) => {
     res.status(201).json({ success: true, data: leave });
 });
 
+const getTrainerLeaveRequests = catchAsync(async (req, res) => {
+    const where = { gymId: req.user.gymId, ...(req.user.branchId ? { branchId: req.user.branchId } : {}) };
+    if (req.user.role === 'trainer') where.trainerId = req.user.id;
+    if (req.query.status && ['Pending', 'Approved', 'Rejected'].includes(req.query.status)) where.status = req.query.status;
+    const requests = await prisma.trainerLeaveRequest.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 });
+    const trainerIds = [...new Set(requests.map(request => request.trainerId))];
+    const trainers = trainerIds.length ? await User.find({ _id: { $in: trainerIds } }).select('id name email').lean() : [];
+    const trainerMap = new Map(trainers.map(trainer => [String(trainer._id || trainer.id), trainer]));
+    res.json(requests.map(request => ({ ...request, trainer: trainerMap.get(String(request.trainerId)) || null })));
+});
+
+const createTrainerLeaveRequest = catchAsync(async (req, res) => {
+    const startDate = parseDateOnly(req.body.startDate);
+    const endDate = parseDateOnly(req.body.endDate);
+    if (!startDate || !endDate || startDate > endDate) return res.status(400).json({ success: false, message: 'Enter a valid leave date range.' });
+    if (Math.round((endDate - startDate) / 86_400_000) > 60) return res.status(400).json({ success: false, message: 'Leave requests can cover up to 61 days.' });
+    const overlap = await prisma.trainerLeaveRequest.findFirst({
+        where: {
+            trainerId: req.user.id,
+            gymId: req.user.gymId,
+            status: { in: ['Pending', 'Approved'] },
+            startDate: { lte: endDate },
+            endDate: { gte: startDate }
+        }
+    });
+    if (overlap) return res.status(409).json({ success: false, message: 'You already have a pending or approved request covering one or more of these days.' });
+    const request = await prisma.trainerLeaveRequest.create({
+        data: {
+            trainerId: req.user.id,
+            startDate,
+            endDate,
+            reason: String(req.body.reason || '').trim() || null,
+            status: 'Pending',
+            gymId: req.user.gymId,
+            branchId: req.user.branchId || null
+        }
+    });
+    res.status(201).json({ success: true, data: request });
+});
+
+const reviewTrainerLeaveRequest = catchAsync(async (req, res) => {
+    const request = await prisma.trainerLeaveRequest.findFirst({ where: { id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId ? { branchId: req.user.branchId } : {}) } });
+    if (!request) return res.status(404).json({ success: false, message: 'Leave request not found in this branch.' });
+    if (request.status !== 'Pending') return res.status(409).json({ success: false, message: 'This leave request has already been reviewed.' });
+    const decision = req.body.status;
+    if (!['Approved', 'Rejected'].includes(decision)) return res.status(400).json({ success: false, message: 'Choose approve or reject.' });
+
+    const update = {
+        status: decision,
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+        adminNote: String(req.body.adminNote || '').trim() || null
+    };
+    let attendanceRows = null;
+
+    if (decision === 'Approved') {
+        const approvedStartDate = parseDateOnly(req.body.startDate) || request.startDate;
+        const approvedEndDate = parseDateOnly(req.body.endDate) || request.endDate;
+        if (approvedStartDate > approvedEndDate) return res.status(400).json({ success: false, message: 'The approved start date must be on or before the end date.' });
+        if (Math.round((approvedEndDate - approvedStartDate) / 86_400_000) > 60) return res.status(400).json({ success: false, message: 'Approved leave can cover up to 61 days.' });
+
+        const overlap = await prisma.trainerLeaveRequest.findFirst({
+            where: {
+                id: { not: request.id },
+                trainerId: request.trainerId,
+                gymId: request.gymId,
+                status: 'Approved',
+                approvedStartDate: { lte: approvedEndDate },
+                approvedEndDate: { gte: approvedStartDate }
+            }
+        });
+        if (overlap) return res.status(409).json({ success: false, message: 'The edited dates overlap another approved leave.' });
+
+        const dates = eachDate(approvedStartDate, approvedEndDate);
+        const timezoneOffset = Number(req.body.timezoneOffset) || 0;
+        attendanceRows = dates.map(date => {
+            const dayStart = new Date(date.getTime() + timezoneOffset * 60_000);
+            const dayEnd = new Date(dayStart.getTime() + 86_400_000 - 1);
+            return { date, dayStart, dayEnd };
+        });
+        const existingAttendance = await TrainerAttendance.find({
+            trainerId: request.trainerId,
+            gymId: request.gymId,
+            branchId: request.branchId,
+            date: { $gte: attendanceRows[0].dayStart, $lte: attendanceRows[attendanceRows.length - 1].dayEnd }
+        }).lean();
+        if (existingAttendance.some(row => row.status !== 'Leave')) return res.status(409).json({ success: false, message: 'The approved range includes a day with a recorded shift.' });
+        if (existingAttendance.some(row => row.status === 'Leave')) return res.status(409).json({ success: false, message: 'The approved range includes an existing leave marker.' });
+
+        update.approvedStartDate = approvedStartDate;
+        update.approvedEndDate = approvedEndDate;
+    }
+
+    const updated = await prisma.$transaction(async transaction => {
+        if (attendanceRows) {
+            await transaction.trainerAttendance.createMany({
+                data: attendanceRows.map(({ dayStart }) => ({
+                    trainerId: request.trainerId,
+                    date: dayStart,
+                    checkInTime: dayStart,
+                    checkOutTime: dayStart,
+                    workingHours: 0,
+                    status: 'Leave',
+                    leaveReason: request.reason,
+                    gymId: request.gymId,
+                    branchId: request.branchId
+                }))
+            });
+        }
+        return transaction.trainerLeaveRequest.update({ where: { id: request.id }, data: update });
+    });
+    res.json({ success: true, data: updated });
+});
+
 module.exports = {
     checkInTrainer,
     checkOutTrainer,
     getTrainerAttendance,
-    markTrainerLeave
+    markTrainerLeave,
+    getTrainerLeaveRequests,
+    createTrainerLeaveRequest,
+    reviewTrainerLeaveRequest
 };

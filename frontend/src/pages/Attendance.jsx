@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import MemberFilterSelect from '../components/MemberFilterSelect';
 import QRScanner from '../components/QRScanner';
 import { QRCodeCanvas } from 'qrcode.react';
-import { ShieldCheck, UserCheck, QrCode, Clock, Calendar, Check, AlertCircle, Search, X, Keyboard } from 'lucide-react';
+import { ShieldCheck, UserCheck, QrCode, Clock, Calendar, Check, AlertCircle, Search, X, Keyboard, Loader } from 'lucide-react';
 
 const Attendance = () => {
     const [activeTab, setActiveTab] = useState('member_attendance'); // 'member_attendance' | 'staff_duty'
@@ -151,7 +151,11 @@ const Attendance = () => {
         }
     };
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary)' }} />
+        </div>
+    );
 
     return (
         <div>
@@ -180,17 +184,18 @@ const Attendance = () => {
                 <button
                     onClick={() => setActiveTab('member_attendance')}
                     style={{
-                        background: activeTab === 'member_attendance' ? 'rgba(240, 160, 32, 0.15)' : 'none',
+                        background: 'none',
                         border: 'none',
-                        borderBottom: activeTab === 'member_attendance' ? '2px solid #FEDF1E' : '2px solid transparent',
-                        color: activeTab === 'member_attendance' ? '#FEDF1E' : 'var(--text-secondary)',
-                        fontWeight: '700',
+                        borderBottom: activeTab === 'member_attendance' ? '2px solid var(--primary)' : '2px solid transparent',
+                        color: activeTab === 'member_attendance' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        fontWeight: activeTab === 'member_attendance' ? '700' : '500',
                         fontSize: '0.9rem',
                         padding: '0.5rem 1rem',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '6px',
+                        transition: 'all 0.15s ease'
                     }}
                 >
                     <UserCheck size={16} /> Member Check-In ({todayList.length})
@@ -198,17 +203,18 @@ const Attendance = () => {
                 <button
                     onClick={() => setActiveTab('staff_duty')}
                     style={{
-                        background: activeTab === 'staff_duty' ? 'rgba(240, 160, 32, 0.15)' : 'none',
+                        background: 'none',
                         border: 'none',
-                        borderBottom: activeTab === 'staff_duty' ? '2px solid #FEDF1E' : '2px solid transparent',
-                        color: activeTab === 'staff_duty' ? '#FEDF1E' : 'var(--text-secondary)',
-                        fontWeight: '700',
+                        borderBottom: activeTab === 'staff_duty' ? '2px solid var(--primary)' : '2px solid transparent',
+                        color: activeTab === 'staff_duty' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        fontWeight: activeTab === 'staff_duty' ? '700' : '500',
                         fontSize: '0.9rem',
                         padding: '0.5rem 1rem',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '6px',
+                        transition: 'all 0.15s ease'
                     }}
                 >
                     <ShieldCheck size={16} /> Staff Duty Presence ({staffTodayList.length})
@@ -419,7 +425,7 @@ const Attendance = () => {
                             <QRCodeCanvas value={dutyQRModal.qrData} size={220} level="H" />
                         </div>
                         <div style={{ marginTop: '1.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '800', background: 'rgba(240, 160, 32, 0.15)', color: '#FEDF1E', padding: '0.3rem 0.8rem', borderRadius: '8px' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '700', background: 'rgba(240, 160, 32, 0.12)', color: '#92700A', padding: '0.3rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(146, 112, 10, 0.2)' }}>
                                 Date: {dutyQRModal.date}
                             </span>
                         </div>

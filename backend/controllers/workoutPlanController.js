@@ -4,6 +4,7 @@ const WorkoutPlan = require('../models/WorkoutPlan');
 const Member = require('../models/Member');
 const User = require('../models/User');
 const { H4_GYM_IDS } = require('../config/constants');
+const { trainerCanManage } = require('../utils/trainerAccess');
 
 const getPlanGymScope = (req) => {
     const gymId = String(req.user?.gymId || '');
@@ -30,7 +31,10 @@ const getAssignableMembers = catchAsync(async (req, res, next) => {
         }
 
         const query = { gymId: gymIds.length > 1 ? { $in: gymIds } : gymId };
-        if (req.user.role !== 'trainer' && req.user.branchId) query.branchId = req.user.branchId;
+        if (req.user.role === 'trainer') {
+            const links = await require('../models/MemberTrainerAssignment').find({ trainerId: req.user.id, gymId }).select('memberId').lean();
+            query._id = { $in: links.map((link) => link.memberId) };
+        } else if (req.user.branchId) query.branchId = req.user.branchId;
 
         const page = Math.max(parseInt(req.query.page) || 1, 1);
         const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 100);
@@ -65,6 +69,9 @@ const createPlan = catchAsync(async (req, res, next) => {
 
         if (!memberIds.length || !name) {
             return res.status(400).json({ success: false, message: 'Select at least one member and enter a plan name.' });
+        }
+        if (!(await trainerCanManage(req, memberIds, 'assignWorkout'))) {
+            return res.status(403).json({ success: false, message: 'You need workout assignment access and an active assignment to every selected member.' });
         }
 
         const { gymId, gymIds } = getPlanGymScope(req);
@@ -192,7 +199,7 @@ const getPlans = catchAsync(async (req, res, next) => {
 const getPlanById = catchAsync(async (req, res, next) => {
     try {
         const { gymIds } = getPlanGymScope(req);
-        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0] });
+        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
         if (plan) {
             // Check member authorization
@@ -230,12 +237,13 @@ const updatePlan = catchAsync(async (req, res, next) => {
         const { name, startDate, endDate, exercises, trainerId } = req.body;
         const { gymIds } = getPlanGymScope(req);
 
-        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0] });
+        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
         if (plan) {
             const requestedIds = Array.isArray(req.body.memberIds) ? req.body.memberIds : parseMemberIds(plan);
             const memberIds = [...new Set(requestedIds.filter(Boolean).map(String))];
             if (!memberIds.length) return res.status(400).json({ success: false, message: 'A workout plan must be assigned to at least one member.' });
+            if (!(await trainerCanManage(req, memberIds, 'assignWorkout'))) return res.status(403).json({ success: false, message: 'You need workout access and an active assignment to every selected member.' });
             const members = await Promise.all(memberIds.map((id) => Member.findById(id).lean()));
             const invalidIndex = members.findIndex((member) => !member || !gymIds.includes(String(member.gymId)) || (req.user.role !== 'trainer' && req.user.branchId && String(member.branchId || '') !== String(req.user.branchId)));
             if (invalidIndex !== -1) return res.status(404).json({ success: false, message: 'One or more selected members are outside your gym or branch.' });
@@ -270,7 +278,7 @@ const updatePlan = catchAsync(async (req, res, next) => {
 const deletePlan = catchAsync(async (req, res, next) => {
     try {
         const { gymIds } = getPlanGymScope(req);
-        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0] });
+        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
         if (plan) {
             const memberIds = parseMemberIds(plan);

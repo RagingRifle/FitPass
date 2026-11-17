@@ -14,6 +14,7 @@ import {
     MapPin, 
     User, 
     Clock, 
+    Timer,
     Sparkles, 
     AlertCircle, 
     CheckCircle2, 
@@ -23,6 +24,7 @@ import {
     ShieldCheck, 
     Mail, 
     Lock,
+    Loader,
     Users
 } from 'lucide-react';
 
@@ -176,7 +178,11 @@ function PartnerGyms() {
         g.admins?.[0]?.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     return (
         <div className="partner-gyms-page">
@@ -208,7 +214,7 @@ function PartnerGyms() {
                 </div>
             )}
             {successMsg && (
-                <div className="success-message" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.85rem 1.25rem', backgroundColor: 'rgba(46, 125, 50, 0.15)', border: '1px solid rgba(46, 125, 50, 0.3)', color: '#2E7D32', borderRadius: 'var(--radius-md)' }}>
+                <div className="success-message" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0.85rem 1.25rem', backgroundColor: 'var(--success-bg, rgba(46, 125, 50, 0.12))', border: '1px solid var(--success-border, rgba(46, 125, 50, 0.25))', color: 'var(--success-text, #2E7D32)', borderRadius: 'var(--radius-md)' }}>
                     <Sparkles size={18} />
                     <span>{successMsg}</span>
                 </div>
@@ -351,7 +357,7 @@ function PartnerGyms() {
                                     {/* Session Duration Timeout Controls */}
                                     <div className="partner-gym-duration-box">
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                                            <Clock size={16} style={{ color: 'var(--primary)' }} />
+                                            <Timer size={14} style={{ color: 'var(--primary-color)' }} />
                                             <span>Session Limit:</span>
                                         </div>
                                         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -448,6 +454,7 @@ function PartnerGyms() {
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                                    <Timer size={14} style={{ color: 'var(--primary-color)' }} />
                                                     <select
                                                         value={draftVal / 60}
                                                         onChange={(e) => setDurationDraft((d) => ({ ...d, [gym._id]: Number(e.target.value) * 60 }))}
@@ -569,7 +576,7 @@ function PartnerGyms() {
                     </div>
 
                     <div className="input-group">
-                        <label>Default Session Timeout</label>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Timer size={14} style={{ color: 'var(--primary-color)' }} /> Default Session Timeout</label>
                         <select 
                             className="input" 
                             value={sessionHours} 
@@ -752,7 +759,7 @@ function PartnerGyms() {
                             Print or display this QR code at the entrance. Members scan this QR code with their mobile app to check in.
                         </p>
                         
-                        <div style={{ background: '#FFFFFF', padding: '1.75rem', display: 'inline-block', borderRadius: '16px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)', border: '1px solid rgba(240,160,32,0.3)' }}>
+                        <div style={{ background: 'var(--bg-card, #fff)', padding: '1.75rem', display: 'inline-block', borderRadius: '16px', boxShadow: 'var(--shadow-lg, 0 8px 30px rgba(0,0,0,0.18))', border: '1px solid var(--border)' }}>
                             <QRCodeCanvas
                                 value={JSON.stringify(selectedGymQr.isBranch
                                     ? { gymId: selectedGymQr.parentGymId, branchId: selectedGymQr._id, gymName: selectedGymQr.name }

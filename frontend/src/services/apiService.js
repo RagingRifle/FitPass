@@ -1,7 +1,7 @@
 import API from './api';
 
-export const getStats = async () => {
-    const { data } = await API.get('/dashboard/stats');
+export const getStats = async (params = {}) => {
+    const { data } = await API.get('/dashboard/stats', { params: { ...params, timezoneOffset: new Date().getTimezoneOffset() } });
     return data;
 };
 
@@ -133,6 +133,21 @@ export const getTrainerAttendance = async (filters = {}) => {
 
 export const markTrainerLeave = async (leaveData) => {
     const { data } = await API.post('/trainer-attendance/leave', leaveData);
+    return data;
+};
+
+export const getTrainerLeaveRequests = async (status = '') => {
+    const { data } = await API.get('/trainer-attendance/leave-requests', { params: status ? { status } : {} });
+    return data;
+};
+
+export const createTrainerLeaveRequest = async (requestData) => {
+    const { data } = await API.post('/trainer-attendance/leave-requests', requestData);
+    return data;
+};
+
+export const reviewTrainerLeaveRequest = async (id, reviewData) => {
+    const { data } = await API.patch(`/trainer-attendance/leave-requests/${id}`, reviewData);
     return data;
 };
 

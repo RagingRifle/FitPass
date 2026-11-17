@@ -6,7 +6,7 @@ import { H4Classes } from '@/features/h4';
 
 export default function H4ClassesScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4Classes />
     </SafeAreaView>
   );

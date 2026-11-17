@@ -17,6 +17,23 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
         const nextWeek = new Date();
         nextWeek.setDate(today.getDate() + 7);
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const timezoneOffset = Number(req.query.timezoneOffset) || 0;
+        const dateBoundary = (value, endOfDay = false) => {
+            const [year, month, day] = String(value).split('-').map(Number);
+            const boundary = Date.UTC(year, month - 1, day + (endOfDay ? 1 : 0)) - timezoneOffset * 60_000;
+            return new Date(boundary - (endOfDay ? 1 : 0));
+        };
+        const requestedStart = req.query.startDate ? dateBoundary(req.query.startDate) : null;
+        const requestedEnd = req.query.endDate ? dateBoundary(req.query.endDate, true) : null;
+        const rangeStart = requestedStart && !Number.isNaN(requestedStart.getTime()) ? requestedStart : startOfMonth;
+        const rangeEnd = requestedEnd && !Number.isNaN(requestedEnd.getTime()) ? requestedEnd : null;
+        const rangeMongo = { $gte: rangeStart, ...(rangeEnd ? { $lte: rangeEnd } : {}) };
+        const rangePrisma = { gte: rangeStart, ...(rangeEnd ? { lte: rangeEnd } : {}) };
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+        sixMonthsAgo.setDate(1);
+        sixMonthsAgo.setHours(0, 0, 0, 0);
+        const trendMongo = requestedStart || requestedEnd ? rangeMongo : { $gte: sixMonthsAgo };
 
         const prisma = require('../config/prisma');
 
@@ -133,11 +150,6 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
         // Super Admin / Gym Stats
         const queryFilter = { ...req.tenantFilter };
         
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-        sixMonthsAgo.setDate(1);
-        sixMonthsAgo.setHours(0, 0, 0, 0);
-        
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -174,15 +186,15 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
                 }
             }),
             Payment.aggregate([
-                { $match: { ...queryFilter, date: { $gte: startOfMonth } } },
+                { $match: { ...queryFilter, date: rangeMongo } },
                 { $group: { _id: null, total: { $sum: '$amount' } } }
             ]),
             Expense.aggregate([
-                { $match: { ...queryFilter, date: { $gte: startOfMonth } } },
+                { $match: { ...queryFilter, date: rangeMongo } },
                 { $group: { _id: null, total: { $sum: '$amount' } } }
             ]),
             Payment.aggregate([
-                { $match: { ...queryFilter, date: { $gte: sixMonthsAgo } } },
+                { $match: { ...queryFilter, date: trendMongo } },
                 {
                     $group: {
                         _id: { month: { $month: '$date' }, year: { $year: '$date' } },
@@ -208,12 +220,12 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
                 date: { $gte: sevenDaysAgo }
             }),
             prisma.attendance.findMany({
-                where: { ...prismaWhere, date: { gte: startOfMonth } },
+                where: { ...prismaWhere, date: rangePrisma },
                 orderBy: { date: 'desc' },
                 take: 30
             }),
             prisma.sessionCheckIn.findMany({
-                where: { ...prismaWhere, startedAt: { gte: startOfMonth } },
+                where: { ...prismaWhere, startedAt: rangePrisma },
                 orderBy: { startedAt: 'desc' },
                 take: 30
             })
@@ -225,7 +237,10 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
         const activeMembers = uniqueMembers.filter(activeNow).length;
         const expiredMembers = uniqueMembers.filter(member => member.status === 'Expired' || (member.expiryDate && new Date(member.expiryDate) <= new Date())).length;
         const expiringSoonCount = uniqueMembers.filter(member => activeNow(member) && member.expiryDate && new Date(member.expiryDate) <= nextWeek).length;
-        const newMembersThisMonth = uniqueMembers.filter(member => new Date(member.createdAt || member.joinDate || 0) >= startOfMonth).length;
+        const newMembersThisMonth = uniqueMembers.filter(member => {
+            const joined = new Date(member.createdAt || member.joinDate || 0);
+            return joined >= rangeStart && (!rangeEnd || joined <= rangeEnd);
+        }).length;
 
         const monthlyRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
         const monthlyExpenses = expenseData.length > 0 ? expenseData[0].total : 0;

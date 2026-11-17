@@ -4,6 +4,7 @@ const DietPlan = require('../models/DietPlan');
 const Member = require('../models/Member');
 const User = require('../models/User');
 const { H4_GYM_IDS } = require('../config/constants');
+const { trainerCanManage } = require('../utils/trainerAccess');
 
 const getGymScope = (req) => {
     const gymId = String(req.user?.gymId || '');
@@ -37,6 +38,9 @@ const createPlan = catchAsync(async (req, res, next) => {
 
         if (!memberIds.length || !name) {
             return res.status(400).json({ success: false, message: 'At least one member and a plan name are required' });
+        }
+        if (!(await trainerCanManage(req, memberIds, 'assignDiet'))) {
+            return res.status(403).json({ success: false, message: 'You need diet assignment access and an active assignment to every selected member.' });
         }
 
         const { gymId, gymIds } = getGymScope(req);
@@ -138,8 +142,22 @@ const getPlans = catchAsync(async (req, res, next) => {
                 ...p,
                 meals: parsedMeals,
                 memberIds: assignedMemberIds,
-                members: assignedMembers.map((member) => ({ id: member.id || member._id, name: member.name, phone: member.phone, email: member.email })),
-                member: m ? { id: m.id || m._id, name: m.name, phone: m.phone, email: m.email } : null,
+                members: assignedMembers.map((member) => ({
+                    id: member.id || member._id,
+                    name: member.name,
+                    phone: member.phone,
+                    email: member.email,
+                    displayId: member.displayId,
+                    registrationNumber: member.registrationNumber,
+                })),
+                member: m ? {
+                    id: m.id || m._id,
+                    name: m.name,
+                    phone: m.phone,
+                    email: m.email,
+                    displayId: m.displayId,
+                    registrationNumber: m.registrationNumber,
+                } : null,
                 trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
             };
         });
@@ -158,7 +176,7 @@ const getPlans = catchAsync(async (req, res, next) => {
 const getPlanById = catchAsync(async (req, res, next) => {
     try {
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId });
+        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId, ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
         if (plan) {
             let assignedMemberIds = [plan.memberId].filter(Boolean).map(String);
@@ -195,7 +213,7 @@ const updatePlan = catchAsync(async (req, res, next) => {
         const { memberId, name, startDate, endDate, meals, trainerId } = req.body;
 
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId });
+        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId, ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
         if (plan) {
             let priorMemberIds = [plan.memberId].filter(Boolean).map(String);
@@ -203,6 +221,7 @@ const updatePlan = catchAsync(async (req, res, next) => {
             if (memberId !== undefined || req.body.memberIds !== undefined) {
                 const nextMemberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : [memberId]).filter(Boolean).map(String))];
                 if (!nextMemberIds.length) return res.status(400).json({ success: false, message: 'At least one member must be assigned' });
+                if (!(await trainerCanManage(req, nextMemberIds, 'assignDiet'))) return res.status(403).json({ success: false, message: 'You need diet access and an active assignment to every selected member.' });
                 let currentMemberIds = [plan.memberId].filter(Boolean).map(String);
                 try { if (plan.memberIds) currentMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
                 const { found: assignedMembers, valid } = await loadMembersForAssignment(
@@ -245,7 +264,7 @@ const updatePlan = catchAsync(async (req, res, next) => {
 const deletePlan = catchAsync(async (req, res, next) => {
     try {
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId });
+        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId, ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
         if (plan) {
             let assignedIds = [plan.memberId];

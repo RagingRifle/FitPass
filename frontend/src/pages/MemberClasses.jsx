@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import API from '../services/api';
-import { Check, X } from 'lucide-react';
+import { Loader,  Check, X, Coins, Sparkles } from 'lucide-react';
 
 const typeColors = {
     Yoga: '#10b981', Zumba: '#f59e0b', Strength: '#6366f1', Cardio: '#ef4444',
@@ -12,6 +12,7 @@ const MemberClasses = () => {
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState({});
+    const [coinBalance, setCoinBalance] = useState(0);
 
     const fetchClasses = async () => {
         try {
@@ -22,14 +23,22 @@ const MemberClasses = () => {
         } finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchClasses(); }, []);
+    const fetchWallet = async () => {
+        try { const { data } = await API.get('/member-portal/class-wallet'); setCoinBalance(Number(data.balance) || 0); } catch { setCoinBalance(0); }
+    };
+
+    useEffect(() => { fetchClasses(); fetchWallet(); }, []);
 
     const handleBook = async (gymClass) => {
+        const price = Number(gymClass.priceCoins) || 0;
+        if (price > 0 && !window.confirm(`Book ${gymClass.name} for ${price} FitCoins? Your balance will be ${Math.max(0, coinBalance - price)} coins.`)) return;
         setActionLoading(prev => ({ ...prev, [gymClass._id]: 'booking' }));
         try {
             const { data } = await API.post(`/member-portal/classes/${gymClass._id}/book`);
-            alert(` Booked! ${data.seatsAvailable} seats remaining.`);
+            if (data.balance !== undefined) setCoinBalance(data.balance);
+            alert(`Booked! ${data.coinsCharged ? `${data.coinsCharged} FitCoins used. ` : ''}${data.seatsAvailable} seats remaining.`);
             fetchClasses();
+            fetchWallet();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to book class');
         } finally { setActionLoading(prev => ({ ...prev, [gymClass._id]: null })); }
@@ -39,22 +48,30 @@ const MemberClasses = () => {
         if (!window.confirm('Cancel your booking for this class?')) return;
         setActionLoading(prev => ({ ...prev, [gymClass._id]: 'cancelling' }));
         try {
-            await API.delete(`/member-portal/classes/${gymClass._id}/book`);
-            alert(' Booking cancelled.');
+            const { data } = await API.delete(`/member-portal/classes/${gymClass._id}/book`);
+            if (data.balance !== undefined) setCoinBalance(data.balance);
+            alert(`Booking cancelled.${data.coinsRefunded ? ` ${data.coinsRefunded} FitCoins returned.` : ''}`);
             fetchClasses();
+            fetchWallet();
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to cancel booking');
         } finally { setActionLoading(prev => ({ ...prev, [gymClass._id]: null })); }
     };
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     return (
         <div className="fade-in">
             <div style={{ marginBottom: '2rem' }}>
                 <h2 style={{ fontSize: '1.75rem', fontWeight: '800' }}> Upcoming Classes</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Book a spot in your favourite fitness class</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Reserve a studio class or use FitCoins for a coach-led add-on.</p>
             </div>
+
+            <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: '1.5rem', background: 'linear-gradient(120deg, #211B43, #44368B)', color: '#fff' }}><div><div style={{ fontSize: '.72rem', opacity: .75, letterSpacing: '.08em', fontWeight: 800 }}>FITCOINS AVAILABLE</div><div style={{ fontSize: '1.55rem', fontWeight: 900, marginTop: 4 }}>{coinBalance.toLocaleString('en-IN')}</div></div><Coins size={26} color="#E9C94A" /></div>
 
             {classes.length === 0 ? (
                 <div className="card" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)' }}>
@@ -84,10 +101,12 @@ const MemberClasses = () => {
                                             padding: '0.2rem 0.6rem', borderRadius: '999px',
                                             fontSize: '0.72rem', fontWeight: '800', textTransform: 'uppercase'
                                         }}>{gymClass.type}</span>
+                                        {gymClass.isAddOn && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 8, color: '#5741BB', fontWeight: 850, fontSize: '.76rem' }}><Sparkles size={13} /> COACH-LED ADD-ON</span>}
                                         <h3 style={{ margin: '0.5rem 0 0.25rem', fontSize: '1.05rem', fontWeight: '800' }}>{gymClass.name}</h3>
                                         {gymClass.trainerName && (
                                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}> {gymClass.trainerName}</p>
                                         )}
+                                        {(gymClass.gymName || gymClass.branchName) && <p style={{ fontSize: '.75rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>{[gymClass.gymName, gymClass.branchName].filter(Boolean).join(' · ')}</p>}
                                     </div>
                                     {isBooked && (
                                         <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '700' }}>
@@ -99,6 +118,7 @@ const MemberClasses = () => {
                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                                     <span> {new Date(gymClass.scheduleDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                                     <span> {gymClass.startTime} – {gymClass.endTime}</span>
+                                    {gymClass.isAddOn && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#5741BB', fontWeight: 800 }}><Coins size={14} />{gymClass.priceCoins} FitCoins per booking</span>}
                                     {gymClass.bookingDeadline && (
                                         <span style={{ color: isClosed ? '#ef4444' : 'var(--text-secondary)', fontWeight: isClosed ? 700 : 400 }}>
                                              {isClosed ? 'Booking closed' : 'Book before'} {new Date(gymClass.bookingDeadline).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -129,20 +149,20 @@ const MemberClasses = () => {
                                 {isBooked ? (
                                     <button
                                         onClick={() => handleCancel(gymClass)}
-                                        disabled={!!loading}
+                                        disabled={!!loading || new Date(`${new Date(gymClass.scheduleDate).toISOString().slice(0, 10)}T${gymClass.startTime || '00:00'}:00`) <= new Date()}
                                         className="btn"
                                         style={{ width: '100%', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '0.6rem' }}
                                     >
-                                        {loading === 'cancelling' ? 'Cancelling...' : <><X size={15} /> Cancel Booking</>}
+                                        {loading === 'cancelling' ? 'Cancelling...' : <><X size={15} /> Cancel & refund before class</>}
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => handleBook(gymClass)}
-                                        disabled={isFull || isClosed || !!loading}
+                                        disabled={isFull || isClosed || !!loading || (Number(gymClass.priceCoins) || 0) > coinBalance}
                                         className="btn btn-primary"
                                         style={{ width: '100%', background: (isFull || isClosed) ? 'rgba(100,100,100,0.2)' : color, opacity: (isFull || isClosed) ? 0.6 : 1 }}
                                     >
-                                        {loading === 'booking' ? 'Booking...' : isClosed ? ' Booking Closed' : isFull ? ' Class Full' : ' Book Slot'}
+                                        {loading === 'booking' ? 'Booking...' : isClosed ? 'Booking closed' : isFull ? 'Class full' : (Number(gymClass.priceCoins) || 0) > coinBalance ? 'Not enough FitCoins' : gymClass.isAddOn ? `Book for ${gymClass.priceCoins} FitCoins` : 'Book slot'}
                                     </button>
                                 )}
                             </div>

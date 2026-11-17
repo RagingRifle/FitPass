@@ -3,11 +3,209 @@ const AppError = require('../utils/appError');
 const Member = require('../models/Member');
 const Plan = require('../models/Plan');
 const User = require('../models/User');
+const MemberTrainerAssignment = require('../models/MemberTrainerAssignment');
 const prisma = require('../config/prisma');
 const { jsonToCsv } = require('../utils/csvUtils');
 const { logAudit } = require('../utils/auditLogger');
 const { H4_GYM_IDS } = require('../config/constants');
 const { dedupeMembers } = require('../utils/memberIdentity');
+const { z } = require('zod');
+const getPlanDurationDays = (plan) => {
+    const duration = Number(plan?.duration) || 0;
+    const unit = String(plan?.durationUnit || 'days').toLowerCase();
+    if (unit.startsWith('month')) return duration * 30;
+    if (unit.startsWith('year')) return duration * 365;
+    if (unit.startsWith('hour')) return duration / 24;
+    return duration;
+};
+
+const getMemberDivisionConversionOptions = catchAsync(async (req, res) => {
+    const member = await prisma.member.findUnique({ where: { id: req.params.id } });
+    if (!member) return res.status(404).json({ success: false, message: 'Member not found.' });
+
+    const h4Gym = await prisma.gym.findFirst({ where: { name: { equals: 'H4', mode: 'insensitive' } } });
+    const h4GymId = h4Gym?.id || H4_GYM_IDS[0];
+    const h4GymIds = [...new Set([...H4_GYM_IDS, h4GymId])];
+    const [sourcePlan, fitpassPlans, h4Plans, branches, coinSettings] = await Promise.all([
+        member.planId ? prisma.plan.findUnique({ where: { id: member.planId } }) : null,
+        prisma.plan.findMany({ where: { gymId: 'SYSTEM', sessions: { gt: 0 } }, orderBy: { price: 'asc' } }),
+        prisma.plan.findMany({
+            where: { OR: [
+                { gymId: { in: h4GymIds } },
+                { gymId: 'SYSTEM', sessions: null },
+                { gymId: 'SYSTEM', sessions: 0 },
+            ] },
+            orderBy: { price: 'asc' },
+        }),
+        prisma.branch.findMany({ where: { gymId: h4GymId }, orderBy: { name: 'asc' }, select: { id: true, name: true, address: true } }),
+        prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null),
+    ]);
+    const gym = member.gymId === 'SYSTEM' ? null : await prisma.gym.findUnique({ where: { id: member.gymId } }).catch(() => null);
+    const sourceDivision = member.gymId === 'SYSTEM' ? 'fitpass' : (H4_GYM_IDS.includes(String(member.gymId)) || String(gym?.name || '').toLowerCase() === 'h4') ? 'h4' : null;
+    if (!sourceDivision) return res.status(400).json({ success: false, message: 'Only FitPass and H4 members can be converted.' });
+
+    const coinsPerCheckIn = Number(coinSettings?.coinsPerSession) || 10;
+    const fitpassCoinBalance = sourceDivision === 'fitpass'
+        ? Math.max(0, Number(member.fitpassCoins || 0) + (!member.coinsMigrated ? Number(member.sessionsRemaining || 0) * coinsPerCheckIn : 0))
+        : Number(member.fitpassCoins || 0);
+    const now = new Date();
+    const h4DaysRemaining = sourceDivision === 'h4' && member.expiryDate && new Date(member.expiryDate) > now
+        ? Math.ceil((new Date(member.expiryDate) - now) / 86_400_000)
+        : 0;
+    const h4DailyPrices = h4Plans.filter(plan => Number(plan.sessions || 0) <= 0 && getPlanDurationDays(plan) > 0 && Number(plan.price) > 0)
+        .map(plan => Number(plan.price) / getPlanDurationDays(plan)).sort((a, b) => a - b);
+    const h4DailyValue = h4DailyPrices.length ? h4DailyPrices[Math.floor(h4DailyPrices.length / 2)] : 33.3;
+    const fitpassCoinPrices = fitpassPlans.map(plan => {
+        const allowance = Number(plan.coinAllowance) > 0 ? Number(plan.coinAllowance) : Number(plan.sessions || 0) * coinsPerCheckIn;
+        return allowance > 0 ? Number(plan.price || 0) / allowance : 0;
+    }).filter(value => value > 0);
+    const fitpassCoinValue = fitpassCoinPrices.length
+        ? fitpassCoinPrices.reduce((sum, value) => sum + value, 0) / fitpassCoinPrices.length
+        : 5;
+    const sourcePlanDuration = getPlanDurationDays(sourcePlan) || 30;
+    const sourcePlanPrice = Number(member.planPrice) > 0 ? Number(member.planPrice) : Number(sourcePlan?.price || 0);
+    const sourceCoinAllowance = Number(sourcePlan?.coinAllowance) > 0
+        ? Number(sourcePlan.coinAllowance)
+        : Number(sourcePlan?.sessions || 0) * coinsPerCheckIn;
+    const suggestedCoinsPerH4Day = sourceDivision === 'fitpass' && sourceCoinAllowance > 0 && sourcePlanPrice > 0
+        ? h4DailyValue / (sourcePlanPrice / sourceCoinAllowance)
+        : sourceDivision === 'h4' && sourcePlanPrice > 0
+            ? (sourcePlanPrice / sourcePlanDuration) / fitpassCoinValue
+            : h4DailyValue / fitpassCoinValue;
+
+    res.json({
+        success: true,
+        sourceDivision,
+        sourcePlan,
+        sourcePlanPrice: Number(member.planPrice) || 0,
+        fitpassCoinBalance,
+        h4DaysRemaining,
+        coinsPerCheckIn,
+        suggestedCoinsPerH4Day: Math.max(0.01, Number(suggestedCoinsPerH4Day.toFixed(2))),
+        fitpassPlans,
+        h4Plans: h4Plans.filter(plan => Number(plan.sessions || 0) <= 0),
+        h4GymId,
+        h4Branches: branches,
+    });
+});
+
+const convertMemberDivision = catchAsync(async (req, res) => {
+    const schema = z.object({
+        targetDivision: z.enum(['h4', 'fitpass']),
+        targetPlanId: z.string().min(1),
+        targetBranchId: z.string().optional().nullable(),
+        sourceAmount: z.coerce.number().int().positive(),
+        coinsPerH4Day: z.coerce.number().positive().max(100000),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message || 'Invalid conversion details.' });
+    const { targetDivision, targetPlanId, targetBranchId, sourceAmount, coinsPerH4Day } = parsed.data;
+    const member = await prisma.member.findUnique({ where: { id: req.params.id } });
+    if (!member) return res.status(404).json({ success: false, message: 'Member not found.' });
+
+    const h4Gym = await prisma.gym.findFirst({ where: { name: { equals: 'H4', mode: 'insensitive' } } });
+    const h4GymId = h4Gym?.id || H4_GYM_IDS[0];
+    const h4GymIds = [...new Set([...H4_GYM_IDS, h4GymId])];
+    const sourceGym = member.gymId === 'SYSTEM' ? null : await prisma.gym.findUnique({ where: { id: member.gymId } }).catch(() => null);
+    const sourceDivision = member.gymId === 'SYSTEM' ? 'fitpass' : (H4_GYM_IDS.includes(String(member.gymId)) || String(sourceGym?.name || '').toLowerCase() === 'h4') ? 'h4' : null;
+    if (!sourceDivision || sourceDivision === targetDivision) return res.status(400).json({ success: false, message: 'This member is not in the opposite division.' });
+
+    const [sourcePlan, targetPlan, coinSettings] = await Promise.all([
+        member.planId ? prisma.plan.findUnique({ where: { id: member.planId } }) : null,
+        prisma.plan.findUnique({ where: { id: targetPlanId } }),
+        prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null),
+    ]);
+    const coinsPerCheckIn = Number(coinSettings?.coinsPerSession) || 10;
+    if (targetDivision === 'h4') {
+        const legacyH4Plan = targetPlan?.gymId === 'SYSTEM' && Number(targetPlan.sessions || 0) <= 0;
+        if (!targetPlan || (!h4GymIds.includes(String(targetPlan.gymId)) && !legacyH4Plan) || Number(targetPlan.sessions || 0) > 0) {
+            return res.status(400).json({ success: false, message: 'Choose a valid H4 membership plan.' });
+        }
+    } else if (!targetPlan || targetPlan.gymId !== 'SYSTEM' || Number(targetPlan.sessions || 0) <= 0) {
+        return res.status(400).json({ success: false, message: 'Choose a valid FitPass plan.' });
+    }
+
+    let targetAmount;
+    let targetGymId;
+    let branchId = null;
+    const now = new Date();
+    if (targetDivision === 'h4') {
+        const currentBalance = Math.max(0, Number(member.fitpassCoins || 0) + (!member.coinsMigrated ? Number(member.sessionsRemaining || 0) * coinsPerCheckIn : 0));
+        if (sourceAmount > currentBalance) return res.status(400).json({ success: false, message: `You can convert up to ${currentBalance} FitCoins.` });
+        targetAmount = Math.round(sourceAmount / coinsPerH4Day);
+        if (targetAmount < 1) return res.status(400).json({ success: false, message: 'This coin amount converts to less than one H4 membership day.' });
+        targetGymId = h4GymId;
+        branchId = targetBranchId || null;
+        if (targetPlan.branchId) {
+            if (branchId && String(branchId) !== String(targetPlan.branchId)) {
+                return res.status(400).json({ success: false, message: 'The selected H4 plan belongs to a different branch.' });
+            }
+            branchId = String(targetPlan.branchId);
+        }
+        if (branchId) {
+            const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+            if (!branch || String(branch.gymId) !== String(h4GymId)) return res.status(400).json({ success: false, message: 'Choose a valid H4 branch.' });
+        }
+        if (targetPlan.gymId === 'SYSTEM') {
+            await prisma.plan.update({ where: { id: targetPlan.id }, data: { gymId: targetGymId } });
+            targetPlan.gymId = targetGymId;
+        }
+    } else {
+        const daysRemaining = member.expiryDate && new Date(member.expiryDate) > now
+            ? Math.ceil((new Date(member.expiryDate) - now) / 86_400_000)
+            : 0;
+        if (sourceAmount > daysRemaining) return res.status(400).json({ success: false, message: `You can convert up to ${daysRemaining} remaining H4 days.` });
+        targetAmount = Math.round(sourceAmount * coinsPerH4Day);
+        if (targetAmount < 1) return res.status(400).json({ success: false, message: 'This H4 duration converts to less than one FitCoin.' });
+        targetGymId = 'SYSTEM';
+    }
+
+    const newExpiryDate = new Date(now.getTime() + (targetDivision === 'h4' ? targetAmount : sourceAmount) * 86_400_000);
+    const currentCoins = Number(member.fitpassCoins || 0) + (!member.coinsMigrated && sourceDivision === 'fitpass' ? Number(member.sessionsRemaining || 0) * coinsPerCheckIn : 0);
+    const nextFitpassCoins = targetDivision === 'h4' ? Math.max(0, currentCoins - sourceAmount) : currentCoins + targetAmount;
+    const nextSessions = targetDivision === 'fitpass' ? Math.floor(nextFitpassCoins / coinsPerCheckIn) : 0;
+    const convertedDays = targetDivision === 'h4' ? targetAmount : sourceAmount;
+    const targetPlanCoins = Number(targetPlan.coinAllowance) > 0 ? Number(targetPlan.coinAllowance) : Number(targetPlan.sessions || 0) * coinsPerCheckIn;
+    const conversionValuePerDay = targetDivision === 'h4'
+        ? Number(targetPlan.price || 0) / (getPlanDurationDays(targetPlan) || 30)
+        : (targetPlanCoins > 0 ? Number(targetPlan.price || 0) / targetPlanCoins : 0) * coinsPerH4Day;
+    const conversionCredit = Math.round(convertedDays * conversionValuePerDay * 100) / 100;
+    const updateData = {
+        gymId: targetGymId,
+        branchId,
+        planId: targetPlan.id,
+        joinDate: now,
+        planPrice: conversionCredit,
+        paidAmount: conversionCredit,
+        expiryDate: newExpiryDate,
+        status: 'Active',
+        fitpassCoins: nextFitpassCoins,
+        sessionsTotal: nextSessions,
+        sessionsRemaining: nextSessions,
+        coinsMigrated: true,
+    };
+    const contactFilters = [
+        ...(member.email ? [{ email: { equals: member.email, mode: 'insensitive' } }] : []),
+        ...(member.phone ? [{ phone: member.phone }] : []),
+    ];
+    const userWhere = {
+        role: 'member',
+        OR: [
+            { memberId: member.id },
+            ...(contactFilters.length ? [{ AND: [{ gymId: member.gymId }, { OR: contactFilters }] }] : []),
+        ],
+    };
+    await prisma.$transaction(async tx => {
+        await tx.member.update({ where: { id: member.id }, data: updateData });
+        await tx.user.updateMany({ where: userWhere, data: { gymId: targetGymId, branchId } });
+    });
+
+    const rateText = `${coinsPerH4Day} FitCoins per H4 day`;
+    await logAudit(req, 'MEMBER_DIVISION_SWITCHED', 'Member', member.id,
+        `${member.name} converted from ${sourceDivision.toUpperCase()} to ${targetDivision.toUpperCase()}: ${sourceAmount} ${sourceDivision === 'fitpass' ? 'FitCoins' : 'H4 days'} -> ${targetAmount} ${targetDivision === 'fitpass' ? 'FitCoins' : 'H4 days'} at ${rateText}; plan ${targetPlan.name}; converted plan credit ₹${conversionCredit}.`, member.name);
+
+    res.json({ success: true, member: await prisma.member.findUnique({ where: { id: member.id } }), sourceAmount, targetAmount, targetDivision });
+});
 
 const migrateLegacyH4Plan = async (plan, targetGymId) => {
     if (!plan || plan.gymId !== 'SYSTEM' || Number(plan.sessions) > 0 || !(Number(plan.duration) > 0)) return false;
@@ -36,6 +234,14 @@ const buildMemberQuery = async (req, memberId) => {
         if (H4_GYM_IDS.includes(selectedGymId)) {
             query.gymId = selectedGymId;
         }
+        return query;
+    }
+
+    if (req.user.role === 'trainer') {
+        const assignments = await MemberTrainerAssignment.find({ trainerId: req.user.id, gymId: req.user.gymId }).select('memberId').lean();
+        const assignedIds = assignments.map((assignment) => String(assignment.memberId));
+        if (memberId) return assignedIds.includes(String(memberId)) ? { ...query, _id: memberId } : { _id: '__not_assigned__' };
+        query._id = { $in: assignedIds };
         return query;
     }
 
@@ -185,6 +391,16 @@ const createMember = catchAsync(async (req, res, next) => {
             gymId: targetGymId,
             branchId: targetBranchId
         });
+
+        if (member && req.user.role === 'h4_admin' && targetBranchId) {
+            const trainers = await User.find({ gymId: targetGymId, branchId: targetBranchId, role: 'trainer', isActive: true }).lean();
+            const loads = await Promise.all(trainers.map(async (trainer) => ({
+                trainer,
+                count: await MemberTrainerAssignment.countDocuments({ trainerId: trainer._id || trainer.id, gymId: targetGymId })
+            })));
+            const availableTrainer = loads.filter(({ trainer, count }) => count < (trainer.trainerMemberLimit || 10)).sort((a, b) => a.count - b.count)[0]?.trainer;
+            if (availableTrainer) await MemberTrainerAssignment.create({ memberId: member._id || member.id, trainerId: availableTrainer._id || availableTrainer.id, gymId: targetGymId, branchId: targetBranchId });
+        }
 
         if (member) {
             // Create a User record for the member to allow login
@@ -743,6 +959,8 @@ const transferMember = catchAsync(async (req, res, next) => {
 });
 
 module.exports = {
+    getMemberDivisionConversionOptions,
+    convertMemberDivision,
     createMember,
     getMembers,
     getMemberById,

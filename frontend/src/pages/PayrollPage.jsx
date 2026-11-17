@@ -1,8 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import ResetFiltersButton from '../components/ResetFiltersButton';
-import {
-    getPayrolls,
+import { getPayrolls,
     generatePayroll,
     updatePayroll,
     getSalaryStructure,
@@ -11,11 +10,11 @@ import {
     addCommission
 } from '../services/apiService';
 import Modal from '../components/Modal';
-import { Banknote, Users, DollarSign, PlusCircle, CheckCircle, AlertCircle, Edit, Sparkles, Printer, Download } from 'lucide-react';
+import { Loader,  Banknote, Users, DollarSign, PlusCircle, CheckCircle, AlertCircle, Edit, Sparkles, Printer, Download } from 'lucide-react';
 
 const PayrollPage = () => {
     const { user } = useContext(AuthContext);
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'h4_admin';
 
     const [payrolls, setPayrolls] = useState([]);
     const [trainers, setTrainers] = useState([]);
@@ -34,7 +33,7 @@ const PayrollPage = () => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
     const [isCommissionModalOpen, setIsCommissionModalOpen] = useState(false);
     const [configTrainer, setConfigTrainer] = useState(null);
-    const [salaryConfig, setSalaryConfig] = useState({ fixedSalary: '', commissionPt: '' });
+    const [salaryConfig, setSalaryConfig] = useState({ fixedSalary: '', commissionPt: '', salesAmountPerPoint: '1000', incentivePerPoint: '0' });
     
     const [generateData, setGenerateData] = useState({ trainerId: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), incentives: '0' });
     const [commissionData, setCommissionData] = useState({ trainerId: '', amount: '', date: new Date().toISOString().split('T')[0] });
@@ -55,7 +54,7 @@ const PayrollPage = () => {
         try {
             const data = await getStaff();
             const staffList = Array.isArray(data) ? data : (data?.data || []);
-            setTrainers(staffList.filter(s => s.role === 'trainer'));
+            setTrainers(staffList.filter(s => ['trainer', 'staff', 'receptionist'].includes(s.role)));
         } catch (error) {
             console.error('Error fetching trainers:', error);
             setTrainers([]);
@@ -85,10 +84,12 @@ const PayrollPage = () => {
     const handleOpenConfigModal = async (trainer) => {
         setConfigTrainer(trainer);
         try {
-            const structure = await getSalaryStructure(trainer._id);
+            const structure = await getSalaryStructure(trainer._id || trainer.id);
             setSalaryConfig({
-                fixedSalary: structure.fixedSalary,
-                commissionPt: structure.commissionPt
+                fixedSalary: structure.fixedSalary ?? 0,
+                commissionPt: structure.commissionPt ?? 0,
+                salesAmountPerPoint: structure.salesAmountPerPoint ?? 1000,
+                incentivePerPoint: structure.incentivePerPoint ?? 0
             });
             setIsConfigModalOpen(true);
         } catch {
@@ -100,9 +101,11 @@ const PayrollPage = () => {
         e.preventDefault();
         try {
             await upsertSalaryStructure({
-                trainerId: configTrainer._id,
+                trainerId: configTrainer._id || configTrainer.id,
                 fixedSalary: Number(salaryConfig.fixedSalary),
-                commissionPt: Number(salaryConfig.commissionPt)
+                commissionPt: Number(salaryConfig.commissionPt),
+                salesAmountPerPoint: Number(salaryConfig.salesAmountPerPoint),
+                incentivePerPoint: Number(salaryConfig.incentivePerPoint)
             });
             alert('Salary structure updated successfully');
             setIsConfigModalOpen(false);
@@ -164,13 +167,14 @@ const PayrollPage = () => {
 
     const safePayrolls = Array.isArray(payrolls) ? payrolls : [];
     const safeTrainers = Array.isArray(trainers) ? trainers : [];
+    const ptTrainers = safeTrainers.filter(person => person.role === 'trainer');
 
     return (
-        <div className="fade-in">
+        <div className="payroll-page">
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}> Payroll & Trainer Salaries</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Manage salary structures, track PT commissions, and disburse payrolls</p>
+                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem' }}> Payroll & Employee Salaries</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Set base pay, track sales points and PT commissions, and prepare payroll.</p>
                 </div>
                 {isAdmin && (
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -215,8 +219,8 @@ const PayrollPage = () => {
                                 value={selectedTrainerId}
                                 onChange={(e) => setSelectedTrainerId(e.target.value)}
                             >
-                                <option value="">All Trainers</option>
-                                {safeTrainers.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                                <option value="">All employees</option>
+                                {safeTrainers.map(t => <option key={t._id || t.id} value={t._id || t.id}>{t.name}</option>)}
                             </select>
                         )}
                         <select
@@ -258,7 +262,9 @@ const PayrollPage = () => {
                                                 <th>Period</th>
                                                 <th>Fixed Salary</th>
                                                 <th>PT Commissions</th>
-                                                <th>Incentives</th>
+                                                <th>Sales points</th>
+                                                <th>Sales incentive</th>
+                                                <th>Other incentive</th>
                                                 <th>Total Payout</th>
                                                 <th>Status</th>
                                                 <th>Actions</th>
@@ -276,7 +282,9 @@ const PayrollPage = () => {
                                                     <td style={{ fontWeight: '700' }}>{months[slip.month - 1]} {slip.year}</td>
                                                     <td>₹{slip.fixedSalary.toLocaleString()}</td>
                                                     <td>₹{slip.commissions.toLocaleString()}</td>
-                                                    <td>₹{slip.incentives.toLocaleString()}</td>
+                                                    <td>{slip.salesPoints || 0}</td>
+                                                    <td>₹{Number(slip.salesIncentive || 0).toLocaleString()}</td>
+                                                    <td>₹{Number(slip.incentives || 0).toLocaleString()}</td>
                                                     <td style={{ fontWeight: '800', color: 'var(--primary-color)' }}>₹{slip.totalAmount.toLocaleString()}</td>
                                                     <td>
                                                         {slip.status === 'Paid' ? (
@@ -324,12 +332,13 @@ const PayrollPage = () => {
 
             {activeTab === 'salary' && isAdmin && (
                 <div className="card">
-                    <h3 style={{ marginBottom: '1.25rem', fontSize: '1rem', fontWeight: '700' }}> Salary & PT Commission Structures</h3>
+                    <h3 style={{ marginBottom: '0.4rem', fontSize: '1rem', fontWeight: '700' }}> Salary and sales incentive settings</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem', marginBottom: '1.25rem' }}>Set monthly base pay, PT session pay, sales-to-point conversion, and the incentive paid per point.</p>
                     <div className="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Trainer</th>
+                                    <th>Employee</th>
                                     <th>Email</th>
                                     <th>Salary Configuration</th>
                                     <th>Actions</th>
@@ -337,12 +346,12 @@ const PayrollPage = () => {
                             </thead>
                             <tbody>
                                 {safeTrainers.map(t => (
-                                    <tr key={t._id}>
+                                    <tr key={t._id || t.id}>
                                         <td style={{ fontWeight: '600' }}>{t.name}</td>
                                         <td>{t.email}</td>
                                         <td>
                                             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                                Manage setup for base pay and personal training rates.
+                                                    Configure base salary, sales conversion, and incentive rate.
                                             </span>
                                         </td>
                                         <td>
@@ -387,6 +396,17 @@ const PayrollPage = () => {
                             placeholder="e.g. 200"
                         />
                     </div>
+                    <div className="form-grid">
+                        <div className="input-group">
+                            <label>Sales amount per point (₹)</label>
+                            <input className="input" type="number" min="1" step="1" value={salaryConfig.salesAmountPerPoint} onChange={(e) => setSalaryConfig({ ...salaryConfig, salesAmountPerPoint: e.target.value })} required />
+                        </div>
+                        <div className="input-group">
+                            <label>Incentive per point (₹)</label>
+                            <input className="input" type="number" min="0" step="0.01" value={salaryConfig.incentivePerPoint} onChange={(e) => setSalaryConfig({ ...salaryConfig, incentivePerPoint: e.target.value })} required />
+                        </div>
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '.8rem' }}>Example: ₹1,000 in sales earns one point; each point adds the configured incentive.</p>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
                         Save Salary Settings
                     </button>
@@ -397,7 +417,7 @@ const PayrollPage = () => {
             <Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Monthly Payroll">
                 <form onSubmit={handleGeneratePayroll}>
                     <div className="input-group">
-                        <label>Select Trainer *</label>
+                        <label>Select Employee *</label>
                         <select
                             className="input"
                             value={generateData.trainerId}
@@ -405,7 +425,7 @@ const PayrollPage = () => {
                             required
                         >
                             <option value="">-- Choose Trainer --</option>
-                            {safeTrainers.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                            {safeTrainers.map(t => <option key={t._id || t.id} value={t._id || t.id}>{t.name}</option>)}
                         </select>
                     </div>
 
@@ -463,7 +483,7 @@ const PayrollPage = () => {
                             required
                         >
                             <option value="">-- Choose Trainer --</option>
-                            {safeTrainers.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+                            {ptTrainers.map(t => <option key={t._id || t.id} value={t._id || t.id}>{t.name}</option>)}
                         </select>
                     </div>
 
@@ -518,7 +538,7 @@ const PayrollPage = () => {
                         <div style={{ background: '#FBF6EC', padding: '0.875rem', borderRadius: '8px', marginBottom: '1.25rem', fontSize: '0.85rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                             <div><strong>Employee:</strong> {selectedPayslip.trainer?.name || 'Staff Member'}</div>
                             <div><strong>Email:</strong> {selectedPayslip.trainer?.email || 'N/A'}</div>
-                            <div><strong>Role:</strong> Fitness Trainer</div>
+                            <div><strong>Role:</strong> {selectedPayslip.trainer?.role || 'Employee'}</div>
                             <div><strong>Pay Date:</strong> {selectedPayslip.paymentDate ? new Date(selectedPayslip.paymentDate).toLocaleDateString() : 'Pending'}</div>
                         </div>
 
@@ -540,7 +560,11 @@ const PayrollPage = () => {
                                     <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 600 }}>₹{(selectedPayslip.commissions || 0).toLocaleString()}</td>
                                 </tr>
                                 <tr>
-                                    <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>Incentives & Performance Bonus</td>
+                                    <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>Sales points ({selectedPayslip.salesPoints || 0}) · Incentive</td>
+                                    <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 600 }}>₹{Number(selectedPayslip.salesIncentive || 0).toLocaleString()}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee' }}>Other incentive / bonus</td>
                                     <td style={{ padding: '0.5rem', borderBottom: '1px solid #eee', textAlign: 'right', fontWeight: 600 }}>₹{(selectedPayslip.incentives || 0).toLocaleString()}</td>
                                 </tr>
                                 <tr style={{ background: '#FBF6EC', fontWeight: 800, fontSize: '0.95rem' }}>

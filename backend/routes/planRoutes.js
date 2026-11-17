@@ -17,7 +17,9 @@ const createPlanSchema = z.object({
     duration: z.coerce.number().min(0, 'Duration cannot be negative'),
     price: z.coerce.number().min(0, 'Price cannot be negative'),
     description: z.string().optional(),
-    sessions: z.coerce.number().optional()
+    sessions: z.coerce.number().optional(),
+    allBranches: z.coerce.boolean().optional(),
+    branchId: z.string().optional().nullable()
 });
 
 const updatePlanSchema = createPlanSchema.partial();

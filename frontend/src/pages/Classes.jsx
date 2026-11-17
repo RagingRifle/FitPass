@@ -4,12 +4,13 @@ import Modal from '../components/Modal';
 import MemberFilterSelect from '../components/MemberFilterSelect';
 import QRScanner from '../components/QRScanner';
 import { AuthContext } from '../context/AuthContext';
-import { Trash2, MapPin, Users, CheckCircle2, Clock, Calendar, Check, X } from 'lucide-react';
+import { Trash2, MapPin, Users, CheckCircle2, Clock, Calendar, Check, X, Coins, Loader } from 'lucide-react';
 
 const CLASS_TYPES = ['Yoga', 'Zumba', 'Strength', 'Cardio', 'HIIT', 'Pilates', 'CrossFit', 'Boxing', 'Dance', 'Stretching'];
 
 const Classes = () => {
     const { user } = useContext(AuthContext);
+    const isAddonPage = window.location.pathname === '/fitpass-classes';
     const [classes, setClasses] = useState([]);
     const [branches, setBranches] = useState([]);
     const [selectedMemberId, setSelectedMemberId] = useState('');
@@ -29,15 +30,17 @@ const Classes = () => {
         endTime: '', 
         maxSeats: 10, 
         bookingDeadline: '',
+        priceCoins: 20,
         branchIds: []
     });
 
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const visibleBranches = isAddonPage ? branches.filter(branch => branch.fitPassEnabled !== false && String(branch.gymName || '').toUpperCase() !== 'H4') : branches;
 
     const fetchClasses = async () => {
         try {
-            const { data } = await API.get('/classes');
+            const { data } = await API.get('/classes', { params: isAddonPage ? { isAddOn: true } : {} });
             setClasses(data);
         } catch (err) {
             console.error('Error fetching classes:', err);
@@ -70,10 +73,10 @@ const Classes = () => {
     };
 
     const handleSelectAllBranches = () => {
-        if (formData.branchIds.length === branches.length) {
+        if (formData.branchIds.length === visibleBranches.length) {
             setFormData(prev => ({ ...prev, branchIds: [] }));
         } else {
-            setFormData(prev => ({ ...prev, branchIds: branches.map(b => b.id || b._id) }));
+            setFormData(prev => ({ ...prev, branchIds: visibleBranches.map(b => b.id || b._id) }));
         }
     };
 
@@ -83,7 +86,9 @@ const Classes = () => {
         setError('');
         try {
             const payload = {
-                ...formData,
+            ...formData,
+                isAddOn: isAddonPage,
+                priceCoins: isAddonPage ? Number(formData.priceCoins) : 0,
                 branchIds: formData.branchIds.length > 0 ? formData.branchIds : (user?.branchId ? [user.branchId] : [])
             };
             await API.post('/classes', payload);
@@ -91,7 +96,7 @@ const Classes = () => {
             setFormData({ 
                 name: '', type: 'Yoga', description: '', trainerName: '', 
                 scheduleDate: '', startTime: '', endTime: '', maxSeats: 10, 
-                bookingDeadline: '', branchIds: [] 
+                bookingDeadline: '', priceCoins: 20, branchIds: []
             });
             fetchClasses();
         } catch (err) {
@@ -100,7 +105,7 @@ const Classes = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this class?')) return;
+        if (!window.confirm(isAddonPage ? 'Delete this add-on session? Unattended reservations will be refunded in FitCoins.' : 'Delete this class?')) return;
         try {
             await API.delete(`/classes/${id}`);
             fetchClasses();
@@ -121,6 +126,7 @@ const Classes = () => {
     const handleAdminBook = async (e) => {
         e.preventDefault();
         if (!selectedMemberId) return;
+        if (bookingsModal?.isAddOn && !window.confirm(`Reserve this class for ${bookingsModal.priceCoins} FitCoins from the selected member’s balance?`)) return;
         try {
             await API.post(`/classes/${bookingsModal._id}/book`, { memberId: selectedMemberId });
             const { data } = await API.get(`/classes/${bookingsModal._id}/bookings`);
@@ -174,23 +180,28 @@ const Classes = () => {
         setTimeout(() => setScannerMessage({ text: '', type: '' }), 4000);
     };
 
+    // Minimal 2-tone type accent system - all desaturated, readable
     const typeColors = {
-        Yoga: '#10b981', Zumba: '#f59e0b', Strength: '#6366f1', Cardio: '#ef4444',
-        HIIT: '#f43f5e', Pilates: '#8b5cf6', CrossFit: '#0ea5e9', Boxing: '#d946ef',
-        Dance: '#ec4899', Stretching: '#14b8a6'
+        Yoga: '#5A7A6A', Zumba: '#8A6A30', Strength: '#5A5E8A', Cardio: '#8A4A4A',
+        HIIT: '#7A4A5A', Pilates: '#6A5A8A', CrossFit: '#4A6A8A', Boxing: '#6A4A7A',
+        Dance: '#8A4A6A', Stretching: '#4A7A7A'
     };
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
 
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}> Studio Class Scheduling</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{classes.length} class session(s) scheduled across branches</p>
+                    <h2 style={{ marginBottom: '0.25rem' }}>{isAddonPage ? 'FitPass class add-ons' : 'Studio Class Scheduling'}</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{isAddonPage ? 'Schedule coach-led sessions members can book with FitCoins.' : `${classes.length} class session(s) scheduled across branches`}</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => { setIsModalOpen(true); setError(''); }}>
-                    + Schedule New Class
+                    + {isAddonPage ? 'Schedule add-on' : 'Schedule New Class'}
                 </button>
             </div>
 
@@ -198,8 +209,8 @@ const Classes = () => {
             {classes.length === 0 ? (
                 <div className="card empty-state" style={{ textAlign: 'center', padding: '4rem' }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
-                    <h3>No Classes Scheduled</h3>
-                    <p style={{ color: 'var(--text-secondary)' }}>Click "+ Schedule New Class" to create branch-specific workouts.</p>
+                    <h3>{isAddonPage ? 'No add-on sessions scheduled' : 'No Classes Scheduled'}</h3>
+                    <p style={{ color: 'var(--text-secondary)' }}>{isAddonPage ? 'Create a dated session with a seat limit and FitCoin price.' : 'Click "+ Schedule New Class" to create branch-specific workouts.'}</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
@@ -229,7 +240,7 @@ const Classes = () => {
                                             fontWeight: '800',
                                             textTransform: 'uppercase'
                                         }}>
-                                            {gymClass.type}
+                                            {gymClass.type}{gymClass.isAddOn && <span style={{ marginLeft: 6, color: '#6853C7' }}>ADD-ON</span>}
                                         </span>
 
                                         <span style={{
@@ -238,11 +249,11 @@ const Classes = () => {
                                             gap: '4px',
                                             fontSize: '0.75rem',
                                             fontWeight: '700',
-                                            background: 'rgba(240, 160, 32, 0.12)',
-                                            color: '#FEDF1E',
+                                            background: 'var(--primary-muted)',
+                                            color: 'var(--text-primary)',
                                             padding: '0.2rem 0.6rem',
                                             borderRadius: '8px',
-                                            border: '1px solid rgba(240, 160, 32, 0.25)'
+                                            border: '1px solid var(--border)'
                                         }}>
                                             <MapPin size={12} />
                                             {gymClass.branchName || 'Main Studio'}
@@ -250,6 +261,7 @@ const Classes = () => {
                                     </div>
 
                                     <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: '800' }}>{gymClass.name}</h3>
+                                    {gymClass.isAddOn && <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10, color: '#6550C6', fontWeight: 850, fontSize: '.84rem' }}><Coins size={15} />{gymClass.priceCoins} FitCoins per seat</div>}
                                     
                                     {gymClass.description && (
                                         <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.75rem', fontStyle: 'italic' }}>
@@ -284,7 +296,7 @@ const Classes = () => {
                                             {bookedCount}/{gymClass.maxSeats} Booked ({gymClass.attendedCount || 0} Attended)
                                         </span>
                                     </div>
-                                    <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
+                                    <div style={{ background: 'var(--border)', borderRadius: '999px', height: '6px', overflow: 'hidden' }}>
                                         <div style={{
                                             width: `${(bookedCount / gymClass.maxSeats) * 100}%`,
                                             height: '100%',
@@ -319,7 +331,7 @@ const Classes = () => {
             )}
 
             {/* Create Class Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title=" Schedule Studio Class">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isAddonPage ? 'Schedule a FitPass add-on' : 'Schedule Studio Class'}>
                 <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {error && <div className="alert alert-danger">{error}</div>}
 
@@ -336,6 +348,8 @@ const Classes = () => {
                         </div>
                     </div>
 
+                    {isAddonPage && <div className="input-group"><label>FitCoin price per member *</label><input className="input" type="number" min="1" max="100000" step="1" value={formData.priceCoins} onChange={e => setFormData({ ...formData, priceCoins: e.target.value })} required /><small>Members see this price before booking. Coins are charged on reservation and returned if they cancel before the session starts.</small></div>}
+
                     {/* Branch Assignment Section (Multi-Branch Checkboxes) */}
                     <div style={{
                         background: 'rgba(255,255,255,0.03)',
@@ -347,22 +361,22 @@ const Classes = () => {
                             <label style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
                                  Assign to Branches (Multi-Select)
                             </label>
-                            {branches.length > 1 && (
+                            {visibleBranches.length > 1 && (
                                 <button 
                                     type="button" 
                                     onClick={handleSelectAllBranches} 
                                     style={{ background: 'none', border: 'none', color: '#FEDF1E', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer' }}
                                 >
-                                    {formData.branchIds.length === branches.length ? 'Clear All' : 'Select All'}
+                                    {formData.branchIds.length === visibleBranches.length ? 'Clear All' : 'Select All'}
                                 </button>
                             )}
                         </div>
 
-                        {branches.length === 0 ? (
+                        {user?.role === 'trainer' ? <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>This session will be scheduled at your assigned branch.</p> : visibleBranches.length === 0 ? (
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>All Branches / General Studio</p>
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.5rem' }}>
-                                {branches.map(b => {
+                                {visibleBranches.map(b => {
                                     const bId = b.id || b._id;
                                     const isChecked = formData.branchIds.includes(bId);
                                     return (
@@ -448,6 +462,7 @@ const Classes = () => {
                 onClose={() => { setBookingsModal(null); setSelectedMemberId(''); setIsClassScannerOpen(false); }} 
                 title={` Class Roster & Attendance — ${bookingsModal?.name}`}
             >
+                {bookingsModal?.isAddOn && <div style={{ marginBottom: '1rem', padding: '.75rem', borderRadius: 10, background: '#F0EDFF', color: '#5140A0', fontSize: '.82rem', fontWeight: 750 }}>This session costs {bookingsModal.priceCoins} FitCoins per reservation. Adding a member deducts the coins from their wallet.</div>}
                 {/* Scanner & Manual Action Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div>

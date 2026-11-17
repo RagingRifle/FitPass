@@ -6,7 +6,7 @@ import { H4Assessments } from '@/features/h4';
 
 export default function H4AssessmentsScreen() {
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
       <H4Assessments />
     </SafeAreaView>
   );

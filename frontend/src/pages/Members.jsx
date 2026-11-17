@@ -6,7 +6,34 @@ import ResetFiltersButton from '../components/ResetFiltersButton';
 import { AuthContext } from '../context/AuthContext';
 import { QRCodeCanvas } from 'qrcode.react';
 import API from '../services/api';
-import { Pencil, Trash2, Smartphone, FileText, RefreshCw, ArrowRightLeft, Download } from 'lucide-react';
+import { Loader,  Pencil, Trash2, Smartphone, FileText, RefreshCw, ArrowRightLeft, Download } from 'lucide-react';
+
+const planCoinAllowance = (plan, coinsPerCheckIn) => Number(plan?.coinAllowance) > 0
+    ? Number(plan.coinAllowance)
+    : Number(plan?.sessions || 0) * coinsPerCheckIn;
+const planDurationDays = (plan) => {
+    const duration = Number(plan?.duration) || 0;
+    const unit = String(plan?.durationUnit || 'days').toLowerCase();
+    if (unit.startsWith('month')) return duration * 30;
+    if (unit.startsWith('year')) return duration * 365;
+    if (unit.startsWith('hour')) return duration / 24;
+    return duration;
+};
+const planDailyValue = (plan) => Number(plan?.price) > 0 && planDurationDays(plan) > 0
+    ? Number(plan.price) / planDurationDays(plan)
+    : 0;
+const estimateCoinsPerH4Day = (sourceDivision, sourcePlan, sourcePlanPrice, targetPlan, coinsPerCheckIn, fallback) => {
+    if (sourceDivision === 'fitpass') {
+        const allowance = planCoinAllowance(sourcePlan, coinsPerCheckIn);
+        const coinValue = allowance > 0 ? Number(sourcePlanPrice || sourcePlan?.price || 0) / allowance : 0;
+        const dailyValue = planDailyValue(targetPlan);
+        return coinValue > 0 && dailyValue > 0 ? Number((dailyValue / coinValue).toFixed(2)) : fallback;
+    }
+    const dailyValue = Number(sourcePlanPrice || sourcePlan?.price || 0) / (planDurationDays(sourcePlan) || 30);
+    const targetAllowance = planCoinAllowance(targetPlan, coinsPerCheckIn);
+    const coinValue = targetAllowance > 0 ? Number(targetPlan?.price || 0) / targetAllowance : 0;
+    return dailyValue > 0 && coinValue > 0 ? Number((dailyValue / coinValue).toFixed(2)) : fallback;
+};
 
 const Members = () => {
     const navigate = useNavigate();
@@ -52,6 +79,8 @@ const Members = () => {
     const [transferMemberData, setTransferMemberData] = useState(null);
     const [transferBranchId, setTransferBranchId] = useState('');
     const [submittingAction, setSubmittingAction] = useState(false);
+    const [divisionConversion, setDivisionConversion] = useState(null);
+    const [loadingConversion, setLoadingConversion] = useState(false);
 
 
     const [gyms, setGyms] = useState([]);
@@ -252,6 +281,141 @@ const Members = () => {
         }
     };
 
+    const handleOpenDivisionConversion = async (member) => {
+        setLoadingConversion(true);
+        setDivisionConversion({ member, loading: true });
+        try {
+            const { data: options } = await API.get(`/members/${member._id}/division-conversion`);
+            const targetDivision = options.sourceDivision === 'fitpass' ? 'h4' : 'fitpass';
+            const targetPlans = targetDivision === 'h4' ? options.h4Plans : options.fitpassPlans;
+            const targetPlan = targetPlans[0];
+            const sourceAmount = options.sourceDivision === 'fitpass' ? options.fitpassCoinBalance : options.h4DaysRemaining;
+            const rate = estimateCoinsPerH4Day(
+                options.sourceDivision,
+                options.sourcePlan,
+                options.sourcePlanPrice,
+                targetPlan,
+                options.coinsPerCheckIn,
+                options.suggestedCoinsPerH4Day
+            );
+            const roundedRate = Math.max(0.01, Number(rate || options.suggestedCoinsPerH4Day).toFixed(2));
+            const targetAmount = options.sourceDivision === 'fitpass'
+                ? Math.round(sourceAmount / roundedRate)
+                : Math.round(sourceAmount * roundedRate);
+            setDivisionConversion({
+                member,
+                options,
+                targetDivision,
+                targetPlanId: targetPlan?.id || '',
+                targetBranchId: options.h4Branches.find(branch => String(branch.id) === String(member.branchId || ''))?.id || '',
+                sourceAmount: String(sourceAmount),
+                targetAmount: String(targetAmount),
+                coinsPerH4Day: String(roundedRate),
+            });
+        } catch (error) {
+            setDivisionConversion(null);
+            alert(error.response?.data?.message || 'Could not load conversion details.');
+        } finally {
+            setLoadingConversion(false);
+        }
+    };
+
+    const updateConversionSource = (sourceAmount) => {
+        setDivisionConversion(current => {
+            if (!current?.options) return current;
+            const amount = Number(sourceAmount) || 0;
+            const rate = Number(current.coinsPerH4Day) || 0;
+            const targetAmount = rate > 0 ? current.options.sourceDivision === 'fitpass'
+                ? Math.round(amount / rate)
+                : Math.round(amount * rate) : 0;
+            return { ...current, sourceAmount, targetAmount: String(targetAmount) };
+        });
+    };
+
+    const updateConversionTarget = (targetAmount) => {
+        setDivisionConversion(current => {
+            if (!current?.options) return current;
+            const amount = Number(targetAmount) || 0;
+            const rate = Number(current.coinsPerH4Day) || 0;
+            const sourceAmount = rate > 0 ? current.options.sourceDivision === 'fitpass'
+                ? Math.round(amount * rate)
+                : Math.round(amount / rate) : 0;
+            const roundedTarget = rate > 0 ? current.options.sourceDivision === 'fitpass'
+                ? Math.round(sourceAmount / rate)
+                : Math.round(sourceAmount * rate) : 0;
+            return { ...current, targetAmount: String(roundedTarget), sourceAmount: String(sourceAmount) };
+        });
+    };
+
+    const updateConversionRate = (coinsPerH4Day) => {
+        setDivisionConversion(current => {
+            if (!current?.options) return current;
+            const rate = Number(coinsPerH4Day) || 0;
+            const sourceAmount = Number(current.sourceAmount) || 0;
+            const targetAmount = rate > 0 ? current.options.sourceDivision === 'fitpass'
+                ? Math.round(sourceAmount / rate)
+                : Math.round(sourceAmount * rate) : 0;
+            return { ...current, coinsPerH4Day, targetAmount: String(targetAmount) };
+        });
+    };
+
+    const updateConversionPlan = (targetPlanId) => {
+        setDivisionConversion(current => {
+            if (!current?.options) return current;
+            const targetPlans = current.targetDivision === 'h4' ? current.options.h4Plans : current.options.fitpassPlans;
+            const targetPlan = targetPlans.find(plan => String(plan.id) === String(targetPlanId));
+            const rate = estimateCoinsPerH4Day(
+                current.options.sourceDivision,
+                current.options.sourcePlan,
+                current.options.sourcePlanPrice,
+                targetPlan,
+                current.options.coinsPerCheckIn,
+                current.options.suggestedCoinsPerH4Day
+            );
+            const roundedRate = Math.max(0.01, Number(rate || current.options.suggestedCoinsPerH4Day).toFixed(2));
+            const sourceAmount = Number(current.sourceAmount) || 0;
+            const targetAmount = current.options.sourceDivision === 'fitpass'
+                ? Math.round(sourceAmount / roundedRate)
+                : Math.round(sourceAmount * roundedRate);
+            return { ...current, targetPlanId, coinsPerH4Day: String(roundedRate), targetAmount: String(targetAmount) };
+        });
+    };
+
+    const handleConvertDivision = async (event) => {
+        event.preventDefault();
+        if (!divisionConversion?.options) return;
+        const { member, options, targetDivision, targetPlanId, targetBranchId, sourceAmount, targetAmount, coinsPerH4Day } = divisionConversion;
+        if (!targetPlanId || Number(sourceAmount) <= 0 || Number(targetAmount) <= 0 || Number(coinsPerH4Day) <= 0) {
+            alert('Enter valid amounts, a conversion rate, and a target plan.');
+            return;
+        }
+        const maximum = options.sourceDivision === 'fitpass' ? options.fitpassCoinBalance : options.h4DaysRemaining;
+        const remainder = Math.max(0, maximum - Number(sourceAmount));
+        const remainderWarning = remainder > 0
+            ? options.sourceDivision === 'fitpass'
+                ? `\n${remainder} unconverted FitCoins will remain on the H4 member profile and cannot be spent until they are converted back to FitPass.`
+                : `\n${remainder} H4 day(s) not included in this conversion will not carry over.`
+            : '';
+        if (!window.confirm(`Convert ${member.name} from ${options.sourceDivision.toUpperCase()} to ${targetDivision.toUpperCase()}?\n${sourceAmount} ${options.sourceDivision === 'fitpass' ? 'FitCoins' : 'H4 days'} → ${targetAmount} ${targetDivision === 'fitpass' ? 'FitCoins' : 'H4 days'} at ${coinsPerH4Day} FitCoins per H4 day.${remainderWarning}`)) return;
+
+        setSubmittingAction(true);
+        try {
+            await API.post(`/members/${member._id}/division-conversion`, {
+                targetDivision,
+                targetPlanId,
+                targetBranchId: targetDivision === 'h4' ? targetBranchId || null : null,
+                sourceAmount: Number(sourceAmount),
+                coinsPerH4Day: Number(coinsPerH4Day),
+            });
+            setDivisionConversion(null);
+            fetchData();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Member conversion failed.');
+        } finally {
+            setSubmittingAction(false);
+        }
+    };
+
     const handleDownloadQR = () => {
         const canvas = document.getElementById('member-qr');
         const url = canvas.toDataURL("image/png");
@@ -323,6 +487,13 @@ const Members = () => {
         const matchBranch = !branchFilter || (m.branchId?._id || m.branchId || '') === branchFilter;
         return matchBranch;
     });
+    const isConvertibleMember = (member) => {
+        if (user?.role !== 'superadmin') return false;
+        const gymId = String(member.gymId?._id || member.gymId?.id || member.gymId || '');
+        return gymId === 'SYSTEM'
+            || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(gymId)
+            || gyms.some(gym => String(gym._id || gym.id) === gymId && String(gym.name || '').toLowerCase() === 'h4');
+    };
 
     const handleDownloadCSV = async (exportFullRoster = false) => {
         setIsExporting(true);
@@ -459,7 +630,11 @@ const Members = () => {
         }
     };
 
-    if (loading) return <div className="spinner"></div>;
+    if (loading) return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+            <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
+        </div>
+    );
     return (
         <div>
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -626,6 +801,9 @@ const Members = () => {
                                         }}>
                                             <ArrowRightLeft size={16} />
                                         </button>
+                                        {isConvertibleMember(member) && <button className="btn" style={{ padding: '0.4rem', border: '1px solid #b9a6f4', color: '#6b4cc2', background: 'rgba(139,92,246,0.1)' }} title={`Convert ${String(member.gymId?._id || member.gymId?.id || member.gymId || '') === 'SYSTEM' ? 'FitPass to H4' : 'H4 to FitPass'}`} aria-label={`Convert ${member.name} between FitPass and H4`} onClick={() => handleOpenDivisionConversion(member)}>
+                                            <ArrowRightLeft size={16} />
+                                        </button>}
                                         {user?.role === 'superadmin' && (
                                             <button className="btn" style={{ padding: '0.4rem', border: '1px solid #E7D9AD', color: '#5F4A00', background: '#FBF2D8' }} title="Audit Trail" aria-label={`View audit trail for ${member.name}`} onClick={() => handleOpenAudit(member)}>
                                                 <FileText size={16} />
@@ -1566,6 +1744,75 @@ const Members = () => {
                         {submittingAction ? 'Processing Plan Upgrade...' : 'Confirm Plan Upgrade / Renewal'}
                     </button>
                 </form>
+            </Modal>
+
+            {/* Convert FitPass / H4 balance modal */}
+            <Modal
+                isOpen={!!divisionConversion}
+                onClose={() => !submittingAction && setDivisionConversion(null)}
+                title={`Convert Member: ${divisionConversion?.member?.name || ''}`}
+            >
+                {loadingConversion || !divisionConversion?.options ? (
+                    <p style={{ color: 'var(--text-secondary)' }}>Loading balances and conversion rates…</p>
+                ) : (() => {
+                    const { options } = divisionConversion;
+                    const isFitPassSource = options.sourceDivision === 'fitpass';
+                    const sourceLabel = isFitPassSource ? 'FitPass coins to convert' : 'H4 days to convert';
+                    const targetLabel = isFitPassSource ? 'H4 membership days' : 'FitPass coins';
+                    const maximum = isFitPassSource ? options.fitpassCoinBalance : options.h4DaysRemaining;
+                    const targetPlans = divisionConversion.targetDivision === 'h4' ? options.h4Plans : options.fitpassPlans;
+                    return <form onSubmit={handleConvertDivision}>
+                        <div style={{ padding: 12, marginBottom: 16, borderRadius: 10, background: 'var(--bg-tertiary, #f7f5ef)', color: 'var(--text-secondary)', fontSize: 13 }}>
+                            Current division: <strong>{options.sourceDivision.toUpperCase()}</strong> · Available to convert: <strong>{maximum} {isFitPassSource ? 'FitCoins' : 'days'}</strong>
+                        </div>
+
+                        <div className="input-group">
+                            <label>Target membership plan *</label>
+                            <select className="input" value={divisionConversion.targetPlanId} onChange={e => updateConversionPlan(e.target.value)} required>
+                                <option value="">Choose a {divisionConversion.targetDivision === 'h4' ? 'H4' : 'FitPass'} plan</option>
+                                {targetPlans.map(plan => <option key={plan.id} value={plan.id}>{plan.name} · ₹{Number(plan.price || 0).toLocaleString('en-IN')} / {plan.duration} {plan.durationUnit || 'days'}</option>)}
+                            </select>
+                        </div>
+
+                        {divisionConversion.targetDivision === 'h4' && <div className="input-group">
+                            <label>H4 branch</label>
+                            <select className="input" value={divisionConversion.targetBranchId} onChange={e => setDivisionConversion(current => ({ ...current, targetBranchId: e.target.value }))}>
+                                <option value="">H4 main membership</option>
+                                {options.h4Branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}{branch.address ? ` · ${branch.address}` : ''}</option>)}
+                            </select>
+                        </div>}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                            <div className="input-group">
+                                <label>{sourceLabel} (max {maximum})</label>
+                                <input className="input" type="number" min="1" max={maximum} step="1" value={divisionConversion.sourceAmount} onChange={e => updateConversionSource(e.target.value)} required />
+                            </div>
+                            <div className="input-group">
+                                <label>{targetLabel}</label>
+                                <input className="input" type="number" min="1" step="1" value={divisionConversion.targetAmount} onChange={e => updateConversionTarget(e.target.value)} required />
+                            </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label>Conversion rate · FitCoins per H4 day</label>
+                            <input className="input" type="number" min="0.01" max="100000" step="0.01" value={divisionConversion.coinsPerH4Day} onChange={e => updateConversionRate(e.target.value)} required />
+                            <small style={{ color: 'var(--text-secondary)' }}>Suggested from the source member’s plan value and target plan price per day or FitCoin allowance. Edit it to adjust either amount.</small>
+                        </div>
+
+                        {maximum > Number(divisionConversion.sourceAmount) && <p style={{ margin: '0 0 12px', color: '#9a6700', fontSize: 13 }}>
+                            {isFitPassSource
+                                ? `${maximum - Number(divisionConversion.sourceAmount)} FitCoins will remain on the H4 profile and cannot be spent until converted back.`
+                                : `${maximum - Number(divisionConversion.sourceAmount)} remaining H4 day(s) will not carry over when the H4 membership ends.`}
+                        </p>}
+
+                        <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)', fontSize: 12 }}>
+                            Conversion amounts round to whole days or FitCoins. The converted value is recorded as membership credit, not a cash payment. FitPass check-in sessions are set from the resulting coin balance using the current coin-per-check-in setting ({options.coinsPerCheckIn} coins per session).
+                        </p>
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.25rem' }} disabled={submittingAction || !targetPlans.length}>
+                            {submittingAction ? 'Converting member…' : `Convert to ${divisionConversion.targetDivision === 'h4' ? 'H4' : 'FitPass'}`}
+                        </button>
+                    </form>;
+                })()}
             </Modal>
 
             {/* Transfer Branch Modal */}
