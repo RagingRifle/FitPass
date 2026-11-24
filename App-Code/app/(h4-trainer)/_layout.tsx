@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarCheck, LayoutDashboard, TrendingUp, Users } from '@/components/ui/app-icons';
@@ -11,7 +11,8 @@ const TAB_ITEMS = [
   { name: 'performance', label: 'Performance', Icon: TrendingUp },
 ];
 
-function TrainerTabBar({ state, navigation }: any) {
+function TrainerTabBar({ state }: any) {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const current = state.routes[state.index]?.name;
   const active = current === 'dashboard' || current === 'attendance' || current === 'performance' || current === 'members'
@@ -20,10 +21,8 @@ function TrainerTabBar({ state, navigation }: any) {
   return <View style={[styles.barWrap, { paddingBottom: Math.max(insets.bottom, 7) }]}><View style={styles.bar}>
     {TAB_ITEMS.map(({ name, label, Icon }) => {
       const selected = active === name;
-      const route = state.routes.find((item: any) => item.name === name);
       return <TouchableOpacity key={name} style={[styles.item, selected && styles.itemActive]} activeOpacity={.78} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected }} onPress={() => {
-        const event = navigation.emit({ type: 'tabPress', target: route?.key, canPreventDefault: true });
-        if (!selected && !event.defaultPrevented) navigation.navigate(name);
+        if (!selected) router.navigate(`/(h4-trainer)/${name}` as any);
       }}>
         <Icon size={19} color={selected ? '#F8DF4B' : '#B8B4A8'} />
         <Text style={[styles.label, selected && styles.labelActive]}>{label}</Text>

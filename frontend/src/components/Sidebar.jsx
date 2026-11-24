@@ -154,7 +154,7 @@ const NAV_GROUPS = {
 
 const Sidebar = () => {
     const { collapsed, toggle, mobileOpen, closeMobile } = useSidebar();
-    const { user, logout, selectedGymId, changeSelectedGym, activeDivision, changeActiveDivision, selectedBranchId } = useContext(AuthContext);
+    const { user, logout, changeSelectedGym, activeDivision, changeActiveDivision, selectedBranchId } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -189,7 +189,6 @@ const Sidebar = () => {
 
     let groups = [];
     if (role === 'superadmin') {
-        const hasSelectedGym = !!selectedGymId;
         if (activeDivision === 'fitpass') {
             groups = [
                 {
@@ -221,61 +220,49 @@ const Sidebar = () => {
             ];
         } else {
             // H4 division
-            if (hasSelectedGym) {
-                const suffix = '';
-                
-                const gymMgmtItems = [
-                    { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
-                    { name: `Members${suffix}`, path: '/members', icon: Users },
-                    { name: `Leads${suffix}`, path: '/leads', icon: Target },
-                    { name: `Plans${suffix}`, path: '/plans', icon: Package },
-                            { name: 'Products & Coins', path: '/products', icon: Banknote },
-                    { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
-                    { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
-                    { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
-                    { name: 'Branches', path: '/branches', icon: Building2 },
-                ];
+            const suffix = '';
+            const gymMgmtItems = [
+                { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
+                { name: `Members${suffix}`, path: '/members', icon: Users },
+                { name: `Leads${suffix}`, path: '/leads', icon: Target },
+                { name: `Plans${suffix}`, path: '/plans', icon: Package },
+                { name: 'Products & Coins', path: '/products', icon: Banknote },
+                { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
+                { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
+                { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
+                { name: 'Branches', path: '/branches', icon: Building2 },
+            ];
 
-                groups = [
-                    {
-                        label: 'Gym Management',
-                        items: gymMgmtItems
-                    },
-                    {
-                        label: 'Gym Ops & Finance',
-                        items: [
-                            { name: `Payments${suffix}`, path: '/payments', icon: IndianRupee },
-                            { name: `Sales${suffix}`, path: '/sales', icon: LineChart },
-                            { name: `Expenses${suffix}`, path: '/expenses', icon: IndianRupee },
-                            { name: `Pending Dues${suffix}`, path: '/dues', icon: Clock },
-                            { name: `Attendance${suffix}`, path: '/attendance', icon: UserCheck },
-                            { name: `Trainer Attendance${suffix}`, path: '/trainer-attendance', icon: CalendarCheck },
-                            { name: `Payroll${suffix}`, path: '/payroll', icon: Banknote },
-                        ]
-                    },
-                    {
-                        label: 'Gym System & Reports',
-                        items: [
-                            { name: `Reports${suffix}`, path: '/reports', icon: FileText },
-                            { name: `Freeze System${suffix}`, path: '/freeze', icon: Snowflake },
-                            { name: `Analytics${suffix}`, path: '/analytics', icon: LineChart },
-                            { name: `Workout Plans${suffix}`, path: '/workout-plans', icon: Dumbbell },
-                            { name: `Diet Plans${suffix}`, path: '/diet-plans', icon: Apple },
-                            { name: 'Audit Logs', path: '/audit', icon: History },
-                            { name: `Settings${suffix}`, path: '/settings', icon: Settings },
-                        ]
-                    }
-                ];
-            } else {
-                groups = [
-                    {
-                        label: 'H4 Gym Management',
-                        items: [
-                            { name: 'Select Partner Gym', path: '/superadmin/gyms', icon: Building2 },
-                        ]
-                    }
-                ];
-            }
+            groups = [
+                {
+                    label: 'Gym Management',
+                    items: gymMgmtItems
+                },
+                {
+                    label: 'Gym Ops & Finance',
+                    items: [
+                        { name: `Payments${suffix}`, path: '/payments', icon: IndianRupee },
+                        { name: `Sales${suffix}`, path: '/sales', icon: LineChart },
+                        { name: `Expenses${suffix}`, path: '/expenses', icon: IndianRupee },
+                        { name: `Pending Dues${suffix}`, path: '/dues', icon: Clock },
+                        { name: `Attendance${suffix}`, path: '/attendance', icon: UserCheck },
+                        { name: `Trainer Attendance${suffix}`, path: '/trainer-attendance', icon: CalendarCheck },
+                        { name: `Payroll${suffix}`, path: '/payroll', icon: Banknote },
+                    ]
+                },
+                {
+                    label: 'Gym System & Reports',
+                    items: [
+                        { name: `Reports${suffix}`, path: '/reports', icon: FileText },
+                        { name: `Freeze System${suffix}`, path: '/freeze', icon: Snowflake },
+                        { name: `Analytics${suffix}`, path: '/analytics', icon: LineChart },
+                        { name: `Workout Plans${suffix}`, path: '/workout-plans', icon: Dumbbell },
+                        { name: `Diet Plans${suffix}`, path: '/diet-plans', icon: Apple },
+                        { name: 'Audit Logs', path: '/audit', icon: History },
+                        { name: `Settings${suffix}`, path: '/settings', icon: Settings },
+                    ]
+                }
+            ];
         }
     } else if (role === 'fitpass_admin') {
         groups = [
