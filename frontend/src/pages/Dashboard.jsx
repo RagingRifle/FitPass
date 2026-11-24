@@ -5,6 +5,7 @@ import API from '../services/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import { Users, CheckCircle2, AlertTriangle, Clock, Sparkles, IndianRupee, TrendingDown, TrendingUp, Megaphone, Check, QrCode, Calendar, Phone, ChevronDown, Loader } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
+import './dashboard.css';
 
 const COLORS = ['var(--primary-color)', 'var(--accent-color)', '#a855f7', '#d946ef', '#f43f5e'];
 const dateInputValue = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -172,9 +173,9 @@ const Dashboard = () => {
 
     return (
         <div className="fade-in">
-            <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className={`page-header dashboard-page-header${isH4User ? ' dashboard-page-header--h4' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div className="page-header-left">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div className="dashboard-heading-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0 }}>{activeDivision === 'h4' ? 'Gym CRM Dashboard' : 'Partner Dashboard'}</h2>
                         {['superadmin', 'fitpass_admin', 'h4_admin'].includes(user?.role) && isH4User && (
                             <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
@@ -194,32 +195,10 @@ const Dashboard = () => {
                                         {gymList.find(b => (b._id || b.id) === user.branchId)?.name || 'H4 Branch'}
                                     </div>
                                 ) : (
-                                    <div style={{
-                                        position: 'relative',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '20px',
-                                        padding: '0.25rem 0.75rem 0.25rem 1rem',
-                                        boxShadow: 'var(--shadow-sm)',
-                                        cursor: 'pointer'
-                                    }}>
+                                    <div className="dashboard-branch-picker">
                                         <select
-                                            style={{
-                                                appearance: 'none',
-                                                WebkitAppearance: 'none',
-                                                MozAppearance: 'none',
-                                                background: 'transparent',
-                                                border: 'none',
-                                                outline: 'none',
-                                                color: 'var(--text-primary)',
-                                                fontWeight: 600,
-                                                fontSize: '0.875rem',
-                                                paddingRight: '1.6rem',
-                                                cursor: 'pointer',
-                                                margin: 0
-                                            }}
+                                            className="dashboard-branch-select"
+                                            aria-label={activeDivision === 'h4' ? 'Select H4 branch' : 'Select partner gym'}
                                             value={activeDivision === 'h4' ? selectedBranchId : selectedGymId}
                                             onChange={(e) => {
                                                 const val = e.target.value;
@@ -251,7 +230,7 @@ const Dashboard = () => {
                                                 </>
                                             )}
                                         </select>
-                                        <ChevronDown size={15} style={{ position: 'absolute', right: '0.65rem', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+                                        <ChevronDown size={15} className="dashboard-branch-chevron" aria-hidden="true" />
                                     </div>
                                 )}
                             </div>
@@ -275,11 +254,20 @@ const Dashboard = () => {
                 )}
             </div>
 
-            {isH4User && <section aria-label="Dashboard date filter" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', margin: '0 0 1.5rem', padding: '0.75rem 1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 3, color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>FROM<input type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} /></label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 3, color: 'var(--text-muted)', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>TO<input type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} /></label>
-                <div style={{ display: 'flex', gap: 6, marginLeft: 4 }}>{[7, 30, 90].map(days => <button key={days} type="button" className="btn btn-secondary" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - (days - 1)); setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) }); }}>{days} days</button>)}</div>
-                <small style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 'auto' }}>Revenue, expenses, check-ins, and new joins update for this period. Member status remains current.</small>
+            {isH4User && <section aria-label="Dashboard date filter" className="dashboard-date-filter">
+                <div className="dashboard-date-fields">
+                    <label className="dashboard-date-field"><span>From</span><input aria-label="Start date" type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} /></label>
+                    <span className="dashboard-date-separator" aria-hidden="true">→</span>
+                    <label className="dashboard-date-field"><span>To</span><input aria-label="End date" type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} /></label>
+                </div>
+                <div className="dashboard-date-presets" aria-label="Choose a date range">{[7, 30, 90].map(days => {
+                    const end = new Date();
+                    const start = new Date();
+                    start.setDate(start.getDate() - (days - 1));
+                    const isSelected = dateRange.startDate === dateInputValue(start) && dateRange.endDate === dateInputValue(end);
+                    return <button key={days} type="button" className={`dashboard-date-preset${isSelected ? ' is-selected' : ''}`} aria-pressed={isSelected} onClick={() => setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) })}>{days} days</button>;
+                })}</div>
+                <small className="dashboard-date-note">Revenue, expenses, check-ins and new joins for this period</small>
             </section>}
 
             {/* QR Code Modal */}
