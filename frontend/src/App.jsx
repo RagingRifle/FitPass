@@ -52,6 +52,7 @@ const FitPassGymExplore = lazy(() => import('./pages/FitPassGymExplore'));
 const FitPassLanding = lazy(() => import('./pages/FitPassLanding'));
 const StaffLogin = lazy(() => import('./pages/StaffLogin'));
 const Products = lazy(() => import('./pages/Products'));
+const H4TrialCodes = lazy(() => import('./pages/H4TrialCodes'));
 const Shopping = lazy(() => import('./pages/Shopping'));
 
 const PageLoader = () => (
@@ -104,6 +105,7 @@ function App() {
         } />
 
         <Route path="/products" element={<ProtectedRoute roles={['admin', 'h4_admin', 'superadmin', 'fitpass_admin']}><Layout><Products /></Layout></ProtectedRoute>} />
+        <Route path="/h4/trial-codes" element={<ProtectedRoute roles={['admin', 'h4_admin']}><Layout><H4TrialCodes /></Layout></ProtectedRoute>} />
 
         <Route path="/superadmin/fitpass-members" element={
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>

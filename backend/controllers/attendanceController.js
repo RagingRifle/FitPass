@@ -72,6 +72,10 @@ const markAttendance = catchAsync(async (req, res, next) => {
     const effectiveGymId = req.user.gymId || member.gymId;
     const effectiveBranchId = req.user.branchId || member.branchId || null;
     const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
+    const hasActiveTrial = isH4Member && Boolean(member.trialCouponCode) && member.trialEndsAt && new Date(member.trialEndsAt) > now;
+    const hasActivePaidMembership = member.status === 'Active' && member.expiryDate && new Date(member.expiryDate) > now;
+    if (isH4Member && member.trialCouponCode && !hasActiveTrial && !hasActivePaidMembership) return res.status(403).json({ success: false, message: 'This H4 trial has expired.' });
+    if (hasActiveTrial && (member.trialCheckInsUsed || 0) >= (member.trialCheckInsLimit || 0)) return res.status(402).json({ success: false, message: 'The H4 trial check-in limit has been reached.' });
 
     if (isH4Member) {
         const existingToday = await prisma.attendance.findFirst({
@@ -82,7 +86,7 @@ const markAttendance = catchAsync(async (req, res, next) => {
 
     // 3. Session credits handling. H4 credits are visits, not a currency.
     let sessionDeductionMessage = '';
-    const isSessionPlan = (plan && plan.sessions && plan.sessions > 0) || (member.sessionsTotal && member.sessionsTotal > 0);
+    const isSessionPlan = !hasActiveTrial && ((plan && plan.sessions && plan.sessions > 0) || (member.sessionsTotal && member.sessionsTotal > 0));
 
     if (isSessionPlan) {
         const sessionWhere = {
@@ -110,10 +114,14 @@ const markAttendance = catchAsync(async (req, res, next) => {
         sessionDeductionMessage = ` (Session credit used: 1. ${newRemaining} of ${member.sessionsTotal || plan.sessions} remaining)`;
     } else if (isH4Member) {
         const marked = await prisma.member.updateMany({
-            where: { id: member.id, OR: [{ lastCheckInAt: null }, { lastCheckInAt: { lt: today } }] },
-            data: { lastCheckInAt: now },
+            where: { id: member.id, ...(hasActiveTrial ? { trialEndsAt: { gt: now }, trialCheckInsUsed: { lt: member.trialCheckInsLimit } } : {}), OR: [{ lastCheckInAt: null }, { lastCheckInAt: { lt: today } }] },
+            data: { lastCheckInAt: now, ...(hasActiveTrial ? { trialCheckInsUsed: { increment: 1 } } : {}) },
         });
-        if (!marked.count) return res.status(409).json({ success: false, message: 'Attendance already marked for today.' });
+        if (!marked.count) {
+            const current = await prisma.member.findUnique({ where: { id: member.id } });
+            if (hasActiveTrial && (current?.trialCheckInsUsed || 0) >= (current?.trialCheckInsLimit || 0)) return res.status(402).json({ success: false, message: 'The H4 trial check-in limit has been reached.' });
+            return res.status(409).json({ success: false, message: 'Attendance already marked for today.' });
+        }
     }
 
     // 4. Record attendance. H4 members are limited to one check-in per day.

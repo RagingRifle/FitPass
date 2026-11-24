@@ -43,6 +43,7 @@ const Settings = () => {
     const [emailAlerts, setEmailAlerts] = useState(true);
     const [smsAlerts, setSmsAlerts] = useState(false);
     const [pushAlerts, setPushAlerts] = useState(true);
+    const [inactivityReminderDays, setInactivityReminderDays] = useState(7);
 
     // --- Tab 5: Business Hours State ---
     const [hours, setHours] = useState({
@@ -79,6 +80,7 @@ const Settings = () => {
                     if (data.emailAlerts !== undefined) setEmailAlerts(data.emailAlerts);
                     if (data.smsAlerts !== undefined) setSmsAlerts(data.smsAlerts);
                     if (data.pushAlerts !== undefined) setPushAlerts(data.pushAlerts);
+                    if (data.inactivityReminderDays !== undefined) setInactivityReminderDays(data.inactivityReminderDays);
                     if (data.hours) {
                         try {
                             const parsed = JSON.parse(data.hours);
@@ -136,7 +138,7 @@ const Settings = () => {
                 gymName, tagline, logoUrl, brandTheme,
                 sessionDuration, scanCooldown, qrRefreshRate, checkInSound,
                 currency, taxRate, taxId, razorpayEnabled, razorpayKey,
-                emailAlerts, smsAlerts, pushAlerts,
+                emailAlerts, smsAlerts, pushAlerts, inactivityReminderDays: Number(inactivityReminderDays),
                 hours: JSON.stringify(hours)
             };
             
@@ -489,6 +491,7 @@ const Settings = () => {
                                 <hr style={{ borderColor: '#E5E7EB', margin: '0.5rem 0' }} />
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <label className="input-group" style={{ maxWidth: 340 }}><span style={{ fontWeight: 600, color: '#111827' }}>Inactive member reminder (days)</span><input className="input" type="number" min="1" max="365" value={inactivityReminderDays} onChange={e => setInactivityReminderDays(e.target.value)} /><small style={{ color: '#6B7280' }}>Notify the member and gym admins after this many days without a check-in.</small></label>
                                     <div style={{
                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                         background: '#F9FAFB', padding: '1rem 1.25rem',

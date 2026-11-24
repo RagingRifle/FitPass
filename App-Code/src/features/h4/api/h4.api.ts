@@ -68,6 +68,7 @@ export const useH4Plan = () =>
         startDate:  data?.joinDate   ?? null,
         status:     data?.status     ?? 'Unknown',
         price:      data?.planPrice  ?? plan?.price ?? null,
+        trial:      data?.trial      ?? null,
       };
     },
     staleTime: 60_000,

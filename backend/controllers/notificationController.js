@@ -4,6 +4,7 @@ const logger = require('../lib/logger');
 const Notification = require('../models/Notification');
 const Member = require('../models/Member');
 const User = require('../models/User');
+const Lead = require('../models/Lead');
 
 // @desc    Get unread notifications and auto-generate alerts
 // @route   GET /api/notifications
@@ -90,6 +91,11 @@ const generateAutomatedAlerts = async (user) => {
                 const msg = `Member ${member.name}'s plan is expiring on ${member.expiryDate.toLocaleDateString()}`;
                 return createUniqueNotification(user._id, user.gymId, 'expiry', msg);
             }));
+        }
+
+        if (['admin', 'receptionist', 'h4_admin'].includes(user.role)) {
+            const dueLeads = await Lead.find({ gymId: user.gymId, ...(user.branchId ? { branchId: user.branchId } : {}), followUpDate: { $lte: new Date() }, status: { $nin: ['Converted', 'Closed', 'Lost'] } }).limit(100);
+            await Promise.all(dueLeads.map(lead => createUniqueNotification(user._id, user.gymId, 'lead_followup', `Follow up with ${lead.name} (${lead.phone})${lead.assignedTo ? ` · Assigned to ${lead.assignedTo}` : ''}.`)));
         }
 
         // 2. Check for Dues (only for staff)

@@ -28,6 +28,7 @@ const Staff = () => {
         role: 'trainer',
         branchId: user?.branchId || '',
         trainerMemberLimit: 10,
+        shiftsPerDay: 1,
         trainerPermissions: { assignWorkout: true, assignDiet: true, recordAssessment: true, scheduleClasses: true, manageClassBookings: true, setClassPricing: true }
     });
     const [error, setError] = useState('');
@@ -105,6 +106,7 @@ const Staff = () => {
                 role: staff.role,
                 branchId: staff.branchId || '',
                 trainerMemberLimit: staff.trainerMemberLimit || 10,
+                shiftsPerDay: staff.shiftsPerDay === 2 ? 2 : 1,
                 trainerPermissions: staff.trainerPermissions || { assignWorkout: true, assignDiet: true, recordAssessment: true, scheduleClasses: true, manageClassBookings: true, setClassPricing: true }
             });
         } else {
@@ -116,6 +118,7 @@ const Staff = () => {
                 role: 'trainer',
                 branchId: user?.branchId || '',
                 trainerMemberLimit: 10,
+                shiftsPerDay: 1,
                 trainerPermissions: { assignWorkout: true, assignDiet: true, recordAssessment: true, scheduleClasses: true, manageClassBookings: true, setClassPricing: true }
             });
         }
@@ -395,6 +398,7 @@ const Staff = () => {
 
                     {formData.role === 'trainer' && <section style={{ marginTop: 16, padding: 16, border: '1px solid var(--border)', borderRadius: 10 }}>
                         <h4 style={{ marginTop: 0 }}>Trainer workload and access</h4>
+                        <label className="input-group">Scheduled shifts per day<select className="input" value={formData.shiftsPerDay || 1} onChange={e => setFormData({ ...formData, shiftsPerDay: Number(e.target.value) })}><option value={1}>One full shift</option><option value={2}>Two half shifts</option></select><small>With two shifts set, the trainer can clock in twice. Each completed shift counts as half a day.</small></label>
                         <label className="input-group">Maximum assigned members
                             <input className="input" type="number" min="1" max="100" value={formData.trainerMemberLimit} onChange={e => setFormData({ ...formData, trainerMemberLimit: Number(e.target.value) })} />
                         </label>

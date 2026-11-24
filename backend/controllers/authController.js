@@ -372,12 +372,22 @@ const authUser = catchAsync(async (req, res, next) => {
         throw new Error(`Account temporarily locked. Try again in ${mins} minute(s).`);
     }
 
-    // Members must complete OTP verification. Trainers and desk staff are
-    // provisioned by authenticated gym administrators, so they can sign in
-    // without an email OTP (their account is trusted at creation time).
+    // Admin-created member accounts use their administrator-issued password
+    // (the phone number by default). Legacy records may predate isVerified
+    // being set on creation; accept a real password hash match for an existing
+    // linked member account and mark that provisioned account verified. OTP
+    // pending accounts have a random password hash, so this does not bypass
+    // their email verification.
     if (user.role === 'member' && !user.isVerified) {
-        res.status(401);
-        throw new Error('Please verify your email before logging in. Request a new OTP if needed.');
+        const hasProvisionedMemberAccount = Boolean(user.memberId && user.password
+            && await bcrypt.compare(password, user.password).catch(() => false));
+        if (hasProvisionedMemberAccount) {
+            await User.findByIdAndUpdate(user._id || user.id, { isVerified: true });
+            user.isVerified = true;
+        } else {
+            res.status(401);
+            throw new Error('Please verify your email before logging in. Request a new OTP if needed.');
+        }
     }
 
     if (!(await user.matchPassword(password))) {

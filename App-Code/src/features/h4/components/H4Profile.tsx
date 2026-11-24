@@ -39,6 +39,7 @@ function Row({ label, value, last }: { label: string; value: React.ReactNode; la
 }
 
 import { useToast } from '@/hooks/useToast';
+import { useQueryClient } from '@tanstack/react-query';
 
 //  Main Component 
 export function H4Profile() {
@@ -48,6 +49,7 @@ export function H4Profile() {
   const { data: plan } = useH4Plan();
   const { data: paymentsData } = useH4Payments();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [profileName, setProfileName] = useState(user?.name ?? '');
@@ -56,6 +58,8 @@ export function H4Profile() {
   const [profilePassword, setProfilePassword] = useState('');
   const [updating, setUpdating] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(user?.profileImageUrl ?? '');
+  const [trialCode, setTrialCode] = useState('');
+  const [redeemingTrial, setRedeemingTrial] = useState(false);
   const avatarChoices = PROFILE_AVATARS;
 
   const handleOpenEdit = () => {
@@ -91,6 +95,18 @@ export function H4Profile() {
   };
 
   const payments = paymentsData?.data ?? [];
+  const redeemTrialCode = async () => {
+    if (!trialCode.trim()) { toast.show('Enter a referral code first.', 'error'); return; }
+    setRedeemingTrial(true);
+    try {
+      await API_CLIENT.post('/member-portal/trial-coupons/redeem', { code: trialCode.trim() });
+      setTrialCode('');
+      await queryClient.invalidateQueries({ queryKey: ['h4', 'plan'] });
+      await queryClient.invalidateQueries({ queryKey: ['h4', 'workout-plans'] });
+      toast.show('Trial activated. Your check-in access is ready.', 'success');
+    } catch (error: any) { toast.show(error.response?.data?.message || 'Could not redeem that referral code.', 'error'); }
+    finally { setRedeemingTrial(false); }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -142,6 +158,10 @@ export function H4Profile() {
             ? new Date(plan.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
             : ''
         } />
+      </Section>
+
+      <Section title="Trial referral code">
+        {plan?.trial?.active ? <View style={{ padding: 14, gap: 5, backgroundColor: '#fff8d8', borderRadius: 12 }}><Text style={{ color: '#554400', fontSize: 15, fontWeight: '900' }}>Trial active</Text><Text style={{ color: '#6d5d24', fontSize: 12 }}>{plan.trial.checkInsRemaining} of {plan.trial.checkInLimit} check-ins left · valid until {new Date(plan.trial.expiresAt).toLocaleDateString('en-IN')}{plan.trial.workoutAccess ? ' · workouts included' : ''}</Text></View> : <View style={{ padding: 14, gap: 10, backgroundColor: '#fff9de', borderRadius: 12 }}><Text style={{ color: '#6b5800', fontSize: 12, lineHeight: 18 }}>Enter a referral code from an H4 member to activate your free trial.</Text><Input label="Referral code" value={trialCode} onChangeText={setTrialCode} placeholder="e.g. FRIEND7" autoCapitalize="characters" /><Button title="Activate trial" onPress={redeemTrialCode} loading={redeemingTrial} /></View>}
       </Section>
 
       {/*  Payment History  */}

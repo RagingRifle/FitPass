@@ -9,7 +9,7 @@ const getLeads = catchAsync(async (req, res, next) => {
     try {
         const { status, source } = req.query;
         const filter = { ...req.tenantFilter };
-        if (status) filter.status = status;
+        if (status) filter.status = status === 'Opened' ? { $in: ['Opened', 'New'] } : status === 'Closed' ? { $in: ['Closed', 'Lost'] } : status;
         if (source) filter.source = source;
 
         const leads = await Lead.find(filter).sort({ createdAt: -1 });
@@ -28,10 +28,21 @@ const createLead = catchAsync(async (req, res, next) => {
             name, phone, email, source, interestedPlan, notes, followUpDate, assignedTo,
             gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
             branchId: req.user.branchId || null,
-            status: 'New'
+            status: 'Opened', comments: []
         });
         res.status(201).json(lead);
     } catch (err) { next(err); }
+});
+
+const addLeadComment = catchAsync(async (req, res) => {
+    const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+    const lead = await Lead.findOne(query);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+    const comment = String(req.body.comment || '').trim();
+    if (!comment) return res.status(400).json({ message: 'Comment is required' });
+    lead.comments = [...(Array.isArray(lead.comments) ? lead.comments : []), { id: require('crypto').randomUUID(), comment, author: req.user.name || req.user.email || 'Staff', authorId: String(req.user.id || req.user._id || ''), createdAt: new Date().toISOString() }];
+    await lead.save();
+    res.status(201).json(lead);
 });
 
 // @desc    Update lead status / details
@@ -94,7 +105,7 @@ const getLeadSummary = catchAsync(async (req, res, next) => {
         const followUpDue = await Lead.countDocuments({
             ...matchStage,
             followUpDate: { $lte: today },
-            status: { $nin: ['Converted', 'Lost'] }
+            status: { $nin: ['Converted', 'Lost', 'Closed'] }
         });
 
         // Conversion rate
@@ -106,4 +117,4 @@ const getLeadSummary = catchAsync(async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
-module.exports = { getLeads, createLead, updateLead, deleteLead, getLeadSummary };
+module.exports = { getLeads, createLead, addLeadComment, updateLead, deleteLead, getLeadSummary };

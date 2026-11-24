@@ -102,6 +102,15 @@ const getMyPlan = catchAsync(async (req, res, next) => {
   res.json({
     ...memberWithoutCoins,
     ...(!isH4Member ? { fitpassCoins: member.fitpassCoins ?? 0 } : {}),
+    trial: member.trialEndsAt ? {
+      expiresAt: member.trialEndsAt,
+      checkInLimit: member.trialCheckInsLimit || 0,
+      checkInsUsed: member.trialCheckInsUsed || 0,
+      checkInsRemaining: Math.max(0, (member.trialCheckInsLimit || 0) - (member.trialCheckInsUsed || 0)),
+      workoutAccess: Boolean(member.trialWorkoutAccess),
+      code: member.trialCouponCode || null,
+      active: new Date(member.trialEndsAt) > new Date(),
+    } : null),
     planId: plan || member.planId,
     isH4Member,
     homeGym: homeGym || homeBranch ? {

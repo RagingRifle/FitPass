@@ -4,6 +4,7 @@ const {
     checkInTrainer,
     checkOutTrainer,
     getTrainerAttendance,
+    getMyTrainerConfig,
     markTrainerLeave,
     getTrainerLeaveRequests,
     createTrainerLeaveRequest,
@@ -14,6 +15,7 @@ const tenantFilter = require('../middleware/tenantFilter');
 
 router.route('/')
     .get(protect, authorize('admin', 'receptionist', 'trainer', 'h4_admin'), tenantFilter, getTrainerAttendance);
+router.get('/config', protect, authorize('trainer'), getMyTrainerConfig);
 
 router.post('/checkin', protect, authorize('admin', 'receptionist', 'trainer', 'h4_admin'), checkInTrainer);
 router.post('/checkout', protect, authorize('admin', 'receptionist', 'trainer', 'h4_admin'), checkOutTrainer);

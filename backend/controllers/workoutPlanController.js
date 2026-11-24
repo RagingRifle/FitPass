@@ -11,6 +11,22 @@ const getPlanGymScope = (req) => {
     const h4Scope = req.user?.role === 'h4_admin' || H4_GYM_IDS.includes(gymId);
     return { gymId, gymIds: h4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId] };
 };
+
+const memberTrialBlocksWorkouts = async (user) => {
+    if (user?.role !== 'member') return false;
+    let member = user.memberId ? await Member.findById(user.memberId).lean() : null;
+    if (!member) {
+        const identity = [];
+        if (user.email) identity.push({ email: user.email });
+        if (user.phone) identity.push({ phone: user.phone });
+        if (identity.length) member = await Member.findOne({ $or: identity }).lean();
+    }
+    if (!member?.trialCouponCode) return false;
+    const now = new Date();
+    const activePaidMembership = member.status === 'Active' && member.expiryDate && new Date(member.expiryDate) > now;
+    const activeTrial = member.trialEndsAt && new Date(member.trialEndsAt) > now;
+    return !activePaidMembership && (!activeTrial || !member.trialWorkoutAccess);
+};
 const parseMemberIds = (plan) => {
     try {
         const ids = plan.memberIds ? JSON.parse(plan.memberIds) : [];
@@ -110,6 +126,10 @@ const getPlans = catchAsync(async (req, res, next) => {
         // Query by gymId so workout plans are accessible across all branches of the gym
         const { gymId, gymIds } = getPlanGymScope(req);
         let query = { gymId: gymIds.length > 1 ? { $in: gymIds } : gymId };
+        const page = Math.max(parseInt(req.query.page) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+
+        if (await memberTrialBlocksWorkouts(req.user)) return res.json({ success: true, data: [], meta: { page, limit, total: 0 } });
 
         if (req.query.branchId) {
             query.branchId = req.query.branchId;
@@ -140,8 +160,6 @@ const getPlans = catchAsync(async (req, res, next) => {
         }
 
         // Strict pagination parameters with hard cap at 100
-        const page = Math.max(parseInt(req.query.page) || 1, 1);
-        const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
         const skip = (page - 1) * limit;
 
         const total = await WorkoutPlan.countDocuments(query);
@@ -198,6 +216,7 @@ const getPlans = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer/Member
 const getPlanById = catchAsync(async (req, res, next) => {
     try {
+        if (await memberTrialBlocksWorkouts(req.user)) return res.status(403).json({ success: false, message: 'Workout access is not included in your current trial.' });
         const { gymIds } = getPlanGymScope(req);
         const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
 
@@ -299,6 +318,7 @@ const deletePlan = catchAsync(async (req, res, next) => {
 // @access  Private/Member/Trainer
 const logCompletedWorkout = catchAsync(async (req, res, next) => {
     try {
+        if (await memberTrialBlocksWorkouts(req.user)) return res.status(403).json({ success: false, message: 'Workout access is not included in your current trial.' });
         const { planId, exercises, notes } = req.body;
         let memberId = req.user?.memberId;
         let gymId = req.user?.gymId;

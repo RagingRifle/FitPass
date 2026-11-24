@@ -54,7 +54,7 @@ const Members = () => {
     const [editingMember, setEditingMember] = useState(null);
     const [branches, setBranches] = useState([]);
     const [branchFilter, setBranchFilter] = useState('');
-    const [formData, setFormData] = useState({ name: '', phone: '', email: '', planId: '', joinDate: '', branchId: '', gymId: '', password: '', durationPreset: '30', durationDays: '30', saleSource: '', salesStaffId: '' });
+    const [formData, setFormData] = useState({ name: '', phone: '', email: '', planId: '', joinDate: '', branchId: '', gymId: '', password: '', durationPreset: '30', durationDays: '30', saleSource: '', saleType: 'NEW_MEMBER', salesStaffId: '' });
     const [salesStaff, setSalesStaff] = useState([]);
     const [wizardStep, setWizardStep] = useState(1);
     const [questionnaire, setQuestionnaire] = useState({
@@ -1041,6 +1041,10 @@ const Members = () => {
                                             <option value="Card">Card</option>
                                             <option value="Bank Transfer">Bank Transfer</option>
                                         </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Activity</label>
+                                        <select className="input" value={formData.saleType || 'NEW_MEMBER'} onChange={e => setFormData({ ...formData, saleType: e.target.value })}><option value="NEW_MEMBER">New member</option><option value="REFERRAL">Referral</option></select>
                                     </div>
                                     <div className="input-group">
                                         <label>Lead source</label>

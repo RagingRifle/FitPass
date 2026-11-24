@@ -146,6 +146,7 @@ app.use('/api/v1/pt-packages', require('./routes/ptPackageRoutes'));
 app.use('/api/v1/pt-sessions', require('./routes/ptSessionRoutes'));
 app.use('/api/v1/body-assessments', require('./routes/bodyAssessmentRoutes'));
 app.use('/api/v1/trainer-attendance', require('./routes/trainerAttendanceRoutes'));
+app.use('/api/v1/h4-trial-coupons', require('./routes/h4TrialRoutes'));
 app.use('/api/v1/payroll', require('./routes/payrollRoutes'));
 
 

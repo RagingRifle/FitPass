@@ -26,6 +26,7 @@ const Classes = () => {
         description: '', 
         trainerName: '',
         scheduleDate: '', 
+        recurrence: 'none', repeatUntil: '',
         startTime: '', 
         endTime: '', 
         maxSeats: 10, 
@@ -96,6 +97,7 @@ const Classes = () => {
             setFormData({ 
                 name: '', type: 'Yoga', description: '', trainerName: '', 
                 scheduleDate: '', startTime: '', endTime: '', maxSeats: 10, 
+                recurrence: 'none', repeatUntil: '',
                 bookingDeadline: '', priceCoins: 20, branchIds: []
             });
             fetchClasses();
@@ -427,6 +429,7 @@ const Classes = () => {
                         <label>Date *</label>
                         <input className="input" type="date" value={formData.scheduleDate} onChange={e => setFormData({ ...formData, scheduleDate: e.target.value })} required />
                     </div>
+                    <div className="form-grid"><div className="input-group"><label>Schedule</label><select className="input" value={formData.recurrence} onChange={e => setFormData({ ...formData, recurrence: e.target.value, repeatUntil: e.target.value === 'none' ? '' : formData.repeatUntil })}><option value="none">One time</option><option value="weekly">Repeat weekly</option></select></div>{formData.recurrence === 'weekly' && <div className="input-group"><label>Repeat until *</label><input className="input" type="date" min={formData.scheduleDate} value={formData.repeatUntil} onChange={e => setFormData({ ...formData, repeatUntil: e.target.value })} required /></div>}</div>
 
                     <div className="form-grid">
                         <div className="input-group">

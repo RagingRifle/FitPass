@@ -149,6 +149,11 @@ const updateGymSettings = catchAsync(async (req, res, next) => {
         }
 
         const updateData = { ...req.body };
+        if (updateData.inactivityReminderDays !== undefined) {
+            const days = Number(updateData.inactivityReminderDays);
+            if (!Number.isInteger(days) || days < 1 || days > 365) return res.status(400).json({ message: 'Inactive member reminders must be between 1 and 365 days.' });
+            updateData.inactivityReminderDays = days;
+        }
         // Clean out fields we don't want to accidentally upsert like id, gymId, createdAt
         delete updateData.id;
         delete updateData.gymId;

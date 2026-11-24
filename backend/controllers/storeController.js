@@ -77,7 +77,7 @@ const saveProduct = catchAsync(async (req, res) => {
   // The route parameter is the canonical edit ID. Multipart form fields can be
   // duplicated by clients/proxies, which turns Prisma's unique ID into an array.
   const id = req.params.id || req.body.id;
-  const { name, description = '', priceCoins, imageUrl = '', division = 'fitpass', isActive = true, stock } = req.body;
+  const { name, description = '', priceCoins, priceINR, imageUrl = '', division = 'fitpass', isActive = true, stock } = req.body;
   const safeDivision = adminDivision(req, division);
   if (!name?.trim() || (safeDivision !== 'h4' && (!Number.isInteger(Number(priceCoins)) || Number(priceCoins) < 1))) {
     return res.status(400).json({ message: 'Product name and a positive whole coin price are required.' });
@@ -87,7 +87,8 @@ const saveProduct = catchAsync(async (req, res) => {
     where: { division: safeDivision, name: { equals: name.trim(), mode: 'insensitive' }, ...(id ? { id: { not: id } } : {}) },
   });
   if (duplicate) return res.status(409).json({ message: 'A product with this name already exists in this shop. Edit the existing product instead.' });
-  const data = { name: name.trim(), description, priceCoins: safeDivision === 'h4' ? 0 : Number(priceCoins), imageUrl: req.file?.path || imageUrl, division: safeDivision, isActive: isActive === true || isActive === 'true', stock: stock === '' || stock == null ? null : Number(stock) };
+  if (safeDivision === 'h4' && (!Number.isFinite(Number(priceINR)) || Number(priceINR) < 0)) return res.status(400).json({ message: 'Enter a valid INR price for H4 merchandise.' });
+  const data = { name: name.trim(), description, priceCoins: safeDivision === 'h4' ? 0 : Number(priceCoins), priceINR: safeDivision === 'h4' ? Number(priceINR) : null, imageUrl: req.file?.path || imageUrl, division: safeDivision, isActive: isActive === true || isActive === 'true', stock: stock === '' || stock == null ? null : Number(stock) };
   if (id) {
     const existing = await prisma.storeProduct.findUnique({ where: { id } });
     if (!existing || existing.division !== safeDivision) return res.status(404).json({ message: 'Product not found.' });

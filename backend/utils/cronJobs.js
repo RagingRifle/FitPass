@@ -3,6 +3,7 @@ const Member = require('../models/Member');
 const { sendEmail, sendWhatsApp } = require('./notificationService');
 const logger = require('../lib/logger');
 const { autoUnfreezeDueMembers } = require('../controllers/freezeController');
+const prisma = require('../config/prisma');
 
 const startCronJobs = () => {
     // Scheduled membership pauses resume automatically at their chosen time.
@@ -13,6 +14,31 @@ const startCronJobs = () => {
         } catch (error) {
             logger.error({ err: error }, '[MembershipFreeze] Automatic resume job failed.');
         }
+    });
+
+    // Send an in-app reminder to inactive members and their gym administrators.
+    cron.schedule('0 9 * * *', async () => {
+        try {
+            const configs = await prisma.gymSettings.findMany({ select: { gymId: true, inactivityReminderDays: true } });
+            for (const config of configs) {
+                const days = Math.max(1, Number(config.inactivityReminderDays) || 7);
+                const cutoff = new Date(Date.now() - days * 86400000);
+                const members = await prisma.member.findMany({ where: { gymId: config.gymId, status: 'Active', OR: [{ lastCheckInAt: { lt: cutoff } }, { lastCheckInAt: null, joinDate: { lt: cutoff } }] }, select: { id: true, name: true, lastCheckInAt: true } });
+                if (!members.length) continue;
+                const users = await prisma.user.findMany({ where: { gymId: config.gymId, OR: [{ role: { in: ['admin', 'h4_admin', 'receptionist'] } }, { memberId: { in: members.map(m => m.id) } }] }, select: { id: true, role: true, memberId: true } });
+                for (const member of members) {
+                    const memberUsers = users.filter(user => user.memberId === member.id);
+                    const recipients = [...users.filter(user => ['admin', 'h4_admin', 'receptionist'].includes(user.role)), ...memberUsers];
+                    for (const recipient of recipients) {
+                        const message = ['admin', 'h4_admin', 'receptionist'].includes(recipient.role)
+                            ? `${member.name} has not checked in for ${days} days.`
+                            : `We have missed you at the gym. It has been ${days} days since your last check-in.`;
+                        const exists = await prisma.notification.findFirst({ where: { recipientId: recipient.id, type: 'inactive_member', message, read: false } });
+                        if (!exists) await prisma.notification.create({ data: { recipientId: recipient.id, gymId: config.gymId, type: 'inactive_member', message } });
+                    }
+                }
+            }
+        } catch (error) { logger.error({ err: error }, '[InactivityReminder] Daily reminders failed.'); }
     });
 
     // Run every day at midnight (00:00)

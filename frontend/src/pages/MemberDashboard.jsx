@@ -8,6 +8,7 @@ import { Loader,  Activity, ArrowUpRight, CalendarDays, Clock3, Flame, MapPin, P
 import './fitpass.css';
 import './member-dashboard.css';
 import './member-featured.css';
+import './member-trial.css';
 
 const PROFILE_AVATARS = [
     { url: '/avatars/milo.svg', name: 'Milo', trait: 'Easygoing' },
@@ -51,6 +52,8 @@ const MemberDashboard = () => {
     const [h4Plans, setH4Plans] = useState([]);
     const [renewalModalOpen, setRenewalModalOpen] = useState(false);
     const [selectedRenewalPlan, setSelectedRenewalPlan] = useState(null);
+    const [trialCode, setTrialCode] = useState('');
+    const [redeemingTrial, setRedeemingTrial] = useState(false);
 
     const fetchFitPassHistory = async (params = {}) => {
         try {
@@ -136,6 +139,19 @@ const MemberDashboard = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const redeemTrialCode = async (event) => {
+        event.preventDefault();
+        if (!trialCode.trim()) return;
+        setRedeemingTrial(true);
+        try {
+            const { data } = await API.post('/member-portal/trial-coupons/redeem', { code: trialCode.trim() });
+            setPlan(current => ({ ...current, trial: { ...data.trial, active: true } }));
+            setTrialCode('');
+            toast.success('Trial activated. Your check-in and workout access is ready.');
+        } catch (error) { toast.error(error.response?.data?.message || 'Could not redeem that referral code.'); }
+        finally { setRedeemingTrial(false); }
     };
 
     useEffect(() => {
@@ -398,6 +414,11 @@ const MemberDashboard = () => {
                 </div>
                 <div className="member-overview-mark"><Activity size={24} /></div>
             </section>
+
+            {isH4Member && <section className="member-trial-card" style={{ gap: 18, alignItems: 'center', padding: '20px 24px', margin: '-8px 0 22px', border: '1px solid #e9d98a', borderRadius: 16, background: 'linear-gradient(110deg,#fff9dc 0%,#fffdf4 65%,#fff 100%)' }}>
+                <div><div style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#795f00', fontSize: 11, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}><Sparkles size={14} /> H4 trial access</div><h2 style={{ margin: '7px 0 4px', fontSize: 20 }}>{plan?.trial?.active ? 'Your trial is active' : 'Have a referral code?'}</h2><p style={{ margin: 0, color: '#625a3f', fontSize: 13 }}>{plan?.trial?.active ? `${plan.trial.checkInsRemaining} of ${plan.trial.checkInLimit} check-ins left · valid until ${new Date(plan.trial.expiresAt).toLocaleDateString('en-IN')}${plan.trial.workoutAccess ? ' · workouts included' : ''}` : 'Enter a code shared by an H4 member to activate your free trial.'}</p></div>
+                {!plan?.trial?.active && <form onSubmit={redeemTrialCode} style={{ display: 'flex', gap: 8 }}><input aria-label="H4 referral code" className="input" value={trialCode} onChange={e => setTrialCode(e.target.value.toUpperCase())} placeholder="Enter referral code" required style={{ margin: 0, textTransform: 'uppercase' }} /><button className="btn btn-primary" disabled={redeemingTrial}>{redeemingTrial ? 'Applying…' : 'Redeem'}</button></form>}
+            </section>}
 
             <section className="member-metric-grid" aria-label="Your activity summary">
                 <article className="member-metric-card"><span className="member-metric-icon"><Activity size={17} /></span><small>VISITS THIS MONTH</small><strong>{monthlyVisits}</strong><span>{successfulVisits} all-time check-ins</span></article>

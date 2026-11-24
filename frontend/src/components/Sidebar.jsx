@@ -8,7 +8,7 @@ import {
     UserCheck, Clock, Building2, History, ChevronRight,
     ChevronLeft, LogOut, Target, Package, Banknote,
     AlertTriangle, Receipt, CalendarCheck, Snowflake, LineChart, FileText, Home, Dumbbell, Image, Zap,
-    Settings, Apple, Compass, LifeBuoy
+    Settings, Apple, Compass, LifeBuoy, Ticket
 } from 'lucide-react';
 
 const NAV_GROUPS = {
@@ -304,6 +304,7 @@ const Sidebar = () => {
             { name: `Plans${suffix}`, path: '/plans', icon: Package },
             { name: 'Products & Coins', path: '/products', icon: Banknote },
             { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
+            { name: 'Trial referral codes', path: '/h4/trial-codes', icon: Ticket },
             { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
             { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
             ...(!user?.branchId ? [{ name: 'Branches', path: '/branches', icon: Building2 }] : []),
@@ -366,7 +367,7 @@ const Sidebar = () => {
             items: group.items.filter(item => {
                 if (item.path === '/branches') return false;
                 if (item.path === '/fitpass-classes' && role === 'h4_admin') return false;
-                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
+                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
                 return true;
             })
         }));

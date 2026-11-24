@@ -7,6 +7,7 @@ export interface H4Plan {
   status: 'Active' | 'Expired' | 'Inactive';
   startDate: string | null;
   price: number | null;
+  trial?: { expiresAt: string; checkInLimit: number; checkInsUsed: number; checkInsRemaining: number; workoutAccess: boolean; active: boolean } | null;
 }
 
 export interface H4AttendanceRecord {

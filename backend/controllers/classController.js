@@ -153,6 +153,7 @@ const createClass = catchAsync(async (req, res, next) => {
             description, 
             trainerName, 
             scheduleDate, 
+            recurrence = 'none', repeatUntil,
             startTime, 
             endTime, 
             maxSeats, 
@@ -171,6 +172,8 @@ const createClass = catchAsync(async (req, res, next) => {
         if (!timePattern.test(startTime) || !timePattern.test(endTime) || endTime <= startTime) return res.status(400).json({ message: 'Enter a valid start and end time.' });
         const classDate = new Date(scheduleDate);
         if (!Number.isFinite(classDate.getTime()) || new Date(`${classDate.toISOString().slice(0, 10)}T${startTime}:00+05:30`) <= new Date()) return res.status(400).json({ message: 'Choose a future class date and time.' });
+        const finalDate = recurrence === 'weekly' ? new Date(repeatUntil) : classDate;
+        if (recurrence === 'weekly' && (!repeatUntil || !Number.isFinite(finalDate.getTime()) || finalDate < classDate || (finalDate - classDate) / 86400000 > 365)) return res.status(400).json({ message: 'Choose a repeat-until date within one year.' });
 
         const userRole = req.user.role;
         const callerGymId = req.user.gymId;
@@ -241,12 +244,15 @@ const createClass = catchAsync(async (req, res, next) => {
                 effectiveGymId = reqGymId;
             }
 
+            const occurrenceDates = [new Date(classDate)];
+            if (recurrence === 'weekly') for (let next = new Date(classDate); (next.setDate(next.getDate() + 7), next <= finalDate);) occurrenceDates.push(new Date(next));
+            for (const occurrenceDate of occurrenceDates) {
             const gymClass = await GymClass.create({
                 name,
                 type,
                 description: description || '',
                 trainerName: trainerName || '',
-                scheduleDate: new Date(scheduleDate),
+                scheduleDate: occurrenceDate,
                 startTime,
                 endTime,
                 maxSeats: Number(maxSeats),
@@ -259,6 +265,7 @@ const createClass = catchAsync(async (req, res, next) => {
             });
 
             createdClasses.push(gymClass);
+            }
         }
 
         res.status(201).json(createdClasses.length === 1 ? createdClasses[0] : createdClasses);

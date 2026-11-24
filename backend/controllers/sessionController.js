@@ -193,7 +193,12 @@ const checkIn = catchAsync(async (req, res, next) => {
 
       const now = new Date();
       const checkInTime = now.toTimeString().split(' ')[0];
-      const isSessionPlan = (plan.sessions || 0) > 0 || (member.sessionsTotal || 0) > 0;
+      const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
+      const hasActiveTrial = isH4Member && Boolean(member.trialCouponCode) && member.trialEndsAt && new Date(member.trialEndsAt) > now;
+      const hasActivePaidMembership = member.status === 'Active' && member.expiryDate && new Date(member.expiryDate) > now;
+      if (isH4Member && member.trialCouponCode && !hasActiveTrial && !hasActivePaidMembership) return res.status(403).json({ success: false, message: 'Your trial access has expired. Please contact H4 to renew.' });
+      if (hasActiveTrial && (member.trialCheckInsUsed || 0) >= (member.trialCheckInsLimit || 0)) return res.status(402).json({ success: false, message: 'Your trial check-ins are used up.' });
+      const isSessionPlan = !hasActiveTrial && ((plan.sessions || 0) > 0 || (member.sessionsTotal || 0) > 0);
       if (isSessionPlan && (member.sessionsRemaining || 0) <= 0) {
         return res.status(400).json({
           success: false,
@@ -210,7 +215,6 @@ const checkIn = catchAsync(async (req, res, next) => {
       };
       let attendance;
       let checkedInMember = member;
-      const isH4Member = H4_GYM_IDS.includes(String(member.gymId));
       if (isH4Member) {
         // Attendance is limited to one check-in per local calendar day. The
         // conditional lastCheckInAt update also protects against simultaneous scans.
@@ -219,10 +223,12 @@ const checkIn = catchAsync(async (req, res, next) => {
             where: {
               id: member.id,
               ...(isSessionPlan ? { sessionsRemaining: { gte: 1 } } : {}),
+              ...(hasActiveTrial ? { trialEndsAt: { gt: now }, trialCheckInsUsed: { lt: member.trialCheckInsLimit } } : {}),
               OR: [{ lastCheckInAt: null }, { lastCheckInAt: { lt: today } }],
             },
             data: {
               ...(isSessionPlan ? { sessionsRemaining: { decrement: 1 } } : {}),
+              ...(hasActiveTrial ? { trialCheckInsUsed: { increment: 1 } } : {}),
               lastCheckInAt: now,
             },
           });
@@ -234,6 +240,7 @@ const checkIn = catchAsync(async (req, res, next) => {
             if (isSessionPlan && (current?.sessionsRemaining || 0) <= 0) {
               throw new AppError(`You have no sessions remaining out of ${current?.sessionsTotal || plan.sessions}. Please renew your plan.`, 402, 'NO_SESSIONS_REMAINING');
             }
+            if (hasActiveTrial && (current?.trialCheckInsUsed || 0) >= (current?.trialCheckInsLimit || 0)) throw new AppError('Your trial check-ins are used up.', 402, 'TRIAL_CHECKINS_USED');
             throw new AppError('Attendance already marked for today.', 409, 'ALREADY_CHECKED_IN');
           }
           const updatedMember = await tx.member.findUnique({ where: { id: member.id } });

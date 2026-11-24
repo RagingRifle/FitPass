@@ -5,7 +5,7 @@ import MemberFilterSelect from '../components/MemberFilterSelect';
 import ResetFiltersButton from '../components/ResetFiltersButton';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
-const TYPES = { NEW_MEMBER: 'New member', RENEWAL: 'Renewal', UPGRADE: 'Package upgrade', BALANCE_COLLECTION: 'Balance collection', LEGACY: 'Other payment' };
+const TYPES = { NEW_MEMBER: 'New member', REFERRAL: 'Referral', RENEWAL: 'Renewal', UPGRADE: 'Package upgrade', BALANCE_COLLECTION: 'Balance collection', LEGACY: 'Other payment' };
 const COLORS = ['#818cf8', '#34d399', '#fbbf24', '#fb7185', '#38bdf8', '#c084fc', '#2dd4bf'];
 const today = new Date();
 const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
@@ -27,14 +27,14 @@ const Sales = () => {
         API.get('/payments/sales-report', { params: { ...filters, timezoneOffset: new Date().getTimezoneOffset() } }).then(({ data }) => setRecords(Array.isArray(data) ? data : [])).catch(() => setRecords([])).finally(() => setLoading(false));
     }, [filters]);
 
-    const sales = records.filter(r => ['NEW_MEMBER', 'RENEWAL', 'UPGRADE'].includes(r.saleType));
+    const sales = records.filter(r => ['NEW_MEMBER', 'RENEWAL', 'UPGRADE', 'REFERRAL'].includes(r.saleType));
     const collections = records.filter(r => r.saleType === 'BALANCE_COLLECTION');
     const bySource = useMemo(() => group(sales, r => r.source || 'Direct / not specified'), [sales]);
     const byMethod = useMemo(() => group(records, r => r.method || 'Not specified'), [records]);
     const byStaff = useMemo(() => group(records, r => r.staffName || 'Unassigned'), [records]);
     const byMonth = useMemo(() => {
         const map = new Map();
-        records.forEach(r => { const date = new Date(r.date); const key = date.toLocaleString('en-IN', { month: 'short', year: '2-digit' }); const row = map.get(key) || { month: key, sales: 0, collections: 0, otherPayments: 0 }; if (r.saleType === 'BALANCE_COLLECTION') row.collections += Number(r.amount) || 0; else if (['NEW_MEMBER','RENEWAL','UPGRADE'].includes(r.saleType)) row.sales += Number(r.amount) || 0; else row.otherPayments += Number(r.amount) || 0; map.set(key, row); });
+        records.forEach(r => { const date = new Date(r.date); const key = date.toLocaleString('en-IN', { month: 'short', year: '2-digit' }); const row = map.get(key) || { month: key, sales: 0, collections: 0, otherPayments: 0 }; if (r.saleType === 'BALANCE_COLLECTION') row.collections += Number(r.amount) || 0; else if (['NEW_MEMBER','RENEWAL','UPGRADE','REFERRAL'].includes(r.saleType)) row.sales += Number(r.amount) || 0; else row.otherPayments += Number(r.amount) || 0; map.set(key, row); });
         return [...map.values()].reverse();
     }, [records]);
     const revenue = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);

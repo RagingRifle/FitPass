@@ -3,17 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import Modal from '../components/Modal';
 import ResetFiltersButton from '../components/ResetFiltersButton';
-import { Pencil, Trash2, UserPlus, X, Loader } from 'lucide-react';
+import { Pencil, Trash2, UserPlus, X, Loader, Eye, MessageSquarePlus } from 'lucide-react';
 
-const STATUSES = ['New', 'Contacted', 'Interested', 'Converted', 'Lost'];
+const STATUSES = ['Opened', 'Contacted', 'Interested', 'Converted', 'Closed'];
 const SOURCES = ['Offline', 'Online', 'Referral', 'Walk-in', 'Instagram', 'Facebook', 'Google', 'WhatsApp', 'Other'];
 
 const STATUS_COLORS = {
-    New: { bg: 'var(--primary-muted)', text: '#92700A' },
+    Opened: { bg: 'var(--primary-muted)', text: '#92700A' },
     Contacted: { bg: 'rgba(245,158,11,0.15)', text: '#92700A' },
     Interested: { bg: 'rgba(14,165,233,0.15)', text: '#0ea5e9' },
     Converted: { bg: 'rgba(16,185,129,0.15)', text: '#10b981' },
-    Lost: { bg: 'rgba(107,114,128,0.15)', text: '#6b7280' },
+    Closed: { bg: 'rgba(107,114,128,0.15)', text: '#6b7280' },
 };
 
 
@@ -32,6 +32,10 @@ const Leads = () => {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [staff, setStaff] = useState([]);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    const [commentsLead, setCommentsLead] = useState(null);
+    const [commentText, setCommentText] = useState('');
 
     const fetchAll = async () => {
         try {
@@ -117,10 +121,18 @@ const Leads = () => {
     const safeLeads = Array.isArray(leads) ? leads : [];
 
     const filtered = safeLeads.filter(l => {
-        const matchStatus = !filterStatus || l.status === filterStatus;
+        const status = ({ New: 'Opened', Lost: 'Closed' })[l.status] || l.status;
+        const created = String(l.createdAt || '').slice(0, 10);
+        const matchStatus = !filterStatus || status === filterStatus;
         const matchSearch = !search || l.name.toLowerCase().includes(search.toLowerCase()) || l.phone.includes(search);
-        return matchStatus && matchSearch;
+        return matchStatus && matchSearch && (!dateFrom || created >= dateFrom) && (!dateTo || created <= dateTo);
     });
+
+    const addComment = async () => {
+        if (!commentText.trim()) return;
+        try { await API.post(`/leads/${commentsLead._id}/comments`, { comment: commentText.trim() }); setCommentText(''); await fetchAll(); const latest = await API.get('/leads'); const rows = Array.isArray(latest.data) ? latest.data : latest.data?.data || []; setCommentsLead(rows.find(row => row._id === commentsLead._id) || commentsLead); }
+        catch (err) { alert(err.response?.data?.message || 'Could not add comment'); }
+    };
 
     const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -146,7 +158,7 @@ const Leads = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                     {STATUSES.map(s => {
                         const statusCounts = Array.isArray(summary.statusCounts) ? summary.statusCounts : [];
-                        const count = statusCounts.find(x => x._id === s)?.count || 0;
+                        const count = statusCounts.filter(x => (s === 'Opened' ? ['Opened', 'New'] : s === 'Closed' ? ['Closed', 'Lost'] : [s]).includes(x._id)).reduce((sum, x) => sum + x.count, 0);
                         const col = STATUS_COLORS[s] || { bg: 'var(--primary-muted)', text: 'var(--primary-color)' };
                         return (
                             <div key={s} className="card"
@@ -179,12 +191,14 @@ const Leads = () => {
             {/* Filters */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <input className="input" style={{ maxWidth: '280px', margin: 0 }} placeholder=" Search name / phone..." value={search} onChange={e => setSearch(e.target.value)} />
+                <label>From <input className="input" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></label>
+                <label>To <input className="input" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></label>
                 {filterStatus && (
                     <button onClick={() => setFilterStatus('')} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
                         Clear Filter <X size={14} />
                     </button>
                 )}
-                <ResetFiltersButton onClick={() => { setFilterStatus(''); setSearch(''); }} />
+                <ResetFiltersButton onClick={() => { setFilterStatus(''); setSearch(''); setDateFrom(''); setDateTo(''); }} />
             </div>
 
             {/* Leads Table */}
@@ -214,9 +228,10 @@ const Leads = () => {
                                 </td>
                             </tr>
                         ) : filtered.map(lead => {
-                            const col = STATUS_COLORS[lead.status] || { bg: 'var(--primary-muted)', text: 'var(--primary-color)' };
+                            const status = ({ New: 'Opened', Lost: 'Closed' })[lead.status] || lead.status;
+                            const col = STATUS_COLORS[status] || { bg: 'var(--primary-muted)', text: 'var(--primary-color)' };
                             const followUp = lead.followUpDate ? lead.followUpDate.slice(0, 10) : null;
-                            const isOverdue = followUp && followUp < todayStr && !['Converted', 'Lost'].includes(lead.status);
+                            const isOverdue = followUp && followUp < todayStr && !['Converted', 'Lost', 'Closed'].includes(status);
                             return (
                                 <tr key={lead._id}>
                                     <td style={{ fontWeight: '600' }}>{lead.name}</td>
@@ -233,7 +248,7 @@ const Leads = () => {
                                     </td>
                                     <td>
                                         <select
-                                            value={lead.status}
+                                            value={status}
                                             onChange={e => updateStatus(lead, e.target.value)}
                                             style={{ background: col.bg, color: col.text, border: 'none', borderRadius: '8px', padding: '0.25rem 0.5rem', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}
                                         >
@@ -252,6 +267,7 @@ const Leads = () => {
                                             <button onClick={() => openEdit(lead)} className="btn" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', border: '1px solid var(--border-color)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                                 <Pencil size={14} /> Edit
                                             </button>
+                                            <button title="Comment history" onClick={() => setCommentsLead(lead)} className="btn" style={{ padding: '0.35rem', border: '1px solid var(--border-color)', borderRadius: 6 }}><Eye size={16} /></button>
                                             <button onClick={() => deleteLead(lead._id)} className="btn" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', display: 'flex', alignItems: 'center' }}>
                                                 <Trash2 size={16} />
                                             </button>
@@ -315,6 +331,11 @@ const Leads = () => {
                         {submitting ? 'Saving...' : editLead ? ' Update Lead' : ' Add Lead'}
                     </button>
                 </form>
+            </Modal>
+            <Modal isOpen={!!commentsLead} onClose={() => setCommentsLead(null)} title={`Comment history · ${commentsLead?.name || 'Lead'}`}>
+                <div style={{ maxHeight: 360, overflowY: 'auto' }}>{(Array.isArray(commentsLead?.comments) ? commentsLead.comments : []).slice().reverse().map((item, index) => <div key={item.id || index} style={{ padding: 12, borderBottom: '1px solid var(--border-color)' }}><div>{item.comment}</div><small style={{ color: 'var(--text-secondary)' }}>{item.author || 'Staff'} · {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</small></div>)}{!commentsLead?.comments?.length && <p>No comments yet.</p>}</div>
+                <textarea className="input" rows={3} value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a follow-up comment..." />
+                <button className="btn btn-primary" onClick={addComment} disabled={!commentText.trim()}><MessageSquarePlus size={15} /> Add comment</button>
             </Modal>
         </div>
     );

@@ -44,7 +44,7 @@ const getStaff = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const createStaff = catchAsync(async (req, res, next) => {
     try {
-        const { name, email, password, role, trainerMemberLimit, trainerPermissions, branchId } = req.body;
+        const { name, email, password, role, trainerMemberLimit, trainerPermissions, shiftsPerDay, branchId } = req.body;
         const gymId = await resolveStaffGymId(req);
         if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
         if (!name || !email || !password || !role) {
@@ -74,6 +74,7 @@ const createStaff = catchAsync(async (req, res, next) => {
             role,
             ...(role === 'trainer' ? {
                 trainerMemberLimit: Math.max(1, Math.min(100, Number(trainerMemberLimit) || 10)),
+                shiftsPerDay: Number(shiftsPerDay) === 2 ? 2 : 1,
                 trainerPermissions: normalizeTrainerPermissions(trainerPermissions)
             } : {}),
             gymId,
@@ -110,7 +111,7 @@ const createStaff = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const updateStaff = catchAsync(async (req, res, next) => {
     try {
-        const { name, email, password, role, trainerMemberLimit, trainerPermissions, branchId } = req.body;
+        const { name, email, password, role, trainerMemberLimit, trainerPermissions, shiftsPerDay, branchId } = req.body;
         const gymId = await resolveStaffGymId(req);
         if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
         const query = { _id: req.params.id, gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
@@ -140,6 +141,10 @@ const updateStaff = catchAsync(async (req, res, next) => {
         }
 
         if (staff.role === 'trainer') {
+            if (shiftsPerDay !== undefined) {
+                if (![1, 2, '1', '2'].includes(shiftsPerDay)) return res.status(400).json({ message: 'Choose one or two shifts per day.' });
+                staff.shiftsPerDay = Number(shiftsPerDay);
+            }
             if (branchId && String(branchId) !== String(staff.branchId || '')) {
                 if (req.user.branchId && String(branchId) !== String(req.user.branchId)) return res.status(403).json({ message: 'You can only assign a trainer within your branch.' });
                 const branch = await prisma.branch.findFirst({ where: { id: branchId, gymId } });

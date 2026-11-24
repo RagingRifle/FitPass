@@ -49,20 +49,21 @@ const createPlan = catchAsync(async (req, res, next) => {
         }
 
         const isH4Plan = req.user.role === 'h4_admin' || isH4Superadmin || await isH4Gym(gymId);
-        const canCreateGlobalH4Plan = isH4Superadmin || (req.user.role === 'h4_admin' && !req.user.userBranchId);
+        const assignedBranchId = req.user.userBranchId || req.user.branchId || null;
+        const canCreateGlobalH4Plan = isH4Superadmin || (req.user.role === 'h4_admin' && !assignedBranchId);
         let branchId = null;
         let planGymId = gymId;
         if (isH4Plan) {
             if (canCreateGlobalH4Plan && allBranches) {
                 branchId = null;
             } else {
-                branchId = req.user.userBranchId || requestedBranchId || req.user.branchId || req.tenantFilter?.branchId || null;
+                branchId = assignedBranchId || req.tenantFilter?.branchId || requestedBranchId || null;
                 if (!branchId) return res.status(400).json({ success: false, message: 'Choose an H4 branch for this plan.' });
                 const branch = await Branch.findById(branchId).lean();
                 if (!branch || !(H4_GYM_IDS.includes(String(branch.gymId)) || await isH4Gym(branch.gymId))) {
                     return res.status(400).json({ success: false, message: 'Choose a valid H4 branch.' });
                 }
-                if (req.user.userBranchId && String(branchId) !== String(req.user.userBranchId)) {
+                if (assignedBranchId && String(branchId) !== String(assignedBranchId)) {
                     return res.status(403).json({ success: false, message: 'Branch admins can only create plans for their assigned branch.' });
                 }
                 planGymId = String(branch.gymId);

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getLeads, createLead, updateLead, deleteLead, getLeadSummary } = require('../controllers/leadController');
+const { getLeads, createLead, addLeadComment, updateLead, deleteLead, getLeadSummary } = require('../controllers/leadController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const tenantFilter = require('../middleware/tenantFilter');
 const validate = require('../middleware/validate');
@@ -31,5 +31,7 @@ router.route('/')
 router.route('/:id')
   .put(protect, authorize('admin', 'receptionist', 'h4_admin'), validate({ body: updateLeadSchema }), updateLead)
   .delete(protect, authorize('admin', 'receptionist', 'h4_admin'), deleteLead);
+
+router.post('/:id/comments', protect, authorize('admin', 'receptionist', 'h4_admin'), addLeadComment);
 
 module.exports = router;

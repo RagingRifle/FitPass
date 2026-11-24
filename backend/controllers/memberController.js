@@ -420,7 +420,8 @@ const createMember = catchAsync(async (req, res, next) => {
                 role: 'member',
                 memberId: member._id,
                 gymId: targetGymId,
-                branchId: targetBranchId
+                branchId: targetBranchId,
+                isVerified: true
             });
 
             // If an upfront payment was made during registration, record it in the payment ledger
@@ -432,7 +433,7 @@ const createMember = catchAsync(async (req, res, next) => {
                 date: startDate,
                 gymId: targetGymId,
                 branchId: targetBranchId,
-                saleType: 'NEW_MEMBER',
+                saleType: req.body.saleType === 'REFERRAL' ? 'REFERRAL' : 'NEW_MEMBER',
                 source: req.body.saleSource || leadRecord?.source || '',
                 staffId: salesStaff?._id || req.user.id || req.user._id || null,
                 staffName: salesStaff?.name || req.user.name || '',

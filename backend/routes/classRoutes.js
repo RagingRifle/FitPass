@@ -21,6 +21,8 @@ const createClassSchema = z.object({
     description: z.string().optional(),
     trainerName: z.string().optional(),
     scheduleDate: z.string().min(1, 'Schedule date is required'),
+    recurrence: z.enum(['none', 'weekly']).optional(),
+    repeatUntil: z.string().optional(),
     startTime: z.string().min(1, 'Start time is required'),
     endTime: z.string().min(1, 'End time is required'),
     maxSeats: z.coerce.number().min(1, 'Capacity must be at least 1'),

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { CalendarCheck, ChevronRight, Clock, SlidersHorizontal } from '@/components/ui/app-icons';
+import { CalendarCheck, ChevronRight, Clock, Filter } from '@/components/ui/app-icons';
 import { API_CLIENT } from '@/lib/api-client';
 import { theme } from '@/design-system/theme';
 import { ScreenContainer } from '@/components/layout';
@@ -32,7 +32,7 @@ export default function TrainerAttendance() {
   return <ScreenContainer scrollable={false} style={styles.screen}><ScrollView contentContainerStyle={styles.content}>
     <View style={styles.heading}><Text style={styles.eyebrow}>TIME & PRESENCE</Text><Text style={styles.title}>My attendance</Text><Text style={styles.subtitle}>Review your shifts and recorded hours.</Text></View>
     <View style={styles.summaryRow}><Summary label="Shifts" value={logs.length} /><Summary label="Hours" value={totalHours.toFixed(1)} /><Summary label="Period" value="Selected" /></View>
-    <View style={styles.filterCard}><View style={styles.filterTitle}><SlidersHorizontal size={15} color="#735B00" /><Text style={styles.filterLabel}>Filter dates</Text></View><View style={styles.fields}><View style={{ flex: 1 }}><Text style={styles.fieldLabel}>FROM</Text><TextInput value={from} onChangeText={setFrom} style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#989487" /></View><View style={{ flex: 1 }}><Text style={styles.fieldLabel}>TO</Text><TextInput value={to} onChangeText={setTo} style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#989487" /></View></View><TouchableOpacity style={styles.apply} onPress={() => setAppliedDates({ from, to })}><Text style={styles.applyText}>Apply dates</Text></TouchableOpacity></View>
+    <View style={styles.filterCard}><View style={styles.filterTitle}><Filter size={15} color="#735B00" /><Text style={styles.filterLabel}>Filter dates</Text></View><View style={styles.fields}><View style={{ flex: 1 }}><Text style={styles.fieldLabel}>FROM</Text><TextInput value={from} onChangeText={setFrom} style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#989487" /></View><View style={{ flex: 1 }}><Text style={styles.fieldLabel}>TO</Text><TextInput value={to} onChangeText={setTo} style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#989487" /></View></View><TouchableOpacity style={styles.apply} onPress={() => setAppliedDates({ from, to })}><Text style={styles.applyText}>Apply dates</Text></TouchableOpacity></View>
     <TouchableOpacity style={styles.leaveLink} onPress={() => router.push('/(h4-trainer)/leave' as any)}><View style={styles.leaveIcon}><CalendarCheck size={16} color="#735B00" /></View><Text style={styles.leaveText}>Leave requests</Text><ChevronRight size={17} color="#898579" /></TouchableOpacity>
     <Text style={styles.section}>Shift history</Text>
     {loading ? <ActivityIndicator color="#735B00" style={{ marginTop: 20 }} /> : error ? <Text style={styles.error}>{error}</Text> : logs.length ? logs.map(log => <View key={String(log.id || log._id)} style={styles.logCard}>

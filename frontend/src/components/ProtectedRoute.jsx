@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children, roles }) => {
         return <Navigate to={user.role === 'trainer' ? '/attendance' : '/classes'} replace />;
     }
 
-    const h4BranchPaths = ['/dashboard', '/members', '/leads', '/plans', '/classes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'];
+  const h4BranchPaths = ['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'];
     if (user.role === 'h4_admin' && user.branchId && !h4BranchPaths.includes(window.location.pathname)) {
         return <Navigate to="/dashboard" replace />;
     }

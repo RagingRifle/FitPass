@@ -56,6 +56,7 @@ model GymSettings {
   emailAlerts     Boolean  @default(true)
   smsAlerts       Boolean  @default(false)
   pushAlerts      Boolean  @default(true)
+  inactivityReminderDays Int @default(7)
   
   // Business Hours (Stored as JSON string)
   hours           String   @default("{\"weekday\":\"06:00 AM - 10:00 PM\",\"saturday\":\"07:00 AM - 08:00 PM\",\"sunday\":\"08:00 AM - 02:00 PM\"}")
@@ -87,6 +88,7 @@ model User {
   lockUntil           DateTime?
   branchId            String?
   trainerMemberLimit  Int       @default(10)
+  shiftsPerDay        Int       @default(1)
   trainerPermissions  Json      @default("{}")
   fitPassPayoutAccess Boolean   @default(false)
   createdAt           DateTime  @default(now())
@@ -154,6 +156,11 @@ model Member {
   currentSessionGymId   String?
   // Cooldown gate (authoritative): now < cooldownEndsAt → 429. Equals sessionEndsAt + 3h.
   cooldownEndsAt        DateTime?
+  trialEndsAt           DateTime?
+  trialCheckInsLimit    Int       @default(0)
+  trialCheckInsUsed     Int       @default(0)
+  trialWorkoutAccess    Boolean   @default(false)
+  trialCouponCode       String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -361,9 +368,10 @@ model Lead {
   phone             String
   email             String    @default("")
   source            String    @default("Walk-in")
-  status            String    @default("New")
+  status            String    @default("Opened")
   interestedPlan    String    @default("")
   notes             String    @default("")
+  comments          Json      @default("[]")
   followUpDate      DateTime?
   convertedMemberId String?
   gymId             String
@@ -680,6 +688,9 @@ model TrainerAttendance {
   checkOutTime DateTime?
   workingHours Float?
   status       String    @default("Present")
+  shiftNumber  Int       @default(1)
+  shiftCountExpected Int @default(1)
+  shiftType    String    @default("full")
   leaveReason  String?
   gymId        String
   branchId     String?
@@ -688,6 +699,40 @@ model TrainerAttendance {
 
   @@index([gymId, date(sort: Desc)])
   @@index([trainerId])
+}
+
+model H4TrialCoupon {
+  id              String   @id @default(uuid())
+  gymId           String
+  code            String   @unique
+  startsAt        DateTime
+  endsAt          DateTime
+  trialDays       Int
+  checkInLimit    Int
+  workoutAccess   Boolean  @default(false)
+  maxRedemptions  Int?
+  redemptionCount Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([gymId, isActive, startsAt, endsAt])
+}
+
+model H4TrialRedemption {
+  id            String   @id @default(uuid())
+  couponId      String
+  memberId      String
+  gymId         String
+  redeemedAt    DateTime @default(now())
+  expiresAt     DateTime
+  checkInLimit  Int
+  workoutAccess Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@unique([couponId, memberId])
+  @@index([memberId, expiresAt])
 }
 
 model TrainerLeaveRequest {
@@ -913,6 +958,7 @@ model StoreProduct {
   name        String
   description String   @default("")
   priceCoins  Int
+  priceINR    Float?
   imageUrl    String   @default("")
   division    String   @default("fitpass")
   isActive    Boolean  @default(true)

@@ -39,23 +39,22 @@ const checkInTrainer = catchAsync(async (req, res, next) => {
         if (!trainer || trainer.role !== 'trainer') {
             return res.status(404).json({ success: false, message: 'Trainer not found' });
         }
+        const trainerBranchId = trainer.branchId || req.user.branchId || null;
 
         // Prevent overlapping shifts while allowing multiple completed shifts in one day.
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
+        const shiftCountExpected = Number(trainer.shiftsPerDay) === 2 ? 2 : 1;
 
         const existingQuery = {
             trainerId,
-            gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
+            gymId: req.user.gymId, branchId: trainerBranchId,
             checkOutTime: null,
             status: { $ne: 'Leave' },
             date: { $gte: todayStart, $lte: todayEnd }
         };
-        if (req.user.branchId) {
-            existingQuery.branchId = req.user.branchId;
-        }
 
         const existing = await TrainerAttendance.findOne(existingQuery);
 
@@ -69,13 +68,20 @@ const checkInTrainer = catchAsync(async (req, res, next) => {
         const leaveRecord = await TrainerAttendance.findOne({ ...leaveQuery, status: 'Leave' });
         if (leaveRecord) return res.status(400).json({ success: false, message: 'A leave marker exists for today. Ask an admin to remove it before checking in.' });
 
+        const shiftsAlreadyRecorded = await TrainerAttendance.countDocuments({
+            trainerId, gymId: req.user.gymId, date: { $gte: todayStart, $lte: todayEnd }, status: { $ne: 'Leave' },
+            branchId: trainerBranchId
+        });
+        if (shiftsAlreadyRecorded >= shiftCountExpected) return res.status(400).json({ success: false, message: `You have already recorded all ${shiftCountExpected} shift${shiftCountExpected === 1 ? '' : 's'} for today.` });
+
         const attendance = await TrainerAttendance.create({
             trainerId,
             date: new Date(),
             checkInTime: new Date(),
-            gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
-            branchId: req.user.branchId || null,
-            status: 'Present'
+            gymId: req.user.gymId,
+            branchId: trainerBranchId,
+            status: 'Present', shiftNumber: shiftsAlreadyRecorded + 1, shiftCountExpected,
+            shiftType: shiftCountExpected === 2 ? 'half' : 'full'
         });
 
         res.status(201).json(attendance);
@@ -163,7 +169,7 @@ const getTrainerAttendance = catchAsync(async (req, res, next) => {
         // Batched Trainer lookup ONLY
         const trainerIds = [...new Set(logs.map(l => l.trainerId).filter(Boolean))];
         const trainers = trainerIds.length > 0
-            ? await User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean()
+            ? await User.find({ _id: { $in: trainerIds } }).select('id name email role phone shiftsPerDay').lean()
             : [];
 
         const trainerMap = new Map((trainers || []).map(t => [t._id ? t._id.toString() : t.id, t]));
@@ -172,7 +178,10 @@ const getTrainerAttendance = catchAsync(async (req, res, next) => {
             const t = log.trainerId ? trainerMap.get(log.trainerId.toString()) : null;
             return {
                 ...log,
-                trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
+                trainer: t ? { id: t.id || t._id, name: t.name, email: t.email, shiftsPerDay: t.shiftsPerDay || 1 } : null,
+                shiftCountExpected: log.shiftCountExpected || t?.shiftsPerDay || 1,
+                shiftNumber: log.shiftNumber || 1,
+                shiftType: log.shiftType || ((log.shiftCountExpected || t?.shiftsPerDay) === 2 ? 'half' : 'full')
             };
         });
 
@@ -327,10 +336,17 @@ const reviewTrainerLeaveRequest = catchAsync(async (req, res) => {
     res.json({ success: true, data: updated });
 });
 
+const getMyTrainerConfig = catchAsync(async (req, res) => {
+    if (req.user.role !== 'trainer') return res.status(403).json({ message: 'Trainer account required.' });
+    const trainer = await User.findById(req.user.id).select('shiftsPerDay').lean();
+    res.json({ shiftsPerDay: Number(trainer?.shiftsPerDay) === 2 ? 2 : 1 });
+});
+
 module.exports = {
     checkInTrainer,
     checkOutTrainer,
     getTrainerAttendance,
+    getMyTrainerConfig,
     markTrainerLeave,
     getTrainerLeaveRequests,
     createTrainerLeaveRequest,

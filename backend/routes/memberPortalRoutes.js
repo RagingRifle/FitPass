@@ -7,12 +7,14 @@ const { checkIn, getSessionStatus, getSessionHistory } = require('../controllers
 const { protect } = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const { checkInSchema } = require('./sessionRoutes');
+const { redeemCoupon } = require('../controllers/h4TrialController');
 
 router.use(protect);
 
 router.get('/dashboard', getDashboardData);
 router.get('/digital-pass', getMyDigitalPass);
 router.put('/profile', updateMyProfile);
+router.post('/trial-coupons/redeem', redeemCoupon);
 router.get('/plan', getMyPlan);
 router.get('/fitprime-plans', getFitPrimePlans);
 router.get('/h4-plans', getH4Plans);

@@ -3,7 +3,7 @@ import API from '../services/api';
 import { useToast } from '../components/ui/Toast';
 import { AuthContext } from '../context/AuthContext';
 
-const empty = { name: '', description: '', priceCoins: 12, imageUrl: '', division: 'fitpass', isActive: true, stock: '' };
+const empty = { name: '', description: '', priceCoins: 12, priceINR: '', imageUrl: '', division: 'fitpass', isActive: true, stock: '' };
 
 export default function Products() {
   const { activeDivision } = useContext(AuthContext);
@@ -58,10 +58,16 @@ export default function Products() {
   const save = async (event) => {
     event.preventDefault(); setBusy(true);
     try {
+      const payload = { ...form, division, priceCoins: division === 'h4' ? 0 : Number(form.priceCoins), priceINR: division === 'h4' ? Number(form.priceINR) : null };
       const body = new FormData();
-      Object.entries({ ...form, division, priceCoins: division === 'h4' ? 0 : form.priceCoins }).forEach(([key, value]) => body.append(key, value));
+      Object.entries(payload).forEach(([key, value]) => body.append(key, String(value ?? '')));
       if (image) body.append('image', image);
-      await API({ method: editing ? 'put' : 'post', url: editing ? `/store/products/${editing}` : '/store/products', data: body, headers: { 'Content-Type': 'multipart/form-data' } });
+      await API({
+        method: editing ? 'put' : 'post',
+        url: editing ? `/store/products/${editing}` : '/store/products',
+        data: image ? body : payload,
+        // Let the browser/Axios add the multipart boundary when uploading a file.
+      });
       setForm({ ...empty, division }); setImage(null); setEditing(null); await load(); toast.success('Product saved.');
     } catch (error) { toast.error(error.response?.data?.message || 'Could not save product.'); }
     finally { setBusy(false); }
@@ -79,7 +85,7 @@ export default function Products() {
       toast.success('Product permanently deleted.');
     } catch (error) { toast.error(error.response?.data?.message || 'Could not delete product.'); }
   };
-  const field = (key, label, type = 'text') => <label className="products-field">{label}<input required={key === 'name' || key === 'priceCoins'} type={type} min={type === 'number' ? 0 : undefined} value={form[key] ?? ''} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>;
+  const field = (key, label, type = 'text') => <label className="products-field">{label}<input required={key === 'name' || key === 'priceCoins' || (key === 'priceINR' && division === 'h4')} type={type} min={type === 'number' ? 0 : undefined} value={form[key] ?? ''} onChange={e => setForm({ ...form, [key]: e.target.value })} /></label>;
 
   return <main className="products-page">
     <header className="products-header">
@@ -99,6 +105,7 @@ export default function Products() {
       <form className="products-form" onSubmit={save}>
         {field('name', 'Product name')}
         {division !== 'h4' && field('priceCoins', 'Price (FitCoins)', 'number')}
+        {division === 'h4' && field('priceINR', 'Cost (INR)', 'number')}
         {field('stock', 'Stock (optional)', 'number')}
         <label className="products-field">{editing ? 'Replace product image' : 'Product image'}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setImage(e.target.files?.[0] || null)} />{editing && form.imageUrl && !image && <img src={form.imageUrl} alt={`${form.name} current product`} style={{ display: 'block', width: 120, height: 90, objectFit: 'cover', borderRadius: 8, marginTop: 8 }} />}{image && <small>{image.name}</small>}</label>
         <label className="products-field products-description">Description<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></label>
@@ -110,7 +117,7 @@ export default function Products() {
       <div className="products-section-heading"><div><h2>Shop products</h2><p>{products.length} product{products.length === 1 ? '' : 's'} in this catalog</p></div></div>
       {products.length === 0 && !loadError ? <div className="products-empty">No products yet. Add the first product above.</div> : <div className="products-grid">{products.map(p => <article key={p.id} className="products-card">
         {p.imageUrl ? <img src={p.imageUrl} alt={p.name} /> : <div className="products-image-placeholder">No product image</div>}
-        <div className="products-card-body"><div className="products-card-heading"><h3>{p.name}</h3><span className={p.isActive ? 'products-status is-available' : 'products-status'}>{p.isActive ? 'Available' : 'Hidden'}</span></div><div className="products-price">{division === 'h4' ? 'Available at H4' : `${p.priceCoins} FitCoins`}</div><p className="products-description-copy">{p.description || 'No description provided.'}</p>{p.stock != null && <small className="products-stock">{p.stock} in stock</small>}<div className="products-card-actions"><button type="button" className="products-secondary-button" onClick={() => edit(p)}>Edit</button><button type="button" className="products-secondary-button" onClick={() => remove(p.id)}>Hide</button><button type="button" className="products-secondary-button" onClick={() => permanentlyRemove(p)}>Delete</button></div></div>
+        <div className="products-card-body"><div className="products-card-heading"><h3>{p.name}</h3><span className={p.isActive ? 'products-status is-available' : 'products-status'}>{p.isActive ? 'Available' : 'Hidden'}</span></div><div className="products-price">{division === 'h4' ? `₹${Number(p.priceINR || 0).toLocaleString('en-IN')}` : `${p.priceCoins} FitCoins`}</div><p className="products-description-copy">{p.description || 'No description provided.'}</p>{p.stock != null && <small className="products-stock">{p.stock} in stock</small>}<div className="products-card-actions"><button type="button" className="products-secondary-button" onClick={() => edit(p)}>Edit</button><button type="button" className="products-secondary-button" onClick={() => remove(p.id)}>Hide</button><button type="button" className="products-secondary-button" onClick={() => permanentlyRemove(p)}>Delete</button></div></div>
       </article>)}</div>}
     </section>
   </main>;

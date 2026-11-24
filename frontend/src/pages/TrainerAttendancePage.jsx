@@ -41,6 +41,8 @@ const TrainerAttendancePage = () => {
     const [leaveRequests, setLeaveRequests] = useState([]);
     const [leaveEdits, setLeaveEdits] = useState({});
     const [busy, setBusy] = useState(false);
+    const [trainerShiftsPerDay, setTrainerShiftsPerDay] = useState(1);
+    const [shiftsRecordedToday, setShiftsRecordedToday] = useState(0);
 
     const dateRange = useMemo(() => {
         if (period === 'custom') return { from: fromDate, to: toDate };
@@ -71,6 +73,11 @@ const TrainerAttendancePage = () => {
         if (isTrainer && user?.id) setSelectedTrainerId(user.id);
     }, [isTrainer, user?.id]);
 
+    useEffect(() => {
+        if (!isTrainer) return;
+        API.get('/trainer-attendance/config').then(({ data }) => setTrainerShiftsPerDay(data?.shiftsPerDay === 2 ? 2 : 1)).catch(() => setTrainerShiftsPerDay(1));
+    }, [isTrainer]);
+
     const fetchLogs = useCallback(async () => {
         setLoading(true);
         try {
@@ -85,7 +92,9 @@ const TrainerAttendancePage = () => {
             const todayResponse = await getTrainerAttendance({ from: today, to: today, limit: 100, timezoneOffset: new Date().getTimezoneOffset(), ...(selectedTrainerId ? { trainerId: selectedTrainerId } : {}), ...(selectedBranchId ? { branchId: selectedBranchId } : {}) });
             const todayLogs = Array.isArray(todayResponse) ? todayResponse : (todayResponse?.data || []);
             const currentTrainer = selectedTrainerId || (isTrainer ? user?.id : '');
-            const active = currentTrainer ? todayLogs.find(log => String(log.trainerId) === String(currentTrainer) && log.status !== 'Leave' && !log.checkOutTime) : null;
+            const currentDayLogs = todayLogs.filter(log => String(log.trainerId) === String(currentTrainer) && log.status !== 'Leave');
+            const active = currentDayLogs.find(log => !log.checkOutTime) || null;
+            setShiftsRecordedToday(currentDayLogs.length);
             setIsCheckedIn(Boolean(active));
             setActiveLog(active || null);
         } catch (error) {
@@ -103,7 +112,7 @@ const TrainerAttendancePage = () => {
         const grouped = new Map();
         safeLogs.forEach(log => {
             const key = `${String(log.trainerId)}|${dayKey(log.date)}`;
-            if (!grouped.has(key)) grouped.set(key, { key, date: dayKey(log.date), trainerId: String(log.trainerId), trainer: log.trainer, shifts: [], hours: 0, isLeave: false, reason: '' });
+            if (!grouped.has(key)) grouped.set(key, { key, date: dayKey(log.date), trainerId: String(log.trainerId), trainer: log.trainer, shifts: [], hours: 0, expectedShifts: Number(log.shiftCountExpected || log.trainer?.shiftsPerDay) === 2 ? 2 : 1, isLeave: false, reason: '' });
             const day = grouped.get(key);
             if (log.status === 'Leave') {
                 day.isLeave = true;
@@ -125,6 +134,10 @@ const TrainerAttendancePage = () => {
     const leaveDays = groupedDays.filter(day => day.isLeave).length;
     const totalHours = groupedDays.reduce((sum, day) => sum + day.hours, 0);
     const totalSessions = groupedDays.reduce((sum, day) => sum + day.shifts.length, 0);
+    const creditedDays = groupedDays.reduce((sum, day) => sum + (day.isLeave ? 0 : Math.min(1, day.shifts.length / day.expectedShifts)), 0);
+    const halfDays = groupedDays.filter(day => !day.isLeave && day.expectedShifts === 2 && day.shifts.length === 1).length;
+    const selectedTrainer = trainers.find(trainer => String(trainer.id || trainer._id) === String(selectedTrainerId));
+    const shiftCountExpected = isTrainer ? trainerShiftsPerDay : (Number(selectedTrainer?.shiftsPerDay) === 2 ? 2 : 1);
     const chartRows = [...groupedDays].reverse().map(day => ({ date: day.date.slice(5), hours: Number(day.hours.toFixed(2)), shifts: day.shifts.length, leave: day.isLeave ? 1 : 0 }));
 
     const calendarDays = useMemo(() => {
@@ -251,13 +264,14 @@ const TrainerAttendancePage = () => {
 
         {loading ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40vh' }}><Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} /></div> : <>
             {(isTrainer || (isAdmin && selectedTrainerId)) && <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem' }}><Clock size={28} color={isCheckedIn ? '#10b981' : 'var(--text-secondary)'} /><div><strong>{isCheckedIn ? 'Shift in progress' : 'No active shift'}</strong><div style={{ color: 'var(--text-secondary)', fontSize: '.85rem' }}>{isCheckedIn ? `Started ${formatTime(activeLog?.checkInTime)}` : 'You can start another shift after each checkout.'}</div></div></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.85rem' }}><Clock size={28} color={isCheckedIn ? '#10b981' : 'var(--text-secondary)'} /><div><strong>{isCheckedIn ? 'Shift in progress' : 'No active shift'}</strong><div style={{ color: 'var(--text-secondary)', fontSize: '.85rem' }}>{isCheckedIn ? `Started ${formatTime(activeLog?.checkInTime)}` : `Today: ${shiftsRecordedToday}/${shiftCountExpected} shifts recorded · ${shiftCountExpected === 2 ? 'each shift counts as half a day' : 'one full shift'}`}</div></div></div>
                 {isCheckedIn ? <button className="btn btn-danger" disabled={busy} onClick={handleCheckOut}><Square size={16} /> Check out shift</button> : <button className="btn btn-primary" disabled={busy} onClick={handleCheckIn}><Play size={16} /> Check in shift</button>}
             </div>}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1.25rem' }}>
                 <div className="card"><div style={{ color: 'var(--text-secondary)', fontSize: '.78rem' }}>Cumulative time</div><strong style={{ fontSize: '1.7rem' }}>{totalHours.toFixed(1)} hrs</strong></div>
                 <div className="card"><div style={{ color: 'var(--text-secondary)', fontSize: '.78rem' }}>Days present</div><strong style={{ fontSize: '1.7rem' }}>{presentDays}</strong></div>
+                <div className="card"><div style={{ color: 'var(--text-secondary)', fontSize: '.78rem' }}>Day credit</div><strong style={{ fontSize: '1.7rem' }}>{creditedDays.toFixed(1)}</strong><small style={{ color: 'var(--text-secondary)' }}>{halfDays} half days</small></div>
                 <div className="card"><div style={{ color: 'var(--text-secondary)', fontSize: '.78rem' }}>Shifts recorded</div><strong style={{ fontSize: '1.7rem' }}>{totalSessions}</strong></div>
                 <div className="card"><div style={{ color: 'var(--text-secondary)', fontSize: '.78rem' }}>Leave days</div><strong style={{ fontSize: '1.7rem' }}>{leaveDays}</strong></div>
             </div>
@@ -278,7 +292,7 @@ const TrainerAttendancePage = () => {
             <div className="card">
                 <h3 style={{ marginTop: 0 }}>Daily attendance summary</h3>
                 <div className="table-container"><table><thead><tr><th>Date</th>{isAdmin && <th>Trainer</th>}<th>Status</th><th>Shifts</th><th>Total time</th><th>Shift details</th></tr></thead><tbody>
-                    {visibleDays.map(day => <tr key={day.key}><td>{new Date(`${day.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</td>{isAdmin && <td>{day.trainer?.name || trainers.find(trainer => String(trainer.id || trainer._id) === day.trainerId)?.name || 'Trainer'}</td>}<td>{day.isLeave ? <span style={{ color: '#dc2626', fontWeight: 700 }}>Leave{day.reason ? ` · ${day.reason}` : ''}</span> : <span style={{ color: '#16a34a', fontWeight: 700 }}>Present</span>}</td><td>{day.shifts.length}</td><td>{day.isLeave ? '—' : `${day.hours.toFixed(2)} hrs`}</td><td>{day.shifts.length ? <details><summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>View {day.shifts.length} shift(s) <ChevronDown size={14} /></summary><div style={{ display: 'grid', gap: 5, marginTop: 8 }}>{day.shifts.map((shift, index) => <div key={shift.id || shift._id || index} style={{ color: 'var(--text-secondary)', fontSize: '.85rem' }}>Shift {index + 1}: {formatTime(shift.checkInTime)} – {formatTime(shift.checkOutTime)} · {shift.workingHours == null ? 'In progress' : `${Number(shift.workingHours).toFixed(2)} hrs`}</div>)}</div></details> : '—'}</td></tr>)}
+                    {visibleDays.map(day => <tr key={day.key}><td>{new Date(`${day.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</td>{isAdmin && <td>{day.trainer?.name || trainers.find(trainer => String(trainer.id || trainer._id) === day.trainerId)?.name || 'Trainer'}</td>}<td>{day.isLeave ? <span style={{ color: '#dc2626', fontWeight: 700 }}>Leave{day.reason ? ` · ${day.reason}` : ''}</span> : <span style={{ color: '#16a34a', fontWeight: 700 }}>{day.expectedShifts === 2 && day.shifts.length < 2 ? 'Half day' : 'Present'}</span>}</td><td>{day.shifts.length}/{day.expectedShifts}</td><td>{day.isLeave ? '—' : `${day.hours.toFixed(2)} hrs`}</td><td>{day.shifts.length ? <details><summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>View {day.shifts.length} shift(s) <ChevronDown size={14} /></summary><div style={{ display: 'grid', gap: 5, marginTop: 8 }}>{day.shifts.map((shift, index) => <div key={shift.id || shift._id || index} style={{ color: 'var(--text-secondary)', fontSize: '.85rem' }}>Shift {shift.shiftNumber || index + 1} ({shift.shiftType === 'half' ? 'half day' : 'full day'}): {formatTime(shift.checkInTime)} – {formatTime(shift.checkOutTime)} · {shift.workingHours == null ? 'In progress' : `${Number(shift.workingHours).toFixed(2)} hrs`}</div>)}</div></details> : '—'}</td></tr>)}
                     {!visibleDays.length && <tr><td colSpan={isAdmin ? 6 : 5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>No attendance or leave records match these filters.</td></tr>}
                 </tbody></table></div>
             </div>

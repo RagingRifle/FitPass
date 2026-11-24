@@ -1,0 +1,11 @@
+.member-trial-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, .8fr);
+}
+
+@media (max-width: 700px) {
+  .member-trial-card {
+    grid-template-columns: 1fr;
+    padding: 18px !important;
+  }
+}
