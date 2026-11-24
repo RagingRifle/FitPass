@@ -9,20 +9,30 @@ const PtSession = require('../models/PtSession');
 const Payment = require('../models/Payment');
 
 const PAYROLL_EMPLOYEE_ROLES = ['trainer', 'staff', 'receptionist'];
+const DEFAULT_SALES_POINT_RULES = Object.freeze({ NEW_MEMBER: 5, RENEWAL: 3, UPGRADE: 10, BALANCE_COLLECTION: 0, LEGACY: 0 });
 
 // @desc    Upsert Trainer Salary Configuration
 // @route   POST /api/payroll/salary-structure
 // @access  Private (Admin)
 const upsertSalaryStructure = catchAsync(async (req, res, next) => {
     try {
-        const { trainerId, fixedSalary, commissionPt, salesAmountPerPoint = 1000, incentivePerPoint = 0 } = req.body;
+        const {
+            trainerId, fixedSalary, commissionPt, salesAmountPerPoint = 1000,
+            incentivePerPoint = 0, salesPointRules = DEFAULT_SALES_POINT_RULES,
+            incentiveEnabled = true, incentiveMultiplier
+        } = req.body;
 
         if (!trainerId) {
             return res.status(400).json({ success: false, message: 'Trainer ID is required' });
         }
-        const numericRates = [fixedSalary, commissionPt, salesAmountPerPoint, incentivePerPoint].map(Number);
+        const multiplier = incentiveMultiplier === undefined ? Number(incentivePerPoint) : Number(incentiveMultiplier);
+        const numericRates = [fixedSalary, commissionPt, salesAmountPerPoint, incentivePerPoint, multiplier].map(Number);
         if (numericRates.some(rate => !Number.isFinite(rate) || rate < 0) || Number(salesAmountPerPoint) <= 0) {
             return res.status(400).json({ success: false, message: 'Enter valid non-negative salary rates and a sales amount per point greater than zero.' });
+        }
+        if (!salesPointRules || typeof salesPointRules !== 'object' || Array.isArray(salesPointRules)
+            || Object.values(salesPointRules).some(points => !Number.isInteger(Number(points)) || Number(points) < 0)) {
+            return res.status(400).json({ success: false, message: 'Enter non-negative points for each sale type.' });
         }
 
         // Validate trainer exists
@@ -45,7 +55,10 @@ const upsertSalaryStructure = catchAsync(async (req, res, next) => {
             salary.fixedSalary = Number(fixedSalary);
             salary.commissionPt = Number(commissionPt);
             salary.salesAmountPerPoint = Number(salesAmountPerPoint);
-            salary.incentivePerPoint = Number(incentivePerPoint);
+            salary.incentivePerPoint = multiplier;
+            salary.salesPointRules = salesPointRules;
+            salary.incentiveEnabled = Boolean(incentiveEnabled);
+            salary.incentiveMultiplier = multiplier;
             const updated = await salary.save();
             return res.json(updated);
         } else {
@@ -54,7 +67,10 @@ const upsertSalaryStructure = catchAsync(async (req, res, next) => {
                 fixedSalary: Number(fixedSalary),
                 commissionPt: Number(commissionPt),
                 salesAmountPerPoint: Number(salesAmountPerPoint),
-                incentivePerPoint: Number(incentivePerPoint),
+                incentivePerPoint: multiplier,
+                salesPointRules,
+                incentiveEnabled: Boolean(incentiveEnabled),
+                incentiveMultiplier: multiplier,
                 gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
                 branchId: req.user.branchId || null
             });
@@ -87,11 +103,86 @@ const getSalaryStructure = catchAsync(async (req, res, next) => {
                 commissionPt: 0,
                 salesAmountPerPoint: 1000,
                 incentivePerPoint: 0,
+                salesPointRules: DEFAULT_SALES_POINT_RULES,
+                incentiveEnabled: true,
+                incentiveMultiplier: 0,
                 gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId })
             });
         }
 
         res.json(salary);
+    } catch (error) { next(error); }
+});
+
+// Trainer-only performance summary. The identity and tenant scope always come
+// from the authenticated account, never from a client supplied staffId.
+const getTrainerPerformance = catchAsync(async (req, res, next) => {
+    try {
+        if (req.user.role !== 'trainer') return res.status(403).json({ success: false, message: 'Trainer access is required.' });
+        const now = new Date();
+        const period = ['month', 'year', 'all', 'custom'].includes(req.query.period) ? req.query.period : 'month';
+        const dateFrom = (value) => {
+            const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
+            return new Date(year, month - 1, day, 0, 0, 0, 0);
+        };
+        let from;
+        let to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        if (period === 'year') from = new Date(now.getFullYear(), 0, 1);
+        else if (period === 'all') from = new Date(2000, 0, 1);
+        else if (period === 'custom' && req.query.from) from = dateFrom(req.query.from);
+        else from = new Date(now.getFullYear(), now.getMonth(), 1);
+        if (period === 'custom' && req.query.to) to = new Date(dateFrom(req.query.to).getTime() + 86_399_999);
+        if (period === 'custom' && req.query.from && req.query.to && from > to) {
+            return res.status(400).json({ success: false, message: 'The start date must be before the end date.' });
+        }
+
+        const [salary, sales] = await Promise.all([
+            TrainerSalary.findOne({ trainerId: req.user.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) }).lean(),
+            Payment.find({ gymId: req.user.gymId, staffId: req.user.id, date: { $gte: from, $lte: to }, ...(req.user.branchId && { branchId: req.user.branchId }) }).sort({ date: 1 }).limit(10000).lean()
+        ]);
+        const rules = salary?.salesPointRules && typeof salary.salesPointRules === 'object' ? salary.salesPointRules : DEFAULT_SALES_POINT_RULES;
+        const breakdown = {};
+        const timeline = {};
+        let totalAmount = 0;
+        let totalPoints = 0;
+        const memberIds = new Set();
+        const useMonthlyTimeline = to.getTime() - from.getTime() > 62 * 86_400_000;
+        for (const payment of sales) {
+            const saleType = Object.prototype.hasOwnProperty.call(rules, payment.saleType) ? payment.saleType : 'LEGACY';
+            const points = Math.max(0, Number(rules[saleType] || 0));
+            const amount = Number(payment.amount || 0);
+            const date = new Date(payment.date);
+            const key = useMonthlyTimeline
+                ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+                : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const typeRow = breakdown[saleType] || (breakdown[saleType] = { saleType, transactions: 0, amount: 0, points: 0 });
+            typeRow.transactions += 1; typeRow.amount += amount; typeRow.points += points;
+            const timeRow = timeline[key] || (timeline[key] = { key, transactions: 0, amount: 0, points: 0 });
+            timeRow.transactions += 1; timeRow.amount += amount; timeRow.points += points;
+            totalAmount += amount; totalPoints += points;
+            if (payment.memberId) memberIds.add(String(payment.memberId));
+        }
+        const multiplier = Math.max(0, Number(salary?.incentiveMultiplier) || Number(salary?.incentivePerPoint) || 0);
+        const incentiveEnabled = salary?.incentiveEnabled !== false;
+        res.json({
+            success: true,
+            period,
+            from,
+            to,
+            summary: {
+                transactions: sales.length,
+                salesAmount: Math.round(totalAmount * 100) / 100,
+                points: totalPoints,
+                membersConverted: memberIds.size,
+                incentiveEnabled,
+                incentiveMultiplier: multiplier,
+                projectedIncentive: incentiveEnabled ? Math.round(totalPoints * multiplier * 100) / 100 : 0,
+                fixedSalary: Number(salary?.fixedSalary || 0)
+            },
+            rules,
+            breakdown: Object.values(breakdown),
+            timeline: Object.values(timeline).sort((a, b) => a.key.localeCompare(b.key))
+        });
     } catch (error) { next(error); }
 });
 
@@ -120,7 +211,7 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
         const fixedSalary = salaryConfig ? salaryConfig.fixedSalary : 0;
         const commissionRate = salaryConfig ? salaryConfig.commissionPt : 0;
         const salesAmountPerPoint = Math.max(Number(salaryConfig?.salesAmountPerPoint) || 1000, 1);
-        const incentivePerPoint = Math.max(Number(salaryConfig?.incentivePerPoint) || 0, 0);
+        const incentiveMultiplier = Math.max(Number(salaryConfig?.incentiveMultiplier) || Number(salaryConfig?.incentivePerPoint) || 0, 0);
 
         // Calculate commissions: Sum amount from PtCommission logged in this month & year
         const startDate = new Date(year, month - 1, 1);
@@ -134,9 +225,16 @@ const generateMonthlyPayroll = catchAsync(async (req, res, next) => {
         };
         if (req.user.branchId) salesQuery.branchId = req.user.branchId;
         const salesPayments = await Payment.find(salesQuery).lean();
+        const configuredRules = salaryConfig?.salesPointRules && typeof salaryConfig.salesPointRules === 'object'
+            ? salaryConfig.salesPointRules
+            : null;
         const salesTotal = salesPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-        const salesPoints = Math.floor(salesTotal / salesAmountPerPoint);
-        const salesIncentive = Math.round(salesPoints * incentivePerPoint * 100) / 100;
+        const salesPoints = configuredRules
+            ? salesPayments.reduce((sum, payment) => sum + Math.max(0, Number(configuredRules[payment.saleType] ?? 0)), 0)
+            : Math.floor(salesTotal / salesAmountPerPoint);
+        const salesIncentive = salaryConfig?.incentiveEnabled === false
+            ? 0
+            : Math.round(salesPoints * incentiveMultiplier * 100) / 100;
 
         // Fetch commissions matching dates
         const commQuery = {
@@ -357,6 +455,7 @@ const addCommission = catchAsync(async (req, res, next) => {
 module.exports = {
     upsertSalaryStructure,
     getSalaryStructure,
+    getTrainerPerformance,
     generateMonthlyPayroll,
     getPayrolls,
     updatePayrollStatus,

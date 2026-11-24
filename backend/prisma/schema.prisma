@@ -719,6 +719,9 @@ model TrainerSalary {
   commissionPt Float     @default(0) // Rate per PT session
   salesAmountPerPoint Float @default(1000)
   incentivePerPoint Float @default(0)
+  salesPointRules Json?
+  incentiveEnabled Boolean @default(true)
+  incentiveMultiplier Float @default(0)
   gymId        String
   branchId     String?
   createdAt    DateTime  @default(now())

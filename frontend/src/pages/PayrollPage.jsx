@@ -12,6 +12,9 @@ import { getPayrolls,
 import Modal from '../components/Modal';
 import { Loader,  Banknote, Users, DollarSign, PlusCircle, CheckCircle, AlertCircle, Edit, Sparkles, Printer, Download } from 'lucide-react';
 
+const DEFAULT_SALES_POINT_RULES = { NEW_MEMBER: 5, RENEWAL: 3, UPGRADE: 10, BALANCE_COLLECTION: 0, LEGACY: 0 };
+const SALE_POINT_LABELS = { NEW_MEMBER: 'New member', RENEWAL: 'Renewal', UPGRADE: 'Package upgrade', BALANCE_COLLECTION: 'Balance collection', LEGACY: 'Other payment' };
+
 const PayrollPage = () => {
     const { user } = useContext(AuthContext);
     const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'h4_admin';
@@ -33,7 +36,7 @@ const PayrollPage = () => {
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
     const [isCommissionModalOpen, setIsCommissionModalOpen] = useState(false);
     const [configTrainer, setConfigTrainer] = useState(null);
-    const [salaryConfig, setSalaryConfig] = useState({ fixedSalary: '', commissionPt: '', salesAmountPerPoint: '1000', incentivePerPoint: '0' });
+    const [salaryConfig, setSalaryConfig] = useState({ fixedSalary: '', commissionPt: '', salesAmountPerPoint: '1000', incentivePerPoint: '0', incentiveMultiplier: '0', incentiveEnabled: true, salesPointRules: DEFAULT_SALES_POINT_RULES });
     
     const [generateData, setGenerateData] = useState({ trainerId: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), incentives: '0' });
     const [commissionData, setCommissionData] = useState({ trainerId: '', amount: '', date: new Date().toISOString().split('T')[0] });
@@ -89,7 +92,10 @@ const PayrollPage = () => {
                 fixedSalary: structure.fixedSalary ?? 0,
                 commissionPt: structure.commissionPt ?? 0,
                 salesAmountPerPoint: structure.salesAmountPerPoint ?? 1000,
-                incentivePerPoint: structure.incentivePerPoint ?? 0
+                incentivePerPoint: structure.incentivePerPoint ?? 0,
+                incentiveMultiplier: structure.incentiveMultiplier ?? structure.incentivePerPoint ?? 0,
+                incentiveEnabled: structure.incentiveEnabled !== false,
+                salesPointRules: { ...DEFAULT_SALES_POINT_RULES, ...(structure.salesPointRules || {}) }
             });
             setIsConfigModalOpen(true);
         } catch {
@@ -105,7 +111,10 @@ const PayrollPage = () => {
                 fixedSalary: Number(salaryConfig.fixedSalary),
                 commissionPt: Number(salaryConfig.commissionPt),
                 salesAmountPerPoint: Number(salaryConfig.salesAmountPerPoint),
-                incentivePerPoint: Number(salaryConfig.incentivePerPoint)
+                incentivePerPoint: Number(salaryConfig.incentiveMultiplier),
+                incentiveMultiplier: Number(salaryConfig.incentiveMultiplier),
+                incentiveEnabled: salaryConfig.incentiveEnabled,
+                salesPointRules: Object.fromEntries(Object.entries(salaryConfig.salesPointRules).map(([key, value]) => [key, Number(value)]))
             });
             alert('Salary structure updated successfully');
             setIsConfigModalOpen(false);
@@ -333,7 +342,7 @@ const PayrollPage = () => {
             {activeTab === 'salary' && isAdmin && (
                 <div className="card">
                     <h3 style={{ marginBottom: '0.4rem', fontSize: '1rem', fontWeight: '700' }}> Salary and sales incentive settings</h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem', marginBottom: '1.25rem' }}>Set monthly base pay, PT session pay, sales-to-point conversion, and the incentive paid per point.</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '.85rem', marginBottom: '1.25rem' }}>Set monthly base pay, PT session pay, points for each sale type, and the optional per-point incentive.</p>
                     <div className="table-container">
                         <table>
                             <thead>
@@ -396,17 +405,22 @@ const PayrollPage = () => {
                             placeholder="e.g. 200"
                         />
                     </div>
+                    <h4 style={{ margin: '1rem 0 .5rem' }}>Sales points by conversion</h4>
                     <div className="form-grid">
-                        <div className="input-group">
-                            <label>Sales amount per point (₹)</label>
-                            <input className="input" type="number" min="1" step="1" value={salaryConfig.salesAmountPerPoint} onChange={(e) => setSalaryConfig({ ...salaryConfig, salesAmountPerPoint: e.target.value })} required />
-                        </div>
-                        <div className="input-group">
-                            <label>Incentive per point (₹)</label>
-                            <input className="input" type="number" min="0" step="0.01" value={salaryConfig.incentivePerPoint} onChange={(e) => setSalaryConfig({ ...salaryConfig, incentivePerPoint: e.target.value })} required />
-                        </div>
+                        {Object.entries(SALE_POINT_LABELS).map(([key, label]) => <div className="input-group" key={key}>
+                            <label>{label} (points)</label>
+                            <input className="input" type="number" min="0" step="1" value={salaryConfig.salesPointRules?.[key] ?? 0} onChange={(e) => setSalaryConfig({ ...salaryConfig, salesPointRules: { ...salaryConfig.salesPointRules, [key]: e.target.value } })} required />
+                        </div>)}
                     </div>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '.8rem' }}>Example: ₹1,000 in sales earns one point; each point adds the configured incentive.</p>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontWeight: 700 }}>
+                        <input type="checkbox" checked={salaryConfig.incentiveEnabled} onChange={(e) => setSalaryConfig({ ...salaryConfig, incentiveEnabled: e.target.checked })} />
+                        Pay a sales incentive for earned points
+                    </label>
+                    <div className="input-group" style={{ marginTop: 12, opacity: salaryConfig.incentiveEnabled ? 1 : .55 }}>
+                        <label>Incentive per point (₹)</label>
+                        <input className="input" type="number" min="0" step="0.01" value={salaryConfig.incentiveMultiplier} onChange={(e) => setSalaryConfig({ ...salaryConfig, incentiveMultiplier: e.target.value })} disabled={!salaryConfig.incentiveEnabled} required />
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '.8rem' }}>Example: 5 points for a new member, 10 for an upgrade. Incentive = total points × incentive per point.</p>
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
                         Save Salary Settings
                     </button>

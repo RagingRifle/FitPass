@@ -5,6 +5,7 @@ const {
     getSalaryStructure,
     generateMonthlyPayroll,
     getPayrolls,
+    getTrainerPerformance,
     updatePayrollStatus,
     addCommission
 } = require('../controllers/payrollController');
@@ -15,6 +16,7 @@ router.route('/')
     .get(protect, authorize('admin', 'trainer', 'h4_admin'), tenantFilter, getPayrolls);
 
 router.post('/generate', protect, authorize('admin', 'h4_admin'), generateMonthlyPayroll);
+router.get('/performance', protect, authorize('trainer'), getTrainerPerformance);
 router.post('/salary-structure', protect, authorize('admin', 'h4_admin'), upsertSalaryStructure);
 router.get('/salary-structure/:trainerId', protect, authorize('admin', 'trainer', 'h4_admin'), getSalaryStructure);
 router.post('/commission', protect, authorize('admin', 'h4_admin'), addCommission);

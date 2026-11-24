@@ -75,11 +75,27 @@ const getFitPassPayoutDashboard = catchAsync(async (req, res) => {
         { branchName: { contains: search.trim(), mode: 'insensitive' } },
     ];
 
-    const [records, branches, settings] = await Promise.all([
+    const [records, branches, settings, activityCounts] = await Promise.all([
         prisma.fitPassBranchPayout.findMany({ where, orderBy: [{ periodStart: 'desc' }, { gymName: 'asc' }, { branchName: 'asc' }], take: 1000 }),
         getEligibleBranches(),
-        getSettings()
+        getSettings(),
+        prisma.fitPassAuditLog.groupBy({
+            by: ['branchIdVisited'],
+            where: {
+                accessStatus: 'Success',
+                ...(fromDate || toDate ? { checkInTimestamp: { ...(fromDate ? { gte: fromDate } : {}), ...(toDate ? { lte: toDate } : {}) } } : {}),
+            },
+            _count: { _all: true },
+        })
     ]);
+    const branchById = new Map(branches.map(branch => [branch.id, branch]));
+    const q = search?.trim().toLowerCase();
+    const activity = activityCounts.flatMap(item => {
+        const branch = branchById.get(item.branchIdVisited);
+        if (!branch || (gymId && branch.gymId !== gymId) || (branchId && branch.id !== branchId) || (q && !`${branch.gymName} ${branch.name}`.toLowerCase().includes(q))) return [];
+        const checkInCount = item._count._all;
+        return [{ ...branch, checkInCount, estimatedRevenue: roundMoney(checkInCount * Number(settings.defaultRatePerCheckIn || DEFAULT_RATE)) }];
+    }).sort((a, b) => b.checkInCount - a.checkInCount);
     const summary = records.reduce((acc, row) => {
         acc.checkIns += row.checkInCount;
         acc.grossRevenue += row.grossRevenue;
@@ -89,7 +105,7 @@ const getFitPassPayoutDashboard = catchAsync(async (req, res) => {
         return acc;
     }, { checkIns: 0, grossRevenue: 0, paidAmount: 0, retainedAmount: 0, netProfit: 0, records: records.length });
     Object.keys(summary).forEach(key => { if (key !== 'records' && key !== 'checkIns') summary[key] = roundMoney(summary[key]); });
-    res.json({ records, branches, settings, summary });
+    res.json({ records, branches, settings, summary, activity });
 });
 
 const updateFitPassPayoutSettings = catchAsync(async (req, res) => {

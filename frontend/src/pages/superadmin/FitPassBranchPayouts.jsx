@@ -18,15 +18,6 @@ const money = value => `₹${Number(value || 0).toLocaleString('en-IN', { maximu
 const number = value => Number(value || 0).toLocaleString('en-IN');
 const periodLabel = record => `${new Date(record.periodStart).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })} – ${new Date(record.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })}`;
 
-const makeDemoRows = () => {
-  const now = new Date();
-  return [
-    { id: 'demo-1', gymName: 'Northstar Fitness · Demo', branchName: 'Pune Central · Demo', periodStart: new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1)).toISOString(), periodEnd: new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0)).toISOString(), checkInCount: 146, ratePerCheckIn: 50, manualRevenue: null, grossRevenue: 7300, paidAmount: 5200, operatingCosts: 250, retainedAmount: 2100, netProfit: 1850, status: 'Partial', isDemo: true },
-    { id: 'demo-2', gymName: 'Northstar Fitness · Demo', branchName: 'Aundh · Demo', periodStart: new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1)).toISOString(), periodEnd: new Date(Date.UTC(now.getFullYear(), now.getMonth(), 0)).toISOString(), checkInCount: 98, ratePerCheckIn: 45, manualRevenue: 4800, grossRevenue: 4800, paidAmount: 4800, operatingCosts: 175, retainedAmount: 0, netProfit: -175, status: 'Paid', isDemo: true },
-    { id: 'demo-3', gymName: 'Urban Motion · Demo', branchName: 'Bengaluru East · Demo', periodStart: new Date(Date.UTC(now.getFullYear(), now.getMonth() - 2, 1)).toISOString(), periodEnd: new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 0)).toISOString(), checkInCount: 121, ratePerCheckIn: 50, manualRevenue: null, grossRevenue: 6050, paidAmount: 0, operatingCosts: 0, retainedAmount: 6050, netProfit: 6050, status: 'Unpaid', isDemo: true },
-  ];
-};
-
 const initialForm = (rate = 50, branchId = '') => ({ branchId, startDate: `${today().slice(0, 7)}-01`, endDate: today(), ratePerCheckIn: String(rate), manualRevenue: '', paidAmount: '0', operatingCosts: '0', paymentReference: '', notes: '' });
 
 const Metric = ({ icon: Icon, label, value, note, tone }) => (
@@ -45,6 +36,7 @@ const statusStyle = status => ({
 
 export default function FitPassBranchPayouts() {
   const [records, setRecords] = useState([]);
+  const [activity, setActivity] = useState([]);
   const [branches, setBranches] = useState([]);
   const [defaultRate, setDefaultRate] = useState('50');
   const [rateDraft, setRateDraft] = useState('50');
@@ -59,7 +51,6 @@ export default function FitPassBranchPayouts() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [rateSaving, setRateSaving] = useState(false);
-  const [showExamples, setShowExamples] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(initialForm());
@@ -76,7 +67,7 @@ export default function FitPassBranchPayouts() {
       if (status) params.status = status;
       if (search.trim()) params.search = search.trim();
       const { data } = await API.get('/superadmin/fitpass/payouts', { params });
-      setRecords(data.records || []); setBranches(data.branches || []); setSummary(data.summary || {});
+      setRecords(data.records || []); setBranches(data.branches || []); setSummary(data.summary || {}); setActivity(data.activity || []);
       const rate = data.settings?.defaultRatePerCheckIn ?? 50;
       setDefaultRate(String(rate)); setRateDraft(String(rate));
     } catch (err) { setError(err.response?.data?.message || 'Could not load branch payout data.'); }
@@ -85,24 +76,7 @@ export default function FitPassBranchPayouts() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const demoRows = useMemo(() => makeDemoRows(), []);
-  const displayedRecords = useMemo(() => {
-    if (records.length || !showExamples || error) return records;
-    const low = from ? new Date(`${from}T00:00:00Z`) : null;
-    const high = to ? new Date(`${to}T23:59:59Z`) : null;
-    const q = search.trim().toLowerCase();
-    return demoRows.filter(row => (!gymId && !branchId) && (!low || new Date(row.periodEnd) >= low) && (!high || new Date(row.periodStart) <= high) && (!status || row.status === status) && (!q || `${row.gymName} ${row.branchName}`.toLowerCase().includes(q)));
-  }, [records, showExamples, demoRows, from, to, gymId, branchId, status, search, error]);
-
-  const shownSummary = useMemo(() => displayedRecords.reduce((acc, row) => ({
-    checkIns: acc.checkIns + row.checkInCount,
-    grossRevenue: acc.grossRevenue + row.grossRevenue,
-    paidAmount: acc.paidAmount + row.paidAmount,
-    retainedAmount: acc.retainedAmount + row.retainedAmount,
-    netProfit: acc.netProfit + row.netProfit,
-    records: acc.records + 1,
-  }), { checkIns: 0, grossRevenue: 0, paidAmount: 0, retainedAmount: 0, netProfit: 0, records: 0 }), [displayedRecords]);
-  const showingExamples = records.length === 0 && showExamples && !error && displayedRecords.length > 0;
+  const displayedRecords = records;
 
   const chartRows = useMemo(() => {
     const grouped = new Map();
@@ -185,10 +159,10 @@ export default function FitPassBranchPayouts() {
         <div style={{ display: 'flex', gap: 7 }}><input className="input" aria-label="Default rupees per check-in" type="number" min="0" step="0.01" value={rateDraft} onChange={event => setRateDraft(event.target.value)} /><button className="btn btn-secondary" disabled={rateSaving} type="submit">{rateSaving ? 'Saving…' : 'Save rate'}</button></div>
         <small style={{ color: 'var(--text-secondary)' }}>Each settlement can use its own rate or a custom revenue total.</small>
       </form>
-      <Metric icon={Users} label="Successful check-ins" value={number(showingExamples ? shownSummary.checkIns : summary.checkIns)} note="For filtered settlements" tone="#2563eb" />
-      <Metric icon={CircleDollarSign} label="Gross revenue" value={money(showingExamples ? shownSummary.grossRevenue : summary.grossRevenue)} note="Check-ins × rate or custom" tone="#0891b2" />
-      <Metric icon={Landmark} label="Paid to branches" value={money(showingExamples ? shownSummary.paidAmount : summary.paidAmount)} note="Recorded partner payouts" tone="#7c3aed" />
-      <Metric icon={TrendingUp} label="Net profit after payout" value={money(showingExamples ? shownSummary.netProfit : summary.netProfit)} note={`Retained ${money(showingExamples ? shownSummary.retainedAmount : summary.retainedAmount)} before costs`} tone="#15803d" />
+      <Metric icon={Users} label="Successful check-ins" value={number(summary.checkIns)} note="For saved settlements" tone="#2563eb" />
+      <Metric icon={CircleDollarSign} label="Gross revenue" value={money(summary.grossRevenue)} note="Saved settlement totals" tone="#0891b2" />
+      <Metric icon={Landmark} label="Paid to branches" value={money(summary.paidAmount)} note="Recorded partner payouts" tone="#7c3aed" />
+      <Metric icon={TrendingUp} label="Net profit after payout" value={money(summary.netProfit)} note={`Retained ${money(summary.retainedAmount)} before costs`} tone="#15803d" />
     </div>
 
     <div className="card" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'end', marginBottom: 14, padding: '1rem' }}>
@@ -202,8 +176,9 @@ export default function FitPassBranchPayouts() {
       <button type="button" className="btn btn-secondary" onClick={loadData} title="Refresh results"><RefreshCw size={15} /></button>
     </div>
 
-    {showingExamples && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12, padding: '.75rem 1rem', background: '#fff8dc', border: '1px solid #f1d66c', borderRadius: 10, color: '#685515', fontSize: '.82rem' }}>
-      <span><strong>Example records:</strong> these are clearly marked demo rows for explaining the calculations. They are not saved or included in the actual payout ledger.</span><button className="btn btn-secondary" onClick={() => setShowExamples(false)} style={{ padding: '.35rem .65rem', fontSize: '.75rem' }}>Hide examples</button>
+    {activity.length > 0 && <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ padding: '1rem 1.1rem', borderBottom: '1px solid var(--border-color)' }}><strong>Successful FitPass activity</strong><div style={{ fontSize: '.75rem', color: 'var(--text-secondary)', marginTop: 3 }}>Actual check-ins in the selected date range; estimated values are not saved or marked as paid.</div></div>
+      <div className="table-container"><table><thead><tr><th>Partner branch</th><th>Successful check-ins</th><th>Estimated at default rate</th></tr></thead><tbody>{activity.map(row => <tr key={row.id}><td><strong>{row.name}</strong><small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: 3 }}>{row.gymName}</small></td><td>{number(row.checkInCount)}</td><td>{money(row.estimatedRevenue)}</td></tr>)}</tbody></table></div>
     </div>}
 
     {chartRows.length > 0 && <div className="card" style={{ padding: '1rem 1.1rem', marginBottom: 14 }}>
@@ -212,9 +187,9 @@ export default function FitPassBranchPayouts() {
     </div>}
 
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ padding: '1rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border-color)' }}><div><strong>Branch settlement records</strong><div style={{ fontSize: '.75rem', color: 'var(--text-secondary)', marginTop: 3 }}>{showingExamples ? 'Example data only' : `${number(summary.records)} saved records`}</div></div><Building2 size={17} color="var(--text-secondary)" /></div>
+      <div style={{ padding: '1rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border-color)' }}><div><strong>Branch settlement records</strong><div style={{ fontSize: '.75rem', color: 'var(--text-secondary)', marginTop: 3}>{`${number(summary.records)} saved records`}</div></div><Building2 size={17} color="var(--text-secondary)" /></div>
       {loading ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '3rem' }}><Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} /></div> : <div className="table-container"><table><thead><tr><th>Period</th><th>Partner branch</th><th>Check-ins</th><th>Rate / visit</th><th>Gross revenue</th><th>Paid to branch</th><th>Retained</th><th>Net profit</th><th>Status</th><th></th></tr></thead><tbody>
-        {displayedRecords.map(row => <tr key={row.id}><td style={{ whiteSpace: 'nowrap' }}>{periodLabel(row)}</td><td><strong>{row.branchName}{row.isDemo ? <small style={{ display: 'block', color: '#a16207', marginTop: 3 }}>DEMO · {row.gymName}</small> : null}</strong>{!row.isDemo && <small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: 3 }}>{row.gymName}</small>}</td><td>{number(row.checkInCount)}</td><td>{money(row.ratePerCheckIn)}</td><td style={{ fontWeight: 750 }}>{money(row.grossRevenue)}{row.manualRevenue != null && <small style={{ display: 'block', color: 'var(--text-secondary)' }}>Custom amount</small>}</td><td>{money(row.paidAmount)}</td><td>{money(row.retainedAmount)}</td><td style={{ fontWeight: 800, color: Number(row.netProfit) < 0 ? '#b91c1c' : '#15803d' }}>{money(row.netProfit)}</td><td><span style={statusStyle(row.status)}>{row.status}</span></td><td><button className="btn btn-secondary" disabled={row.isDemo} onClick={() => openEdit(row)} title="Edit settlement"><Pencil size={14} /></button></td></tr>)}
+        {displayedRecords.map(row => <tr key={row.id}><td style={{ whiteSpace: 'nowrap' }}>{periodLabel(row)}</td><td><strong>{row.branchName}</strong><small style={{ display: 'block', color: 'var(--text-secondary)', marginTop: 3 }}>{row.gymName}</small></td><td>{number(row.checkInCount)}</td><td>{money(row.ratePerCheckIn)}</td><td style={{ fontWeight: 750 }}>{money(row.grossRevenue)}{row.manualRevenue != null && <small style={{ display: 'block', color: 'var(--text-secondary)' }}>Custom amount</small>}</td><td>{money(row.paidAmount)}</td><td>{money(row.retainedAmount)}</td><td style={{ fontWeight: 800, color: Number(row.netProfit) < 0 ? '#b91c1c' : '#15803d' }}>{money(row.netProfit)}</td><td><span style={statusStyle(row.status)}>{row.status}</span></td><td><button className="btn btn-secondary" onClick={() => openEdit(row)} title="Edit settlement"><Pencil size={14} /></button></td></tr>)}
         {!displayedRecords.length && <tr><td colSpan="10" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No branch payout records match these filters.</td></tr>}
       </tbody></table></div>}
     </div>
