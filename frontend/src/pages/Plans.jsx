@@ -6,12 +6,13 @@ import { AuthContext } from '../context/AuthContext';
 import { Loader,  Pencil, Trash2 } from 'lucide-react';
 
 const Plans = () => {
-    const { user, activeDivision, selectedGymId, selectedBranchId } = useContext(AuthContext);
+    const { user, activeDivision, selectedGymId, changeSelectedGym, selectedBranchId } = useContext(AuthContext);
     const isAdmin = ['admin', 'h4_admin', 'superadmin'].includes(user?.role);
     const isH4Plans = user?.role === 'h4_admin' || activeDivision === 'h4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || '')) || String(user?.gymName || '').toLowerCase().includes('h4');
     const canCreateAllBranchPlan = user?.role === 'superadmin' || (user?.role === 'h4_admin' && !user?.userBranchId && !user?.branchId);
     const [plans, setPlans] = useState([]);
     const [h4Branches, setH4Branches] = useState([]);
+    const [h4GymId, setH4GymId] = useState('');
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState(null);
@@ -23,7 +24,14 @@ const Plans = () => {
 
     useEffect(() => {
         if (!isH4Plans) return;
-        API.get('/branches').then(({ data }) => {
+        const h4GymRequest = ['superadmin', 'h4_admin'].includes(user?.role)
+            ? API.get('/superadmin/h4-gym').then(({ data }) => data?._id || data?.id || '')
+            : Promise.resolve(selectedGymId || '');
+        Promise.all([API.get('/branches'), h4GymRequest]).then(([{ data }, resolvedH4GymId]) => {
+            setH4GymId(resolvedH4GymId || selectedGymId || '');
+            if (user?.role === 'superadmin' && resolvedH4GymId && resolvedH4GymId !== selectedGymId) {
+                changeSelectedGym(resolvedH4GymId);
+            }
             const h4GymIds = ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'];
             const list = (Array.isArray(data) ? data : []).filter(branch =>
                 String(branch.gymName || '').toLowerCase().includes('h4') || h4GymIds.includes(String(branch.gymId || ''))
@@ -39,7 +47,7 @@ const Plans = () => {
             console.error('Error fetching H4 branches:', error);
             setH4Branches([]);
         });
-    }, [isH4Plans, selectedGymId, selectedBranchId, user?.branchId]);
+    }, [isH4Plans, selectedGymId, selectedBranchId, user?.branchId, user?.role]);
 
     const fetchPlans = async () => {
         try {
@@ -78,6 +86,7 @@ const Plans = () => {
                 price: Number(formData.price),
                 sessions: formData.sessions === '' ? undefined : Number(formData.sessions),
                 ...(isH4Plans ? {
+                    gymId: h4GymId || selectedGymId || user?.gymId?._id || user?.gymId || undefined,
                     allBranches: canCreateAllBranchPlan && formData.allBranches,
                     branchId: canCreateAllBranchPlan && formData.allBranches ? undefined : formData.branchId
                 } : {})

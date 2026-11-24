@@ -7,6 +7,7 @@
     "start": "prisma db push && node server.js",
     "dev": "prisma db push && nodemon server.js",
     "db:sync": "prisma db push",
+    "seed:showcase": "node scripts/dev/seed-showcase.js",
     "build": "prisma generate && prisma db push",
     "postinstall": "prisma generate",
     "test": "jest"

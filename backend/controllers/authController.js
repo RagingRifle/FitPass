@@ -372,7 +372,10 @@ const authUser = catchAsync(async (req, res, next) => {
         throw new Error(`Account temporarily locked. Try again in ${mins} minute(s).`);
     }
 
-    if (!user.isVerified && !['superadmin', 'admin', 'partner', 'fitpass_admin', 'h4_admin'].includes(user.role)) {
+    // Members must complete OTP verification. Trainers and desk staff are
+    // provisioned by authenticated gym administrators, so they can sign in
+    // without an email OTP (their account is trusted at creation time).
+    if (user.role === 'member' && !user.isVerified) {
         res.status(401);
         throw new Error('Please verify your email before logging in. Request a new OTP if needed.');
     }

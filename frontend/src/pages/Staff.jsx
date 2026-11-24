@@ -3,7 +3,7 @@ import { getStaff, createStaff, updateStaff, deleteStaff } from '../services/api
 import API from '../services/api';
 import Modal from '../components/Modal';
 import { AuthContext } from '../context/AuthContext';
-import { Pencil, Trash2, Eye, EyeOff, ShieldCheck, Users, Search, X, RotateCcw, UserPlus, Dumbbell, Loader } from 'lucide-react';
+import { Pencil, Trash2, Eye, EyeOff, ShieldCheck, Users, Search, X, RotateCcw, UserPlus, Dumbbell, Loader, Copy } from 'lucide-react';
 import './Staff.css';
 
 const Staff = () => {
@@ -15,6 +15,7 @@ const Staff = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStaff, setEditingStaff] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
+    const [issuedCredentials, setIssuedCredentials] = useState(null);
     
     // Filters
     const [search, setSearch] = useState('');
@@ -112,6 +113,8 @@ const Staff = () => {
         e.preventDefault();
         setError('');
         try {
+            const changedPassword = formData.password;
+            const credentialEmail = formData.email.trim().toLowerCase();
             if (editingStaff) {
                 const payload = { ...formData };
                 if (!payload.password) {
@@ -121,6 +124,7 @@ const Staff = () => {
             } else {
                 await createStaff(formData);
             }
+            if (changedPassword) setIssuedCredentials({ email: credentialEmail, password: changedPassword, name: formData.name });
             fetchStaff();
             setIsModalOpen(false);
         } catch (err) {
@@ -178,6 +182,11 @@ const Staff = () => {
             </div>
 
             {error && !isModalOpen && <div className="staff-page__error" role="alert">{error}</div>}
+
+            {issuedCredentials && <div role="status" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap', margin: '0 0 1rem', padding: '1rem 1.1rem', border: '1px solid #d9c36e', borderRadius: 12, background: '#fff9dc', color: '#352d14' }}>
+                <div><strong>Login password set for {issuedCredentials.name}</strong><div style={{ marginTop: 5, fontSize: '.88rem' }}><span>{issuedCredentials.email}</span><span style={{ margin: '0 8px', color: '#8a7a48' }}>·</span><code style={{ fontSize: '.95rem' }}>{issuedCredentials.password}</code></div><small style={{ display: 'block', marginTop: 5 }}>Save this now. Passwords are stored securely and can’t be viewed again; reset it here if needed.</small></div>
+                <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-secondary" type="button" onClick={() => navigator.clipboard?.writeText(`${issuedCredentials.email}\t${issuedCredentials.password}`)}><Copy size={15} /> Copy login</button><button className="btn btn-secondary" type="button" aria-label="Dismiss credentials" onClick={() => setIssuedCredentials(null)}><X size={15} /></button></div>
+            </div>}
 
             {activeTab === 'assignments' && <div className="card" style={{ padding: '1.5rem' }}>
                 <h3>Member to trainer assignments</h3>
@@ -326,7 +335,7 @@ const Staff = () => {
                         </div>
 
                         <div className="input-group">
-                            <label>{editingStaff ? 'New Password' : 'Password *'}</label>
+                            <label>{editingStaff ? 'Set new password' : 'Password *'}</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                                 <input 
                                     className="input" 
@@ -334,7 +343,7 @@ const Staff = () => {
                                     value={formData.password} 
                                     onChange={e => setFormData({ ...formData, password: e.target.value })} 
                                     required={!editingStaff} 
-                                    placeholder={editingStaff ? 'Leave blank' : 'Enter password'}
+                                    placeholder={editingStaff ? 'Leave blank to keep current password' : 'Enter password'}
                                     style={{ paddingRight: '2.5rem' }}
                                     // Make sure it doesn't wrap weirdly
                                 />
@@ -346,6 +355,7 @@ const Staff = () => {
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
+                            {editingStaff && <small style={{ display: 'block', marginTop: 5 }}>Current passwords can’t be retrieved. Enter a new one to reset it; the updated password will be shown once after saving.</small>}
                         </div>
 
                         <div className="input-group">

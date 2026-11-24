@@ -328,7 +328,7 @@ function App() {
         } />
 
         <Route path="/staff" element={
-          <ProtectedRoute roles={['admin', 'h4_admin', 'partner']}>
+          <ProtectedRoute roles={['admin', 'h4_admin', 'partner', 'superadmin']}>
             <Layout>
               <Staff />
             </Layout>

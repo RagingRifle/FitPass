@@ -3,15 +3,29 @@ const AppError = require('../utils/appError');
 const User = require('../models/User');
 const Member = require('../models/Member');
 const MemberTrainerAssignment = require('../models/MemberTrainerAssignment');
+const prisma = require('../config/prisma');
+const { H4_GYM_IDS } = require('../config/constants');
+
+const resolveStaffGymId = async (req) => {
+    if (req.user.role !== 'superadmin') return String(req.user.gymId || '');
+    const selectedGymId = String(req.tenantFilter?.gymId || '');
+    if (!selectedGymId) return '';
+    if (H4_GYM_IDS.includes(selectedGymId)) return selectedGymId;
+    const gym = await prisma.gym.findUnique({ where: { id: selectedGymId }, select: { name: true } }).catch(() => null);
+    return gym?.name?.toLowerCase().includes('h4') ? selectedGymId : '';
+};
 
 // @desc    Get all staff members
 // @route   GET /api/staff
 // @access  Private/Admin
 const getStaff = catchAsync(async (req, res, next) => {
     try {
+        const gymId = await resolveStaffGymId(req);
+        if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
         const query = {
             role: { $in: ['admin', 'trainer', 'receptionist'] },
-            ...req.tenantFilter
+            ...req.tenantFilter,
+            gymId
         };
 
         const staff = await User.find(query).select('-password').lean();
@@ -31,6 +45,8 @@ const getStaff = catchAsync(async (req, res, next) => {
 const createStaff = catchAsync(async (req, res, next) => {
     try {
         const { name, email, password, role, trainerMemberLimit, trainerPermissions, branchId } = req.body;
+        const gymId = await resolveStaffGymId(req);
+        if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
         if (!name || !email || !password || !role) {
             return res.status(400).json({ message: 'All fields are required' });
         }
@@ -42,7 +58,7 @@ const createStaff = catchAsync(async (req, res, next) => {
         if (role === 'trainer' && !assignedBranchId) return res.status(400).json({ message: 'Choose a branch for this trainer account.' });
         if (req.user.branchId && assignedBranchId !== req.user.branchId) return res.status(403).json({ message: 'You can only create staff in your assigned branch.' });
         if (assignedBranchId) {
-            const branch = await require('../config/prisma').branch.findFirst({ where: { id: assignedBranchId, gymId: req.user.gymId } });
+            const branch = await prisma.branch.findFirst({ where: { id: assignedBranchId, gymId } });
             if (!branch) return res.status(400).json({ message: 'Choose a branch that belongs to your gym.' });
         }
 
@@ -60,21 +76,25 @@ const createStaff = catchAsync(async (req, res, next) => {
                 trainerMemberLimit: Math.max(1, Math.min(100, Number(trainerMemberLimit) || 10)),
                 trainerPermissions: normalizeTrainerPermissions(trainerPermissions)
             } : {}),
-            gymId: req.user.gymId,
-            branchId: assignedBranchId
+            gymId,
+            branchId: assignedBranchId,
+            isVerified: true,
+            isActive: true,
+            status: 'Active'
         });
 
         // H4 floor trainers start with the active roster at their branch. Managers
         // can rebalance that roster later through the trainer assignment screen.
-        if (role === 'trainer' && req.user.role === 'h4_admin') {
-            const roster = await Member.find({ gymId: req.user.gymId, branchId: req.user.branchId || null, status: 'Active' }).select('id').lean();
+        if (role === 'trainer' && (req.user.role === 'h4_admin' || req.user.role === 'superadmin')) {
+            const trainerBranchId = assignedBranchId || req.user.branchId || null;
+            const roster = await Member.find({ gymId, branchId: trainerBranchId, status: 'Active' }).select('id').lean();
             const staffId = staff._id || staff.id;
-            const alreadyAssigned = await MemberTrainerAssignment.find({ gymId: req.user.gymId, branchId: req.user.branchId || null }).select('memberId').lean();
+            const alreadyAssigned = await MemberTrainerAssignment.find({ gymId, branchId: trainerBranchId }).select('memberId').lean();
             const assignedIds = new Set(alreadyAssigned.map((item) => String(item.memberId)));
             const available = roster.filter((member) => !assignedIds.has(String(member.id || member._id))).slice(0, staff.trainerMemberLimit || 10);
             await Promise.all(available.map(async (member) => {
                 const memberId = member._id || member.id;
-                await MemberTrainerAssignment.create({ memberId, trainerId: staffId, gymId: req.user.gymId, branchId: req.user.branchId || null });
+                await MemberTrainerAssignment.create({ memberId, trainerId: staffId, gymId, branchId: trainerBranchId });
             }));
         }
 
@@ -91,7 +111,9 @@ const createStaff = catchAsync(async (req, res, next) => {
 const updateStaff = catchAsync(async (req, res, next) => {
     try {
         const { name, email, password, role, trainerMemberLimit, trainerPermissions, branchId } = req.body;
-        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        const gymId = await resolveStaffGymId(req);
+        if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
+        const query = { _id: req.params.id, gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
         }
@@ -120,14 +142,14 @@ const updateStaff = catchAsync(async (req, res, next) => {
         if (staff.role === 'trainer') {
             if (branchId && String(branchId) !== String(staff.branchId || '')) {
                 if (req.user.branchId && String(branchId) !== String(req.user.branchId)) return res.status(403).json({ message: 'You can only assign a trainer within your branch.' });
-                const branch = await require('../config/prisma').branch.findFirst({ where: { id: branchId, gymId: req.user.gymId } });
+                const branch = await prisma.branch.findFirst({ where: { id: branchId, gymId } });
                 if (!branch) return res.status(400).json({ message: 'Choose a branch that belongs to your gym.' });
-                if (await MemberTrainerAssignment.countDocuments({ trainerId: staff._id || staff.id, gymId: req.user.gymId })) return res.status(409).json({ message: 'Reassign this trainer’s members before changing their branch.' });
+                if (await MemberTrainerAssignment.countDocuments({ trainerId: staff._id || staff.id, gymId })) return res.status(409).json({ message: 'Reassign this trainer’s members before changing their branch.' });
                 staff.branchId = branchId;
             }
             if (trainerMemberLimit !== undefined) {
                 const nextLimit = Math.max(1, Math.min(100, Number(trainerMemberLimit) || 1));
-                const currentLoad = await MemberTrainerAssignment.countDocuments({ trainerId: staff._id || staff.id, gymId: req.user.gymId });
+                const currentLoad = await MemberTrainerAssignment.countDocuments({ trainerId: staff._id || staff.id, gymId });
                 if (nextLimit < currentLoad) return res.status(400).json({ message: `This trainer already has ${currentLoad} assigned members. Reassign members before lowering the limit.` });
                 staff.trainerMemberLimit = nextLimit;
             }
@@ -137,6 +159,9 @@ const updateStaff = catchAsync(async (req, res, next) => {
         if (password) {
             staff.password = password;
         }
+        // Staff credentials are issued by an administrator; email OTP is not
+        // part of this account-provisioning flow.
+        staff.isVerified = true;
 
         const updatedStaff = await staff.save();
         const result = { ...updatedStaff };
@@ -151,7 +176,9 @@ const updateStaff = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const deleteStaff = catchAsync(async (req, res, next) => {
     try {
-        const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
+        const gymId = await resolveStaffGymId(req);
+        if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
+        const query = { _id: req.params.id, gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
         if (req.user.branchId) {
             query.branchId = req.user.branchId;
         }

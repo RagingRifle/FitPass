@@ -29,7 +29,7 @@ const isH4Gym = async (gymId) => {
 // @access  Private/Admin
 const createPlan = catchAsync(async (req, res, next) => {
     try {
-        const { name, duration, price, sessions, allBranches, branchId: requestedBranchId } = req.body;
+        const { name, duration, price, sessions, allBranches, gymId: requestedGymId, branchId: requestedBranchId } = req.body;
 
         if (req.user.role === 'fitpass_admin') {
             return res.status(403).json({ success: false, message: 'FitPass session plans are managed from FitPass Plans.' });
@@ -40,7 +40,7 @@ const createPlan = catchAsync(async (req, res, next) => {
             return res.json({ success: false, message: 'Name, duration, and price are required' });
         }
 
-        const selectedGymId = String(req.tenantFilter?.gymId || '');
+        const selectedGymId = String(req.tenantFilter?.gymId || (req.user.role === 'superadmin' ? requestedGymId : '') || '');
         const currentGymId = String(req.user.gymId || '');
         const isH4Superadmin = req.user.role === 'superadmin' && await isH4Gym(selectedGymId);
         const gymId = isH4Superadmin ? selectedGymId : currentGymId;

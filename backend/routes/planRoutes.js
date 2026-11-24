@@ -19,6 +19,7 @@ const createPlanSchema = z.object({
     description: z.string().optional(),
     sessions: z.coerce.number().optional(),
     allBranches: z.coerce.boolean().optional(),
+    gymId: z.string().optional(),
     branchId: z.string().optional().nullable()
 });
 

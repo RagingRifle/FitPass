@@ -12,6 +12,12 @@ without reading them fully first. None of them are invoked automatically by the 
   dev environment.
 - **`seed-fitpass-gyms.js`** — seeds sample FitPass partner gyms for local testing.
 - **`seed-reviews.js`** — seeds sample gym reviews for local testing.
+- **`seed-showcase.js`** — adds H4 and FitPass gyms, branches, members, staff accounts,
+  plans, attendance, payments, and expenses to the configured database. Re-running it
+  updates its known accounts and avoids duplicate payment/attendance/expense rows.
+  Run with `npm run seed:showcase` from `backend/`. It is additive; a full database
+  reset removes these rows along with everything else in that database. Staff login
+  credentials are printed once by the command; member passwords are their phone numbers.
 
 ## What used to live here
 

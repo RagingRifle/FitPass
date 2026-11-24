@@ -51,6 +51,10 @@ const getBranches = catchAsync(async (req, res, next) => {
 
         const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
             || (req.user.role === 'h4_admin' && !req.user.userBranchId);
+        const selectedGymId = String(req.headers['x-gym-id'] || '');
+        if (req.user.role === 'superadmin' && selectedGymId && selectedGymId !== 'SYSTEM') {
+            query.gymId = selectedGymId;
+        }
         if (!isHQAdmin && req.user.userBranchId) {
             query._id = req.user.userBranchId;
         }
