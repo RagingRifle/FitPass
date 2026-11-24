@@ -20,6 +20,7 @@ const emptyForm = { name: '', shortDescription: '', description: '', address: ''
 
 const Branches = () => {
     const { activeDivision, changeActiveDivision, selectedGymId, changeSelectedGym, user, selectedBranchId } = useContext(AuthContext);
+    const isH4Division = activeDivision === 'h4' || user?.role === 'h4_admin';
     const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,6 +90,8 @@ const Branches = () => {
             const firstOpenDay = workingDays[0];
             const payload = {
                 ...formData,
+                // H4 branches are managed separately from FitPass partner check-ins.
+                fitPassEnabled: isH4Division ? false : Boolean(formData.fitPassEnabled),
                 openingTime: firstOpenDay ? formData.weeklySchedule[firstOpenDay]?.open : formData.openingTime,
                 closingTime: firstOpenDay ? formData.weeklySchedule[firstOpenDay]?.close : formData.closingTime,
                 workingDays,
@@ -181,11 +184,11 @@ const Branches = () => {
                                     <span style={{ background: 'rgba(30, 142, 62, 0.08)', color: '#1E8E3E', border: '1px solid rgba(30, 142, 62, 0.2)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '700' }}>
                                         Active
                                     </span>
-                                    <span style={{
+                                    {!isH4Division && <span style={{
                                         background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '600'
                                     }}>
                                         {branch.fitPassEnabled ? ' FitPass' : ' No FitPass'}
-                                    </span>
+                                    </span>}
                                 </div>
                             </div>
 
@@ -213,7 +216,7 @@ const Branches = () => {
                                 <button onClick={() => viewMembers(branch)} className="btn btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: 'var(--text-primary)' }}>
                                      Members
                                 </button>
-                                {branch.fitPassEnabled && (
+                                {!isH4Division && branch.fitPassEnabled && (
                                     <button onClick={() => setQrBranch(branch)} className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', borderRadius: '8px' }} title="Print Branch QR Code">
                                         <QrCode size={16} />
                                     </button>
@@ -253,7 +256,7 @@ const Branches = () => {
                         <input className="input" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Full address" />
                     </div>
                     <div className="input-group">
-                        <label>Website</label>
+                        <label>Website (optional)</label>
                         <input className="input" type="url" value={formData.website} onChange={e => setFormData({ ...formData, website: e.target.value })} placeholder="https://example.com" />
                     </div>
                     <div className="form-grid">
@@ -300,7 +303,7 @@ const Branches = () => {
                         <div className="input-group"><label>Amenities (comma separated)</label><input className="input" value={formData.amenitiesText} onChange={e => setFormData({ ...formData, amenitiesText: e.target.value })} placeholder="Showers, lockers, parking" /></div>
                         <div className="input-group"><label>Equipment (comma separated)</label><input className="input" value={formData.equipmentsText} onChange={e => setFormData({ ...formData, equipmentsText: e.target.value })} placeholder="Treadmills, free weights" /></div>
                     </div>
-                    <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+                    {!isH4Division && <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}>
                         <input
                             type="checkbox"
                             id="fitPassEnabled"
@@ -311,7 +314,7 @@ const Branches = () => {
                         <label htmlFor="fitPassEnabled" style={{ marginBottom: 0, cursor: 'pointer', fontWeight: '600' }}>
                             Willing / Agreed for FitPass (FitPrime) Check-Ins
                         </label>
-                    </div>
+                    </div>}
                     <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} disabled={submitting}>
                         {submitting ? 'Saving...' : editBranch ? ' Update Branch' : ' Create Branch'}
                     </button>
