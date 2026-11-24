@@ -32,19 +32,27 @@
     display: inline-flex;
     align-items: center;
     min-width: 0;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    background: var(--bg);
-    box-shadow: 0 1px 3px rgba(32, 28, 18, 0.06);
+    gap: 0.55rem;
+    min-height: 42px;
+    padding: 0 0.7rem;
+    border: 1px solid color-mix(in srgb, #d39c19 38%, var(--border));
+    border-radius: 11px;
+    background: linear-gradient(120deg, rgba(246, 202, 76, 0.19), var(--bg) 74%);
+    box-shadow: 0 2px 7px rgba(66, 51, 18, 0.075);
+}
+
+.dashboard-branch-icon {
+    flex: 0 0 auto;
+    color: #9a710e;
 }
 
 .dashboard-branch-select {
     width: auto !important;
-    min-width: 166px;
-    max-width: min(270px, 64vw);
-    min-height: 38px;
+    min-width: 178px;
+    max-width: min(270px, 60vw);
+    min-height: 40px;
     margin: 0;
-    padding: 0.48rem 2.15rem 0.48rem 0.72rem;
+    padding: 0.48rem 1.8rem 0.48rem 0.1rem;
     appearance: none;
     -webkit-appearance: none;
     border: 0 !important;
@@ -63,14 +71,14 @@
 
 .dashboard-branch-chevron {
     position: absolute;
-    right: 0.65rem;
+    right: 0.7rem;
     color: var(--text-muted);
     pointer-events: none;
 }
 
 .dashboard-date-filter {
     display: grid;
-    grid-template-columns: auto auto minmax(180px, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.8rem 1.1rem;
     margin: 0 0 1.5rem;
@@ -99,7 +107,8 @@
 
 .dashboard-date-field input[type="date"] {
     box-sizing: border-box;
-    width: 164px;
+    width: 172px;
+    min-width: 172px;
     min-height: 40px;
     padding: 0.45rem 0.55rem;
     border: 1px solid var(--border) !important;
@@ -127,9 +136,14 @@
     font-size: 1rem;
 }
 
+.dashboard-date-fields .dashboard-date-field {
+    flex: 0 0 172px;
+}
+
 .dashboard-date-presets {
     align-self: end;
     gap: 0.4rem;
+    justify-self: end;
 }
 
 .dashboard-date-preset {
@@ -166,11 +180,16 @@
 
 @media (max-width: 900px) {
     .dashboard-date-filter {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr;
     }
 
     .dashboard-date-fields {
         grid-column: 1 / -1;
+        justify-content: flex-start;
+    }
+
+    .dashboard-date-presets {
+        justify-self: start;
     }
 
     .dashboard-date-note {
@@ -202,6 +221,11 @@
         grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
         align-items: end;
         gap: 0.45rem;
+    }
+
+    .dashboard-date-fields .dashboard-date-field {
+        min-width: 0;
+        flex: initial;
     }
 
     .dashboard-date-field input[type="date"] {

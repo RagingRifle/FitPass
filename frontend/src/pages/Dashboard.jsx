@@ -3,7 +3,7 @@ import { getStats, getMembers } from '../services/apiService';
 import { AuthContext } from '../context/AuthContext';
 import API from '../services/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
-import { Users, CheckCircle2, AlertTriangle, Clock, Sparkles, IndianRupee, TrendingDown, TrendingUp, Megaphone, Check, QrCode, Calendar, Phone, ChevronDown, Loader } from 'lucide-react';
+import { Users, CheckCircle2, AlertTriangle, Clock, Sparkles, IndianRupee, TrendingDown, TrendingUp, Megaphone, Check, QrCode, Calendar, Phone, ChevronDown, Building2, Loader } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import './dashboard.css';
 
@@ -196,6 +196,7 @@ const Dashboard = () => {
                                     </div>
                                 ) : (
                                     <div className="dashboard-branch-picker">
+                                        <Building2 size={17} className="dashboard-branch-icon" aria-hidden="true" />
                                         <select
                                             className="dashboard-branch-select"
                                             aria-label={activeDivision === 'h4' ? 'Select H4 branch' : 'Select partner gym'}
