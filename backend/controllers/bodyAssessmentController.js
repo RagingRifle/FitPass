@@ -58,14 +58,12 @@ const createAssessment = catchAsync(async (req, res, next) => {
         }
 
         if (await isH4Gym(member.gymId)) {
-            let baselineHeight = member.heightCm;
-            if (!baselineHeight) {
-                const initialHeight = Number(heightCm);
-                if (!Number.isFinite(initialHeight) || initialHeight < 80 || initialHeight > 250) {
-                    return res.status(400).json({ success: false, message: 'Enter the member’s height in centimeters for their first assessment.' });
-                }
-                baselineHeight = initialHeight;
+            const suppliedHeight = heightCm === undefined || heightCm === null || heightCm === '' ? null : Number(heightCm);
+            if (suppliedHeight !== null && (!Number.isFinite(suppliedHeight) || suppliedHeight < 80 || suppliedHeight > 250)) {
+                return res.status(400).json({ success: false, message: 'Height must be between 80 and 250 centimeters.' });
             }
+            const baselineHeight = suppliedHeight || member.heightCm;
+            if (!baselineHeight) return res.status(400).json({ success: false, message: 'Enter the member’s height in centimeters for their first assessment.' });
             const numericWeight = Number(weight);
             const heightMeters = Number(baselineHeight) / 100;
             const calculatedBmi = roundMetric(numericWeight / (heightMeters * heightMeters));
@@ -78,7 +76,7 @@ const createAssessment = catchAsync(async (req, res, next) => {
             if (deviceBmr !== null && (!Number.isFinite(deviceBmr) || deviceBmr < 200 || deviceBmr > 6000)) return res.status(400).json({ success: false, message: 'Enter a valid BMR reading from the device.' });
             if (waist !== null && (!Number.isFinite(waist) || waist < 30 || waist > 250)) return res.status(400).json({ success: false, message: 'Waist measurement must be between 30 and 250 cm.' });
 
-            if (!member.heightCm) {
+            if (suppliedHeight !== null && Number(member.heightCm) !== suppliedHeight) {
                 member.heightCm = baselineHeight;
                 await member.save();
             }
@@ -247,7 +245,8 @@ const updateAssessment = catchAsync(async (req, res, next) => {
             bmr,
             inBodyScore,
             waistCm,
-            assessmentDate
+            assessmentDate,
+            heightCm
         } = req.body;
 
         const query = { _id: req.params.id, gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }), ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) };
@@ -262,6 +261,15 @@ const updateAssessment = catchAsync(async (req, res, next) => {
             const h4Assessment = await isH4Gym(assessment.gymId);
             if (h4Assessment) {
                 if (!Number.isFinite(Number(assessment.weight)) || Number(assessment.weight) <= 0) return res.status(400).json({ success: false, message: 'Enter a valid weight.' });
+                if (heightCm !== undefined) {
+                    const nextHeight = Number(heightCm);
+                    if (!Number.isFinite(nextHeight) || nextHeight < 80 || nextHeight > 250) return res.status(400).json({ success: false, message: 'Height must be between 80 and 250 centimeters.' });
+                    const member = await Member.findOne({ _id: assessment.memberId, gymId: assessment.gymId });
+                    if (!member) return res.status(404).json({ success: false, message: 'Member not found.' });
+                    member.heightCm = nextHeight;
+                    await member.save();
+                    assessment.heightCm = nextHeight;
+                }
                 const pbf = bodyFat === undefined ? assessment.bodyFat : toOptionalNumber(bodyFat);
                 const smm = muscleMass === undefined ? assessment.muscleMass : toOptionalNumber(muscleMass);
                 const deviceBmr = bmr === undefined ? assessment.bmr : toOptionalNumber(bmr);

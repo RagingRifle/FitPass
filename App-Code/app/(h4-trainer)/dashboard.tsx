@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Search, Users, ChevronRight, Dumbbell, CalendarCheck } from '@/components/ui/app-icons';
+import { Search, Users, ChevronRight, Dumbbell, CalendarCheck, Clock, LogIn, LogOut } from '@/components/ui/app-icons';
 import { API_CLIENT } from '@/lib/api-client';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { theme } from '@/design-system/theme';
@@ -17,6 +17,34 @@ export default function H4TrainerDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [activeShift, setActiveShift] = useState<any>(null);
+  const [attendanceBusy, setAttendanceBusy] = useState(false);
+
+  const today = () => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const loadAttendance = useCallback(async () => {
+    try {
+      const { data } = await API_CLIENT.get('/trainer-attendance', { params: { from: today(), to: today(), timezoneOffset: new Date().getTimezoneOffset(), limit: 100 } });
+      const logs = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      setActiveShift(logs.find((log: any) => !log.checkOutTime && log.status !== 'Leave') || null);
+    } catch (err: any) {
+      Alert.alert('Attendance unavailable', err.response?.data?.message || 'Could not load your duty status.');
+    }
+  }, []);
+
+  const toggleAttendance = async () => {
+    setAttendanceBusy(true);
+    try {
+      const { data } = await API_CLIENT.post(`/trainer-attendance/${activeShift ? 'checkout' : 'checkin'}`);
+      if (activeShift) setActiveShift(null);
+      else setActiveShift(data);
+    } catch (err: any) {
+      Alert.alert(activeShift ? 'Could not clock out' : 'Could not clock in', err.response?.data?.message || 'Please try again.');
+    } finally { setAttendanceBusy(false); }
+  };
 
   const loadMembers = useCallback(async (refresh = false) => {
     refresh ? setRefreshing(true) : setLoading(true);
@@ -29,7 +57,7 @@ export default function H4TrainerDashboard() {
     } finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => { loadMembers(); }, [loadMembers]);
+  useEffect(() => { loadMembers(); loadAttendance(); }, [loadMembers, loadAttendance]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -49,6 +77,16 @@ export default function H4TrainerDashboard() {
             <View style={styles.welcomeTop}><View><Text style={styles.eyebrow}>H4 TRAINER WORKSPACE</Text><Text style={styles.greeting}>Good work, {user?.name?.split(' ')[0] || 'Coach'}</Text></View><View style={styles.iconBadge}><Dumbbell size={21} color="#735B00" /></View></View>
             <Text style={styles.welcomeCopy}>Your assigned members and coaching tools, together in one place.</Text>
             <View style={styles.countRow}><View style={styles.countIcon}><Users size={16} color="#735B00" /></View><Text style={styles.countText}><Text style={styles.countNumber}>{members.length}</Text> assigned {members.length === 1 ? 'member' : 'members'}</Text></View>
+          </View>
+          <View style={styles.attendanceCard}>
+            <View style={styles.attendanceTop}>
+              <View style={styles.attendanceIcon}><Clock size={17} color={activeShift ? '#14633D' : '#735B00'} /></View>
+              <View style={{ flex: 1 }}><Text style={styles.attendanceTitle}>{activeShift ? 'You are on duty' : 'Duty attendance'}</Text><Text style={styles.attendanceCopy}>{activeShift?.checkInTime ? `Clocked in ${new Date(activeShift.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Record your shift start and finish'}</Text></View>
+              <View style={[styles.shiftBadge, activeShift && styles.shiftBadgeActive]}><Text style={[styles.shiftBadgeText, activeShift && styles.shiftBadgeTextActive]}>{activeShift ? 'ON SHIFT' : 'OFF SHIFT'}</Text></View>
+            </View>
+            <TouchableOpacity style={[styles.shiftButton, activeShift && styles.shiftButtonOut, attendanceBusy && { opacity: .65 }]} onPress={toggleAttendance} disabled={attendanceBusy} activeOpacity={.82}>
+              {attendanceBusy ? <ActivityIndicator color={activeShift ? '#FFFFFF' : '#171713'} /> : <><View style={styles.shiftButtonIcon}>{activeShift ? <LogOut size={17} color="#FFFFFF" /> : <LogIn size={17} color="#171713" />}</View><Text style={[styles.shiftButtonText, activeShift && { color: '#FFFFFF' }]}>{activeShift ? 'Clock out' : 'Clock in'}</Text></>}
+            </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.leaveLink} activeOpacity={0.8} onPress={() => router.push('/(h4-trainer)/leave' as any)}>
             <View style={styles.leaveIcon}><CalendarCheck size={18} color="#735B00" /></View>
@@ -87,6 +125,12 @@ const styles = StyleSheet.create({
   countIcon: { width: 25, height: 25, borderRadius: 8, backgroundColor: '#FFF3A6', alignItems: 'center', justifyContent: 'center' },
   countText: { color: '#E9E5D8', fontSize: 12, fontWeight: '600' }, countNumber: { color: '#FFFDF5', fontSize: 14, fontWeight: '900' },
   leaveLink: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 13, marginBottom: 8, borderRadius: 15, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: '#FFFFFF' },
+  attendanceCard: { padding: 14, marginBottom: 4, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: '#FFFFFF', gap: 12 },
+  attendanceTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  attendanceIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#FFF4B1', alignItems: 'center', justifyContent: 'center' },
+  attendanceTitle: { color: theme.colors.text, fontSize: 13, fontWeight: '850' }, attendanceCopy: { marginTop: 3, color: theme.colors.textSecondary, fontSize: 10 },
+  shiftBadge: { paddingHorizontal: 8, paddingVertical: 6, borderRadius: 99, backgroundColor: '#F2F0E8' }, shiftBadgeActive: { backgroundColor: '#E4F5EA' }, shiftBadgeText: { color: '#756A43', fontSize: 8, fontWeight: '900', letterSpacing: .5 }, shiftBadgeTextActive: { color: '#14633D' },
+  shiftButton: { minHeight: 43, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 11, backgroundColor: theme.colors.primary }, shiftButtonOut: { backgroundColor: '#171713' }, shiftButtonIcon: { alignItems: 'center', justifyContent: 'center' }, shiftButtonText: { color: '#171713', fontSize: 12, fontWeight: '900' },
   leaveIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF4B1' },
   leaveTitle: { color: theme.colors.text, fontWeight: '800', fontSize: 13 },
   leaveCopy: { color: theme.colors.textSecondary, fontSize: 11, marginTop: 3 },

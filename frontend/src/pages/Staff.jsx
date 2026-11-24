@@ -37,6 +37,20 @@ const Staff = () => {
     const [assignmentMemberId, setAssignmentMemberId] = useState('');
     const [assignmentTrainerId, setAssignmentTrainerId] = useState('');
 
+    const loadTrainerAssignmentData = async () => {
+        const [assignmentsResponse, membersResponse] = await Promise.all([
+            API.get('/trainer-assignments', { params: { limit: 100 } }),
+            API.get('/members', { params: { page: 1, limit: 100 } })
+        ]);
+        const assignments = assignmentsResponse.data?.data || [];
+        const membersPayload = membersResponse.data;
+        const members = Array.isArray(membersPayload)
+            ? membersPayload
+            : membersPayload?.members || membersPayload?.data || [];
+        setTrainerAssignments(assignments);
+        setAssignmentMembers(members);
+    };
+
     useEffect(() => {
         fetchStaff();
         API.get('/branches').then(({ data }) => setBranchList(Array.isArray(data) ? data : data.branches || [])).catch(() => setBranchList([]));
@@ -44,10 +58,7 @@ const Staff = () => {
 
     useEffect(() => {
         if (activeTab !== 'assignments') return;
-        Promise.all([API.get('/trainer-assignments', { params: { limit: 100 } }), API.get('/members', { params: { page: 1, limit: 100 } })]).then(([assignments, members]) => {
-            setTrainerAssignments(assignments.data?.data || []);
-            setAssignmentMembers(Array.isArray(members.data) ? members.data : members.data?.data || []);
-        }).catch(() => setError('Could not load trainer assignments or members.'));
+        loadTrainerAssignmentData().catch(() => setError('Could not load trainer assignments or members.'));
     }, [activeTab]);
 
     const submitTrainerAssignment = async (event) => {
@@ -57,8 +68,7 @@ const Staff = () => {
             await API.post('/trainer-assignments', { memberId: assignmentMemberId, trainerId: assignmentTrainerId });
             setAssignmentMemberId('');
             setAssignmentTrainerId('');
-            const { data } = await API.get('/trainer-assignments', { params: { limit: 100 } });
-            setTrainerAssignments(data?.data || []);
+            await loadTrainerAssignmentData();
         } catch (err) { setError(err.response?.data?.message || 'Could not assign this member to the trainer.'); }
     };
 
@@ -66,6 +76,9 @@ const Staff = () => {
         try {
             await API.delete(`/trainer-assignments/${assignmentId}`);
             setTrainerAssignments((items) => items.filter((item) => String(item.id || item._id) !== String(assignmentId)));
+            // Refresh the member choices so the released member is immediately
+            // available to assign to another trainer.
+            await loadTrainerAssignmentData();
         } catch (err) { setError(err.response?.data?.message || 'Could not remove this trainer assignment.'); }
     };
 
@@ -124,7 +137,14 @@ const Staff = () => {
             } else {
                 await createStaff(formData);
             }
-            if (changedPassword) setIssuedCredentials({ email: credentialEmail, password: changedPassword, name: formData.name });
+            if (changedPassword) {
+                setIssuedCredentials({
+                    email: credentialEmail,
+                    password: changedPassword,
+                    name: formData.name,
+                    action: editingStaff ? 'updated' : 'created'
+                });
+            }
             fetchStaff();
             setIsModalOpen(false);
         } catch (err) {
@@ -387,6 +407,26 @@ const Staff = () => {
                         {editingStaff ? 'Save Changes' : 'Create Account'}
                     </button>
                 </form>
+            </Modal>
+
+            <Modal
+                isOpen={Boolean(issuedCredentials)}
+                onClose={() => setIssuedCredentials(null)}
+                title={issuedCredentials?.action === 'updated' ? 'New password saved' : 'Login details saved'}
+                size="sm"
+            >
+                {issuedCredentials && <div style={{ padding: '0 1.25rem 1.25rem' }}>
+                    <p style={{ marginTop: 0 }}>Save these login details now. The password is stored securely and cannot be retrieved later.</p>
+                    <div style={{ display: 'grid', gap: 10, padding: 14, border: '1px solid #d9c36e', borderRadius: 12, background: '#fff9dc' }}>
+                        <div><small style={{ display: 'block', color: 'var(--text-muted)' }}>STAFF MEMBER</small><strong>{issuedCredentials.name}</strong></div>
+                        <div><small style={{ display: 'block', color: 'var(--text-muted)' }}>EMAIL</small><strong>{issuedCredentials.email}</strong></div>
+                        <div><small style={{ display: 'block', color: 'var(--text-muted)' }}>NEW PASSWORD</small><code style={{ fontSize: '1.05rem', fontWeight: 800, overflowWrap: 'anywhere' }}>{issuedCredentials.password}</code></div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                        <button className="btn btn-secondary" type="button" onClick={() => navigator.clipboard?.writeText(`${issuedCredentials.email}\t${issuedCredentials.password}`)}><Copy size={15} /> Copy login</button>
+                        <button className="btn btn-primary" type="button" onClick={() => setIssuedCredentials(null)}>Done</button>
+                    </div>
+                </div>}
             </Modal>
         </div>
     );
