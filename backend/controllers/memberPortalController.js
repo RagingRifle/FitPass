@@ -110,7 +110,7 @@ const getMyPlan = catchAsync(async (req, res, next) => {
       workoutAccess: Boolean(member.trialWorkoutAccess),
       code: member.trialCouponCode || null,
       active: new Date(member.trialEndsAt) > new Date(),
-    } : null),
+    } : null,
     planId: plan || member.planId,
     isH4Member,
     homeGym: homeGym || homeBranch ? {
