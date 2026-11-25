@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Activity, Apple, ChevronRight, Dumbbell, Search, Users } from '@/components/ui/app-icons';
 import { API_CLIENT } from '@/lib/api-client';
 import { theme } from '@/design-system/theme';
@@ -28,7 +28,7 @@ export default function TrainerMembers() {
       setError(err.response?.data?.message || 'Could not load your assigned members.');
     } finally { setLoading(false); setRefreshing(false); }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -46,7 +46,7 @@ export default function TrainerMembers() {
         <View style={styles.titleRow}><View><Text style={styles.title}>Your members</Text><Text style={styles.subtitle}>{members.length} assigned member{members.length === 1 ? '' : 's'}</Text></View><View style={styles.countPill}><Users size={15} color="#655400" /><Text style={styles.count}>{members.length}</Text></View></View>
         <View style={styles.search}><Search size={17} color="#898579" /><TextInput value={search} onChangeText={setSearch} placeholder="Search by name, phone or ID" placeholderTextColor="#989487" style={styles.searchInput} /></View>
         {loading && <ActivityIndicator color="#735B00" style={{ marginTop: 24 }} />}
-        {!!error && <Text style={styles.error}>{error}</Text>}
+        {!!error && <View style={styles.errorBox}><Text style={styles.error}>{error}</Text><TouchableOpacity style={styles.retryBtn} onPress={() => load()}><Text style={styles.retryText}>Retry</Text></TouchableOpacity></View>}
         {!loading && !error && !filtered.length && <View style={styles.empty}><Users size={25} color="#AAA69A" /><Text style={styles.emptyTitle}>{members.length ? 'No matches' : 'Your roster is empty'}</Text><Text style={styles.emptyCopy}>{members.length ? 'Try another search.' : 'Ask your branch admin to assign members to you.'}</Text></View>}
       </View>}
       renderItem={({ item }) => {
@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   search: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#E4E1D8', borderRadius: 13, backgroundColor: '#FFFFFF', marginTop: 6 }, searchInput: { flex: 1, color: '#28271F', fontSize: 12, paddingVertical: 10 },
   memberCard: { padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#E9E6DE', backgroundColor: '#FFFFFF', gap: 10 }, memberMain: { flexDirection: 'row', alignItems: 'center', gap: 11 }, avatar: { width: 43, height: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#FFF3B0' }, avatarText: { color: '#514500', fontSize: 17, fontWeight: '900' }, memberInfo: { flex: 1, gap: 3 }, memberName: { color: '#27261F', fontSize: 13, fontWeight: '850' }, memberMeta: { color: '#77746A', fontSize: 10 }, memberStatus: { color: '#969185', fontSize: 9 },
   actions: { flexDirection: 'row', gap: 7, paddingTop: 9, borderTopWidth: 1, borderTopColor: '#F0EEE8' }, action: { flex: 1, minHeight: 35, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 10, backgroundColor: '#FFF9DD' }, actionText: { color: '#514500', fontSize: 9, fontWeight: '850' },
-  empty: { alignItems: 'center', padding: 24, borderRadius: 15, backgroundColor: '#FFFFFF', gap: 8, marginTop: 8 }, emptyTitle: { color: '#312F28', fontSize: 14, fontWeight: '850' }, emptyCopy: { color: '#77746A', fontSize: 11, textAlign: 'center' }, error: { color: theme.colors.error, fontSize: 11, padding: 12, backgroundColor: '#FFF1ED', borderRadius: 10 },
+  empty: { alignItems: 'center', padding: 24, borderRadius: 15, backgroundColor: '#FFFFFF', gap: 8, marginTop: 8 }, emptyTitle: { color: '#312F28', fontSize: 14, fontWeight: '850' }, emptyCopy: { color: '#77746A', fontSize: 11, textAlign: 'center' }, errorBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: 12, backgroundColor: '#FFF1ED', borderRadius: 10 }, error: { flex: 1, color: theme.colors.error, fontSize: 11 }, retryBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: '#FFFFFF' }, retryText: { color: '#514500', fontSize: 11, fontWeight: '800' },
 });

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Bell, CalendarCheck, LogOut, Sparkles } from '@/components/ui/app-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Bell, Calendar, CalendarCheck, LogOut, Sparkles, Users } from '@/components/ui/app-icons';
 import { API_CLIENT } from '@/lib/api-client';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { theme } from '@/design-system/theme';
@@ -29,7 +29,7 @@ export default function H4TrainerHome() {
     } finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const signOut = () => Alert.alert('Sign out', 'Sign out of the H4 Trainer app?', [
     { text: 'Stay signed in', style: 'cancel' },
@@ -64,16 +64,36 @@ export default function H4TrainerHome() {
       <View style={styles.nextCard}>
         <Text style={styles.nextEyebrow}>YOUR WORKSPACE</Text>
         <Text style={styles.nextTitle}>Ready for your coaching day?</Text>
-        <Text style={styles.nextCopy}>Open your roster, review member plans, or check your sales performance from the tabs below.</Text>
-        <TouchableOpacity
-          style={styles.notificationsLink}
-          onPress={() => router.push('/(h4-trainer)/notifications' as any)}
-          accessibilityRole="button"
-          accessibilityLabel="Open notifications"
-        >
-          <Bell size={16} color="#514500" />
-          <Text style={styles.notificationsLinkText}>Open notifications</Text>
-        </TouchableOpacity>
+        <Text style={styles.nextCopy}>Open your roster to assign workouts and diets, request leave, or check notifications.</Text>
+        <View style={styles.quickLinks}>
+          <TouchableOpacity
+            style={styles.notificationsLink}
+            onPress={() => router.push('/(h4-trainer)/members' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Open assigned members"
+          >
+            <Users size={16} color="#514500" />
+            <Text style={styles.notificationsLinkText}>Assigned members</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.notificationsLink}
+            onPress={() => router.push('/(h4-trainer)/leave' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Request leave"
+          >
+            <Calendar size={16} color="#514500" />
+            <Text style={styles.notificationsLinkText}>Leave requests</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.notificationsLink}
+            onPress={() => router.push('/(h4-trainer)/notifications' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Open notifications"
+          >
+            <Bell size={16} color="#514500" />
+            <Text style={styles.notificationsLinkText}>Notifications</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   </ScreenContainer>;
@@ -105,6 +125,7 @@ const styles = StyleSheet.create({
   nextEyebrow: { color: '#9B8841', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   nextTitle: { color: '#26251F', fontSize: 15, fontWeight: '850', marginTop: 8 },
   nextCopy: { color: '#77746A', fontSize: 11, lineHeight: 17, marginTop: 5 },
-  notificationsLink: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginTop: 14, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 11, backgroundColor: '#FFF4BC' },
+  quickLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  notificationsLink: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 11, backgroundColor: '#FFF4BC' },
   notificationsLinkText: { color: '#514500', fontSize: 11, fontWeight: '800' },
 });

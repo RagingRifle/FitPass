@@ -22,7 +22,7 @@ const loadMembersForAssignment = async (memberIds, gymIds, branchId, existingIds
     const found = records.filter(Boolean);
     const valid = found.filter((member) => {
         const gymMatches = gymIds.includes(String(member.gymId || ''));
-        const branchMatches = !branchId || String(member.branchId || '') === String(branchId);
+        const branchMatches = !branchId || !member.branchId || String(member.branchId) === String(branchId);
         return (gymMatches && branchMatches) || existing.has(String(member.id || member._id));
     });
     return { found, valid };

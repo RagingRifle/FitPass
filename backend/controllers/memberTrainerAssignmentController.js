@@ -101,7 +101,16 @@ const getAssignments = catchAsync(async (req, res, next) => {
             const t = assoc.trainerId ? trainerMap.get(assoc.trainerId.toString()) : null;
             return {
                 ...assoc,
-                member: m ? { id: m.id || m._id, name: m.name, phone: m.phone, email: m.email } : null,
+                member: m ? {
+                    id: m.id || m._id,
+                    name: m.name,
+                    phone: m.phone,
+                    email: m.email,
+                    registrationNumber: m.registrationNumber,
+                    heightCm: m.heightCm,
+                    status: m.status,
+                    branchId: m.branchId
+                } : null,
                 trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
             };
         });

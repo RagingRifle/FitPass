@@ -96,7 +96,7 @@ export const useAuth = create<AuthState>((set, get) => {
         if (data.role !== 'superadmin') {
           const userGymName = data.gymName || '';
           const userGymId = data.gymId || '';
-          const isH4Gym = userGymName.toUpperCase() === 'H4' || H4_GYM_IDS.includes(userGymId);
+          const isH4Gym = userGymName.toUpperCase().includes('H4') || H4_GYM_IDS.includes(userGymId);
           division = isH4Gym ? 'h4' : 'fitpass';
         }
 
@@ -170,7 +170,7 @@ export const useAuth = create<AuthState>((set, get) => {
         // Determine active division based on user context
         let division: 'fitpass' | 'h4' | null = null;
         if (data.role !== 'superadmin') {
-          const isH4Gym = userGymName.toUpperCase() === 'H4' || H4_GYM_IDS.includes(userGymId);
+          const isH4Gym = userGymName.toUpperCase().includes('H4') || H4_GYM_IDS.includes(userGymId);
           division = isH4Gym ? 'h4' : 'fitpass';
         }
 

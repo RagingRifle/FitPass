@@ -17,7 +17,7 @@ describe('trainer assignment queries', () => {
         });
     });
 
-    it('limits branch-scoped trainers to members in their own branch', () => {
+    it('limits branch-scoped trainers to members in their own branch or branchless members', () => {
         expect(buildAssignmentMemberQuery({
             id: 'trainer-1',
             role: 'trainer',
@@ -25,7 +25,7 @@ describe('trainer assignment queries', () => {
             branchId: 'branch-1'
         }, ['member-1'])).toEqual({
             _id: { $in: ['member-1'] },
-            branchId: 'branch-1'
+            $or: [{ branchId: 'branch-1' }, { branchId: null }]
         });
     });
 

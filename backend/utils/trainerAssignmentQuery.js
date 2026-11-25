@@ -11,7 +11,9 @@ function buildTrainerAssignmentQuery(user) {
 
 function buildAssignmentMemberQuery(user, memberIds) {
     const query = { _id: { $in: memberIds } };
-    if (user.role === 'trainer' && user.branchId) query.branchId = user.branchId;
+    if (user.role === 'trainer' && user.branchId) {
+        query.$or = [{ branchId: user.branchId }, { branchId: null }];
+    }
     return query;
 }
 
