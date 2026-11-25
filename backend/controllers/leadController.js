@@ -3,6 +3,10 @@ const AppError = require('../utils/appError');
 const Lead = require('../models/Lead');
 const Member = require('../models/Member');
 
+const parseFollowUpDate = (value) => value
+    ? new Date(`${value}T00:00:00.000Z`)
+    : null;
+
 // @desc    Get all leads for gym
 // @route   GET /api/leads
 const getLeads = catchAsync(async (req, res, next) => {
@@ -25,7 +29,9 @@ const createLead = catchAsync(async (req, res, next) => {
         if (!name || !phone) return res.status(400).json({ message: 'Name and phone are required' });
 
         const lead = await Lead.create({
-            name, phone, email, source, interestedPlan, notes, followUpDate, assignedTo,
+            name, phone, email, source, interestedPlan, notes,
+            followUpDate: parseFollowUpDate(followUpDate),
+            assignedTo,
             gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }),
             branchId: req.user.branchId || null,
             status: 'Opened', comments: []
@@ -62,7 +68,7 @@ const updateLead = catchAsync(async (req, res, next) => {
         if (status) lead.status = status;
         if (interestedPlan !== undefined) lead.interestedPlan = interestedPlan;
         if (notes !== undefined) lead.notes = notes;
-        if (followUpDate !== undefined) lead.followUpDate = followUpDate || null;
+        if (followUpDate !== undefined) lead.followUpDate = parseFollowUpDate(followUpDate);
         if (assignedTo !== undefined) lead.assignedTo = assignedTo;
         if (convertedMemberId !== undefined) lead.convertedMemberId = convertedMemberId;
 

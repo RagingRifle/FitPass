@@ -44,6 +44,7 @@ const FitPassOrders = lazy(() => import('./pages/superadmin/FitPassOrders'));
 const WorkoutPlans = lazy(() => import('./pages/WorkoutPlans'));
 const DietPlans = lazy(() => import('./pages/DietPlans'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Reminders = lazy(() => import('./pages/Reminders'));
 const FitPassVisitLog = lazy(() => import('./pages/FitPassVisitLog'));
 const FitPassPartnerLeads = lazy(() => import('./pages/FitPassPartnerLeads'));
 const GymProfileDiscovery = lazy(() => import('./pages/GymProfileDiscovery'));
@@ -267,7 +268,7 @@ function App() {
         } />
 
         <Route path="/leads" element={
-          <ProtectedRoute roles={['admin', 'receptionist', 'h4_admin']}>
+          <ProtectedRoute roles={['admin', 'receptionist', 'h4_admin', 'superadmin']}>
             <Layout>
               <Leads />
             </Layout>
@@ -405,6 +406,14 @@ function App() {
           <ProtectedRoute roles={['admin', 'h4_admin', 'superadmin', 'partner']}>
             <Layout>
               <Settings />
+            </Layout>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/reminders" element={
+          <ProtectedRoute roles={['h4_admin', 'superadmin']}>
+            <Layout>
+              <Reminders />
             </Layout>
           </ProtectedRoute>
         } />

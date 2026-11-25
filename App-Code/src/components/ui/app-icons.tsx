@@ -9,6 +9,7 @@ const iconNames = {
   ArrowLeft: 'arrow-left', ArrowRight: 'arrow-right', Award: 'medal-outline', BadgeCheck: 'check-decagram-outline',
   Building2: 'domain', Calendar: 'calendar-month-outline', CalendarCheck: 'calendar-check-outline', Camera: 'camera-outline', Check: 'check',
   BarChart2: 'chart-bar', BarChart3: 'chart-bar', Building: 'office-building-outline', CheckCircle: 'check-circle-outline', CheckCircle2: 'check-circle',
+  Bell: 'bell-outline',
   ChevronDown: 'chevron-down', ChevronLeft: 'chevron-left',
   ChevronRight: 'chevron-right', Circle: 'circle-outline', Clock: 'clock-outline', Coins: 'coins', CreditCard: 'credit-card-outline',
   Clipboard: 'clipboard-outline', ClipboardList: 'clipboard-list-outline', DollarSign: 'currency-usd', Download: 'download-outline',
@@ -34,7 +35,7 @@ function makeIcon(name: keyof typeof iconNames) {
 
 export const {
   Activity, AlertCircle, AlertTriangle, Apple, ArrowDown, ArrowDownRight, ArrowUp, ArrowUpRight, ArrowLeft, ArrowRight, Award, BadgeCheck, BarChart2, BarChart3, Building, Building2, Calendar, CalendarCheck,
-  Camera, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Circle, Clock, Coins, CreditCard, DollarSign, Download,
+  Camera, Check, CheckCircle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Circle, Clock, Coins, CreditCard, DollarSign, Download, Bell,
   Clipboard, ClipboardList, Droplet, Droplets, Dumbbell, Edit2, Edit3, Eye, EyeOff, FileText, Filter, Flame, Globe, History, Info, Key, LayoutDashboard, LayoutGrid, Layers, LifeBuoy,
   Lock, LogIn, LogOut, Mail, MapPin, MessageSquare, MessageSquarePlus, Minus, Package, PackageCheck, PieChart, Pencil, Phone, Play, Plus, PlusCircle, QrCode, RefreshCw, RotateCcw, RotateCw,
   Scale, Scan, ScanLine, Search, Send, Settings, Share2, ShieldAlert, ShieldCheck, Shuffle, ShoppingCart, Snowflake, Sparkles, Star, Sun, Target, Ticket, Trash2, TrendingDown, TrendingUp, Trophy, Utensils, User,

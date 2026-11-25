@@ -7,6 +7,11 @@ import {
 
 const Settings = () => {
     const { user } = useContext(AuthContext);
+    const userGymId = user?.gymId?._id || user?.gymId?.id || user?.gymId || '';
+    const isH4ReminderSettings = user?.role === 'h4_admin'
+        || user?.role === 'superadmin'
+        || String(user?.gymName || '').toLowerCase().includes('h4')
+        || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(userGymId));
     const [subTab, setSubTab] = useState('profile'); // 'profile' | 'branding' | 'operations' | 'finance' | 'notifications' | 'hours'
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
@@ -138,9 +143,10 @@ const Settings = () => {
                 gymName, tagline, logoUrl, brandTheme,
                 sessionDuration, scanCooldown, qrRefreshRate, checkInSound,
                 currency, taxRate, taxId, razorpayEnabled, razorpayKey,
-                emailAlerts, smsAlerts, pushAlerts, inactivityReminderDays: Number(inactivityReminderDays),
+                emailAlerts, smsAlerts, pushAlerts,
                 hours: JSON.stringify(hours)
             };
+            if (!isH4ReminderSettings) payload.inactivityReminderDays = Number(inactivityReminderDays);
             
             await API.put('/gyms/settings', payload);
             setLoading(false);
@@ -491,7 +497,8 @@ const Settings = () => {
                                 <hr style={{ borderColor: '#E5E7EB', margin: '0.5rem 0' }} />
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    <label className="input-group" style={{ maxWidth: 340 }}><span style={{ fontWeight: 600, color: '#111827' }}>Inactive member reminder (days)</span><input className="input" type="number" min="1" max="365" value={inactivityReminderDays} onChange={e => setInactivityReminderDays(e.target.value)} /><small style={{ color: '#6B7280' }}>Notify the member and gym admins after this many days without a check-in.</small></label>
+                                    {!isH4ReminderSettings && <label className="input-group" style={{ maxWidth: 340 }}><span style={{ fontWeight: 600, color: '#111827' }}>Inactive member reminder (days)</span><input className="input" type="number" min="1" max="365" value={inactivityReminderDays} onChange={e => setInactivityReminderDays(e.target.value)} /><small style={{ color: '#6B7280' }}>Notify the member and gym admins after this many days without a check-in.</small></label>}
+                                    {isH4ReminderSettings && <p style={{ margin: 0, color: '#6B7280', fontSize: '0.82rem' }}>Manage H4 follow-up and visit reminders from the Reminders page.</p>}
                                     <div style={{
                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                         background: '#F9FAFB', padding: '1rem 1.25rem',

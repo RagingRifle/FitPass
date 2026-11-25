@@ -8,7 +8,7 @@ import {
     UserCheck, Clock, Building2, History, ChevronRight,
     ChevronLeft, LogOut, Target, Package, Banknote,
     AlertTriangle, Receipt, CalendarCheck, Snowflake, LineChart, FileText, Home, Dumbbell, Image, Zap,
-    Settings, Apple, Compass, LifeBuoy, Ticket
+    Settings, Apple, Compass, LifeBuoy, Ticket, Bell
 } from 'lucide-react';
 
 const NAV_GROUPS = {
@@ -258,6 +258,7 @@ const Sidebar = () => {
                         { name: `Analytics${suffix}`, path: '/analytics', icon: LineChart },
                         { name: `Workout Plans${suffix}`, path: '/workout-plans', icon: Dumbbell },
                         { name: `Diet Plans${suffix}`, path: '/diet-plans', icon: Apple },
+                        { name: 'Reminders', path: '/reminders', icon: Bell },
                         { name: 'Audit Logs', path: '/audit', icon: History },
                         { name: `Settings${suffix}`, path: '/settings', icon: Settings },
                     ]
@@ -335,6 +336,7 @@ const Sidebar = () => {
                     { name: `Analytics${suffix}`, path: '/analytics', icon: LineChart },
                     { name: `Workout Plans${suffix}`, path: '/workout-plans', icon: Dumbbell },
                     { name: `Diet Plans${suffix}`, path: '/diet-plans', icon: Apple },
+                    { name: 'Reminders', path: '/reminders', icon: Bell },
                     ...(!user?.branchId ? [{ name: 'Admins Directory', path: '/h4/admins', icon: ShieldCheck }] : []),
                     { name: 'Audit Logs', path: '/audit', icon: History },
                     { name: `Settings${suffix}`, path: '/settings', icon: Settings },
@@ -367,7 +369,7 @@ const Sidebar = () => {
             items: group.items.filter(item => {
                 if (item.path === '/branches') return false;
                 if (item.path === '/fitpass-classes' && role === 'h4_admin') return false;
-                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
+                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans', '/reminders'].includes(item.path)) return false;
                 return true;
             })
         }));

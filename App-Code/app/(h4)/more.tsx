@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   Apple,
+  Bell,
   CalendarCheck,
   CreditCard,
   Activity,
@@ -15,6 +16,7 @@ import { theme } from '@/design-system/theme';
 import { H4TopHeader } from '@/features/h4/components/H4TopHeader';
 
 const MORE_LINKS = [
+  { title: 'Notifications', detail: 'Follow-ups and member visit reminders', route: '/(h4)/notifications', Icon: Bell },
   { title: 'H4 merchandise', detail: 'Browse products and ask at the gym to buy', route: '/(h4)/shop', Icon: Package },
   { title: 'Nutrition', detail: 'Meals and daily targets', route: '/(h4)/diets', Icon: Apple },
   { title: 'Group classes', detail: 'Find your next session', route: '/(h4)/classes', Icon: CalendarCheck },

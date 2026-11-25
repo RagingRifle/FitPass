@@ -32,6 +32,9 @@ const Leads = () => {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [staff, setStaff] = useState([]);
+    const [plans, setPlans] = useState([]);
+    const [plansLoading, setPlansLoading] = useState(true);
+    const [plansError, setPlansError] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [commentsLead, setCommentsLead] = useState(null);
@@ -57,6 +60,17 @@ const Leads = () => {
     useEffect(() => {
         fetchAll();
         API.get('/staff').then(({ data }) => setStaff(Array.isArray(data) ? data : [])).catch(() => setStaff([]));
+        API.get('/plans')
+            .then(({ data }) => {
+                setPlans(Array.isArray(data) ? data : []);
+                setPlansError('');
+            })
+            .catch((err) => {
+                console.error('Error fetching plans for leads:', err);
+                setPlans([]);
+                setPlansError('Plans could not be loaded. Refresh and try again.');
+            })
+            .finally(() => setPlansLoading(false));
     }, []);
 
     const openCreate = () => { setEditLead(null); setFormData(emptyForm); setError(''); setIsModalOpen(true); };
@@ -316,7 +330,23 @@ const Leads = () => {
                     <div className="form-grid">
                         <div className="input-group">
                             <label>Interested Plan</label>
-                            <input className="input" value={formData.interestedPlan} onChange={e => setFormData({ ...formData, interestedPlan: e.target.value })} placeholder="e.g. Monthly, Annual" />
+                            <select
+                                className="input"
+                                value={formData.interestedPlan}
+                                onChange={e => setFormData({ ...formData, interestedPlan: e.target.value })}
+                                disabled={plansLoading}
+                            >
+                                <option value="">{plansLoading ? 'Loading plans…' : 'Select a plan (optional)'}</option>
+                                {formData.interestedPlan && !plans.some(plan => plan.name === formData.interestedPlan) && (
+                                    <option value={formData.interestedPlan}>Saved plan: {formData.interestedPlan}</option>
+                                )}
+                                {plans.map(plan => (
+                                    <option key={plan._id || plan.id} value={plan.name}>
+                                        {plan.name} · ₹{Number(plan.price || 0).toLocaleString('en-IN')}
+                                    </option>
+                                ))}
+                            </select>
+                            {plansError && <small style={{ color: '#b91c1c' }}>{plansError}</small>}
                         </div>
                         <div className="input-group">
                             <label>Follow-up Date</label>

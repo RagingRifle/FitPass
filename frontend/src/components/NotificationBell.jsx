@@ -1,21 +1,35 @@
 import { useState, useEffect, useRef } from 'react';
 import API from '../services/api';
-import { Bell, Clock, CreditCard, Megaphone, CheckCircle2 } from 'lucide-react';
+import { Bell, Clock, CreditCard, Megaphone, CheckCircle2, Target, UsersRound } from 'lucide-react';
 
-const typeIcon = { expiry: <Clock size={16} />, payment: <CreditCard size={16} />, announcement: <Megaphone size={16} /> };
-const typeColor = { expiry: '#f59e0b', payment: '#ef4444', announcement: 'var(--primary-color)' };
+const typeIcon = {
+    expiry: <Clock size={16} />,
+    payment: <CreditCard size={16} />,
+    announcement: <Megaphone size={16} />,
+    lead_followup: <Target size={16} />,
+    inactive_member: <UsersRound size={16} />,
+};
+const typeColor = {
+    expiry: '#f59e0b',
+    payment: '#ef4444',
+    announcement: 'var(--primary-color)',
+    lead_followup: '#d4a800',
+    inactive_member: '#0f766e',
+};
 
 const NotificationBell = () => {
     const [notifications, setNotifications] = useState([]);
     const [open, setOpen] = useState(false);
+    const [error, setError] = useState('');
     const ref = useRef(null);
 
     const fetchNotifications = async () => {
         try {
             const { data } = await API.get('/notifications');
             setNotifications(data);
-        } catch {
-            // silently fail - not critical
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Notifications could not be loaded.');
         }
     };
 
@@ -40,13 +54,21 @@ const NotificationBell = () => {
             setNotifications(prev =>
                 prev.map(n => n._id === id ? { ...n, read: true } : n)
             );
-        } catch { }
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Notification could not be marked as read.');
+        }
     };
 
     const handleMarkAllRead = async () => {
         const unread = notifications.filter(n => !n.read);
-        await Promise.all(unread.map(n => API.put(`/notifications/${n._id}`)));
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        try {
+            await Promise.all(unread.map(n => API.put(`/notifications/${n._id}`)));
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Notifications could not be marked as read.');
+        }
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;
@@ -129,6 +151,11 @@ const NotificationBell = () => {
 
                     {/* Notification List */}
                     <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                        {error && (
+                            <p role="alert" style={{ margin: 0, padding: '0.75rem 1rem', color: '#b91c1c', fontSize: '0.75rem' }}>
+                                {error}
+                            </p>
+                        )}
                         {notifications.length === 0 ? (
                             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                                 <div style={{ marginBottom: '0.5rem', color: 'var(--success)', display: 'flex', justifyContent: 'center' }}><CheckCircle2 size={48} strokeWidth={1.5} /></div>
@@ -154,14 +181,14 @@ const NotificationBell = () => {
                                         width: '32px',
                                         height: '32px',
                                         borderRadius: '50%',
-                                        background: `${typeColor[n.type]}22`,
+                                        background: `${typeColor[n.type] || 'var(--primary-color)'}22`,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         fontSize: '1rem',
                                         flexShrink: 0
                                     }}>
-                                        {typeIcon[n.type]}
+                                        {typeIcon[n.type] || <Bell size={16} />}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: '1.4', color: n.read ? 'var(--text-secondary)' : 'var(--text-primary)' }}>

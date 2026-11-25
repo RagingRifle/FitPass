@@ -4,7 +4,106 @@ const logger = require('../lib/logger');
 const Notification = require('../models/Notification');
 const Member = require('../models/Member');
 const User = require('../models/User');
-const Lead = require('../models/Lead');
+const prisma = require('../config/prisma');
+const { H4_GYM_IDS } = require('../config/constants');
+
+const getH4GymIds = async () => {
+    const gyms = await prisma.gym.findMany({
+        where: {
+            OR: [
+                { id: { in: H4_GYM_IDS } },
+                { name: { contains: 'h4', mode: 'insensitive' } },
+            ],
+        },
+        select: { id: true },
+    });
+    const gymIds = new Set(gyms.map(gym => gym.id));
+    return [
+        ...H4_GYM_IDS.filter(id => gymIds.has(id)),
+        ...gyms.map(gym => gym.id).filter(id => !H4_GYM_IDS.includes(id)),
+    ];
+};
+
+const getSharedSettingsGymId = (gymIds) => (
+    H4_GYM_IDS.find(id => gymIds.includes(id)) || gymIds[0]
+);
+
+const reminderSettingsSelect = {
+    inactivityReminderDays: true,
+    inactivityReminderRepeatDaily: true,
+    leadReminderDaysBefore: true,
+    leadReminderRepeatDaily: true,
+};
+
+const getH4GymId = async (req) => {
+    if (!['h4_admin', 'superadmin'].includes(req.user?.role)) return null;
+    const gymId = String(
+        req.user.role === 'superadmin'
+            ? req.tenantFilter?.gymId || req.user.gymId || ''
+            : req.user.gymId || ''
+    );
+    if (!gymId || gymId === 'SYSTEM') return null;
+    if (H4_GYM_IDS.includes(gymId)) return gymId;
+    const gym = await prisma.gym.findUnique({ where: { id: gymId }, select: { id: true, name: true } });
+    return gym?.name?.toLowerCase().includes('h4') ? gym.id : null;
+};
+
+const getReminderSettings = catchAsync(async (req, res) => {
+    const gymId = await getH4GymId(req);
+    if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to manage reminders.' });
+    const gymIds = await getH4GymIds();
+    if (!gymIds.includes(gymId)) return res.status(403).json({ message: 'The selected H4 gym was not found.' });
+
+    const sharedGymId = getSharedSettingsGymId(gymIds);
+    const settingsRows = await Promise.all(gymIds.map(id => prisma.gymSettings.upsert({
+        where: { gymId: id },
+        update: {},
+        create: { gymId: id },
+        select: { gymId: true, ...reminderSettingsSelect },
+    })));
+    const settings = settingsRows.find(row => row.gymId === sharedGymId);
+    return res.json(settings);
+});
+
+const updateReminderSettings = catchAsync(async (req, res) => {
+    const gymId = await getH4GymId(req);
+    if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to manage reminders.' });
+    const gymIds = await getH4GymIds();
+    if (!gymIds.includes(gymId)) return res.status(403).json({ message: 'The selected H4 gym was not found.' });
+
+    const updates = {};
+    for (const field of ['inactivityReminderDays', 'leadReminderDaysBefore']) {
+        if (req.body[field] === undefined) continue;
+        const days = Number(req.body[field]);
+        const minimum = 1;
+        if (!Number.isInteger(days) || days < minimum || days > 365) {
+            return res.status(400).json({ message: `${field} must be between ${minimum} and 365 days.` });
+        }
+        updates[field] = days;
+    }
+
+    for (const field of ['inactivityReminderRepeatDaily', 'leadReminderRepeatDaily']) {
+        if (req.body[field] === undefined) continue;
+        if (typeof req.body[field] !== 'boolean') {
+            return res.status(400).json({ message: `${field} must be true or false.` });
+        }
+        updates[field] = req.body[field];
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: 'At least one reminder setting is required.' });
+    }
+
+    const sharedGymId = getSharedSettingsGymId(gymIds);
+    const settingsRows = await prisma.$transaction(gymIds.map(id => prisma.gymSettings.upsert({
+        where: { gymId: id },
+        update: updates,
+        create: { gymId: id, ...updates },
+        select: { gymId: true, ...reminderSettingsSelect },
+    })));
+    const settings = settingsRows.find(row => row.gymId === sharedGymId);
+    return res.json({ message: 'Reminder settings saved.', settings });
+});
 
 // @desc    Get unread notifications and auto-generate alerts
 // @route   GET /api/notifications
@@ -93,11 +192,6 @@ const generateAutomatedAlerts = async (user) => {
             }));
         }
 
-        if (['admin', 'receptionist', 'h4_admin'].includes(user.role)) {
-            const dueLeads = await Lead.find({ gymId: user.gymId, ...(user.branchId ? { branchId: user.branchId } : {}), followUpDate: { $lte: new Date() }, status: { $nin: ['Converted', 'Closed', 'Lost'] } }).limit(100);
-            await Promise.all(dueLeads.map(lead => createUniqueNotification(user._id, user.gymId, 'lead_followup', `Follow up with ${lead.name} (${lead.phone})${lead.assignedTo ? ` · Assigned to ${lead.assignedTo}` : ''}.`)));
-        }
-
         // 2. Check for Dues (only for staff)
         if (user.role === 'admin' || user.role === 'receptionist') {
             const allMembers = await Member.find({ gymId: user.gymId });
@@ -134,5 +228,7 @@ const createUniqueNotification = async (recipientId, gymId, type, message) => {
 module.exports = {
     getNotifications,
     markAsRead,
-    createAnnouncement
+    createAnnouncement,
+    getReminderSettings,
+    updateReminderSettings,
 };

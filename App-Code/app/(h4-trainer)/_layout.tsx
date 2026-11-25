@@ -21,6 +21,7 @@ export default function H4TrainerLayout() {
     <Tabs.Screen name="diets/[memberId]" options={{ href: null, headerShown: true, title: 'Diet plan' }} />
     <Tabs.Screen name="workouts/[memberId]" options={{ href: null, headerShown: true, title: 'Workout plan' }} />
     <Tabs.Screen name="assessments/[memberId]" options={{ href: null, headerShown: true, title: 'Body assessment' }} />
+    <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
   </Tabs>;
 }
 

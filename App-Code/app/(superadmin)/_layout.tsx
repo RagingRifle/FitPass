@@ -1,7 +1,7 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
-import { LayoutDashboard, Building2, Package, History, LogOut, Shuffle, LayoutGrid, ShieldCheck } from '@/components/ui/app-icons';
+import { LayoutDashboard, Building2, Package, History, LogOut, Shuffle, LayoutGrid, ShieldCheck, Bell } from '@/components/ui/app-icons';
 import { theme } from '@/design-system/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { ProfileAvatar } from '@/components/ui/ProfileAvatar';
@@ -11,6 +11,7 @@ export default function SuperAdminLayout() {
   const activeDivision = useAuth((state) => state.activeDivision);
   const changeActiveDivision = useAuth((state) => state.changeActiveDivision);
   const user = useAuth((state) => state.user);
+  const router = useRouter();
 
   const isH4 = activeDivision === 'h4';
 
@@ -27,6 +28,16 @@ export default function SuperAdminLayout() {
         headerRight: () => (
           <View style={styles.headerActions}>
             <ProfileAvatar size={32} />
+            {isH4 && (
+              <TouchableOpacity
+                onPress={() => router.push('/(superadmin)/notifications' as any)}
+                style={styles.headerBtn}
+                activeOpacity={0.7}
+                accessibilityLabel="H4 notifications"
+              >
+                <Bell color="#FEDF1E" size={18} />
+              </TouchableOpacity>
+            )}
             {activeDivision !== null && (
               <TouchableOpacity 
                 onPress={() => changeActiveDivision(null)} 
@@ -141,6 +152,13 @@ export default function SuperAdminLayout() {
           title: 'Audit Logs',
           tabBarLabel: 'Audit',
           tabBarIcon: ({ color }) => <History color={color} size={22} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null,
+          headerShown: false,
         }}
       />
     </Tabs>
