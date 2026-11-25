@@ -3,6 +3,10 @@ const AppError = require('../utils/appError');
 const MemberTrainerAssignment = require('../models/MemberTrainerAssignment');
 const User = require('../models/User');
 const Member = require('../models/Member');
+const {
+    buildTrainerAssignmentQuery,
+    buildAssignmentMemberQuery
+} = require('../utils/trainerAssignmentQuery');
 
 // @desc    Assign a trainer to a member
 // @route   POST /api/trainer-assignments
@@ -27,6 +31,13 @@ const assignTrainer = catchAsync(async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Trainer not found or user is not a trainer' });
         }
 
+        const memberBranchId = String(member.branchId || '');
+        const trainerBranchId = String(trainer.branchId || '');
+        if (memberBranchId && trainerBranchId && memberBranchId !== trainerBranchId) {
+            return res.status(400).json({ success: false, message: 'Member and trainer must belong to the same branch.' });
+        }
+        const assignmentBranchId = member.branchId || trainer.branchId || req.user.branchId || null;
+
         // Check if assignment already exists
         const existingAssignment = await MemberTrainerAssignment.findOne({
             memberId,
@@ -47,7 +58,8 @@ const assignTrainer = catchAsync(async (req, res, next) => {
             memberId,
             trainerId,
             assignedDate: new Date(),
-            gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId })
+            gymId: req.user.gymId,
+            branchId: assignmentBranchId
         });
 
         res.status(201).json(assignment);
@@ -59,8 +71,8 @@ const assignTrainer = catchAsync(async (req, res, next) => {
 // @access  Private/Admin/Trainer
 const getAssignments = catchAsync(async (req, res, next) => {
     try {
-        const query = { gymId: req.user.gymId, ...(req.user.branchId && { branchId: req.user.branchId }) };
-        if (req.user.role === 'trainer') query.trainerId = req.user.id;
+        const query = buildTrainerAssignmentQuery(req.user);
+        const branchScopedTrainer = req.user.role === 'trainer' && Boolean(req.user.branchId);
 
         // Strict pagination parameters with hard cap at 100
         const page = Math.max(parseInt(req.query.page) || 1, 1);
@@ -68,18 +80,16 @@ const getAssignments = catchAsync(async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const total = await MemberTrainerAssignment.countDocuments(query);
-        const assignments = await MemberTrainerAssignment.find(query)
-            .sort({ assignedDate: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        let assignmentsQuery = MemberTrainerAssignment.find(query).sort({ assignedDate: -1 });
+        if (!branchScopedTrainer) assignmentsQuery = assignmentsQuery.skip(skip).limit(limit);
+        const assignments = await assignmentsQuery.lean();
         
         // Batched multi-entity lookup (Member + Trainer)
         const memberIds = [...new Set(assignments.map(a => a.memberId).filter(Boolean))];
         const trainerIds = [...new Set(assignments.map(a => a.trainerId).filter(Boolean))];
 
         const [members, trainers] = await Promise.all([
-            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id name phone email registrationNumber heightCm status').lean() : [],
+            memberIds.length > 0 ? Member.find(buildAssignmentMemberQuery(req.user, memberIds)).select('id name phone email registrationNumber heightCm status').lean() : [],
             trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
         ]);
 
@@ -95,11 +105,13 @@ const getAssignments = catchAsync(async (req, res, next) => {
                 trainer: t ? { id: t.id || t._id, name: t.name, email: t.email } : null
             };
         });
+        const visibleAssignments = branchScopedTrainer ? populated.filter((assignment) => assignment.member) : populated;
+        const paginatedAssignments = branchScopedTrainer ? visibleAssignments.slice(skip, skip + limit) : visibleAssignments;
 
         res.json({
             success: true,
-            data: populated,
-            meta: { page, limit, total }
+            data: paginatedAssignments,
+            meta: { page, limit, total: branchScopedTrainer ? visibleAssignments.length : total }
         });
     } catch (error) { next(error); }
 });
