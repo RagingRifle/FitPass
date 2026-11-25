@@ -944,62 +944,87 @@ const DietPlans = () => {
                                         </button>
 
                                         <div className="diet-meal-primary-grid">
-                                            <input 
-                                                type="text" 
-                                                placeholder="Time (e.g. 08:00 AM)" 
-                                                className="form-control" 
-                                                value={meal.time} 
-                                                onChange={(e) => handleMealChange(index, 'time', e.target.value)}
-                                                required
-                                            />
-                                            <input 
-                                                type="text" 
-                                                placeholder="Meal Name (Breakfast)" 
-                                                className="form-control" 
-                                                value={meal.name} 
-                                                onChange={(e) => handleMealChange(index, 'name', e.target.value)}
-                                                required
-                                            />
-                                            <input 
-                                                type="number" 
-                                                placeholder="kcal" 
-                                                className="form-control" 
-                                                value={meal.calories} 
-                                                onChange={(e) => handleMealChange(index, 'calories', parseInt(e.target.value) || 0)}
-                                            />
+                                            <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                Time
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="e.g. 08:00 AM" 
+                                                    className="form-control" 
+                                                    value={meal.time} 
+                                                    onChange={(e) => handleMealChange(index, 'time', e.target.value)}
+                                                    required
+                                                />
+                                            </label>
+                                            <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                Meal Name
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="e.g. Breakfast" 
+                                                    className="form-control" 
+                                                    value={meal.name} 
+                                                    onChange={(e) => handleMealChange(index, 'name', e.target.value)}
+                                                    required
+                                                />
+                                            </label>
+                                            <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                Calories (kcal)
+                                                <input 
+                                                    type="number" 
+                                                    min="0"
+                                                    placeholder="kcal" 
+                                                    className="form-control" 
+                                                    value={meal.calories} 
+                                                    onChange={(e) => handleMealChange(index, 'calories', parseInt(e.target.value) || 0)}
+                                                />
+                                            </label>
                                         </div>
 
                                         <div className="diet-meal-macro-grid">
-                                            <input 
-                                                type="number" 
-                                                placeholder="Prot (g)" 
-                                                className="form-control" 
-                                                value={meal.protein} 
-                                                onChange={(e) => handleMealChange(index, 'protein', parseInt(e.target.value) || 0)}
-                                            />
-                                            <input 
-                                                type="number" 
-                                                placeholder="Carbs (g)" 
-                                                className="form-control" 
-                                                value={meal.carbs} 
-                                                onChange={(e) => handleMealChange(index, 'carbs', parseInt(e.target.value) || 0)}
-                                            />
-                                            <input 
-                                                type="number" 
-                                                placeholder="Fats (g)" 
-                                                className="form-control" 
-                                                value={meal.fats} 
-                                                onChange={(e) => handleMealChange(index, 'fats', parseInt(e.target.value) || 0)}
-                                            />
+                                            <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                Protein (g)
+                                                <input 
+                                                    type="number" 
+                                                    min="0"
+                                                    placeholder="g" 
+                                                    className="form-control" 
+                                                    value={meal.protein} 
+                                                    onChange={(e) => handleMealChange(index, 'protein', parseInt(e.target.value) || 0)}
+                                                />
+                                            </label>
+                                            <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                Carbs (g)
+                                                <input 
+                                                    type="number" 
+                                                    min="0"
+                                                    placeholder="g" 
+                                                    className="form-control" 
+                                                    value={meal.carbs} 
+                                                    onChange={(e) => handleMealChange(index, 'carbs', parseInt(e.target.value) || 0)}
+                                                />
+                                            </label>
+                                            <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                                Fats (g)
+                                                <input 
+                                                    type="number" 
+                                                    min="0"
+                                                    placeholder="g" 
+                                                    className="form-control" 
+                                                    value={meal.fats} 
+                                                    onChange={(e) => handleMealChange(index, 'fats', parseInt(e.target.value) || 0)}
+                                                />
+                                            </label>
                                         </div>
 
-                                        <input 
-                                            type="text" 
-                                            placeholder="Food items (e.g. 3 eggs, 100g oats, 1 banana)" 
-                                            className="form-control" 
-                                            value={meal.items} 
-                                            onChange={(e) => handleMealChange(index, 'items', e.target.value)}
-                                        />
+                                        <label style={{ display: 'grid', gap: '4px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                                            Food Items
+                                            <input 
+                                                type="text" 
+                                                placeholder="e.g. 3 eggs, 100g oats, 1 banana" 
+                                                className="form-control" 
+                                                value={meal.items} 
+                                                onChange={(e) => handleMealChange(index, 'items', e.target.value)}
+                                            />
+                                        </label>
                                     </div>
                                 ))}
                             </div>

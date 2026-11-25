@@ -14,7 +14,7 @@ const today = () => {
 };
 export default function TrainerDietPlan() {
   const { memberId } = useLocalSearchParams<{ memberId: string }>();
-  const toast = useToast();
+  const showToast = useToast((s) => s.show);
   const [memberName, setMemberName] = useState('Member');
   const [name, setName] = useState('');
   const [meals, setMeals] = useState({ breakfast: '', lunch: '', dinner: '', snacks: '' });
@@ -36,25 +36,25 @@ export default function TrainerDietPlan() {
       setMemberName(memberRes.data.name || 'Member');
       setPlans(plansRes.data?.data || []);
     } catch {
-      toast.show('Could not load this member’s diet plans.', 'error');
+      showToast('Could not load this member’s diet plans.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [memberId, toast]);
+  }, [memberId, showToast]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const save = async () => {
-    if (!name.trim() || !Object.values(meals).some((value) => value.trim())) return toast.show('Add a plan name and at least one meal.', 'error');
-    if (startDate && endDate && startDate > endDate) return toast.show('The end date must be after the start date.', 'error');
+    if (!name.trim() || !Object.values(meals).some((value) => value.trim())) return showToast('Add a plan name and at least one meal.', 'error');
+    if (startDate && endDate && startDate > endDate) return showToast('The end date must be after the start date.', 'error');
     setSaving(true);
     try {
       const mealList = Object.entries(meals).filter(([, value]) => value.trim()).map(([mealName, foods]) => ({ name: mealName.charAt(0).toUpperCase() + mealName.slice(1), foods: foods.trim() }));
       const payload = { memberId, name: name.trim(), meals: mealList, startDate: startDate || null, endDate: endDate || null };
       if (editingPlanId) await API_CLIENT.put(`/diet-plans/${editingPlanId}`, payload);
       else await API_CLIENT.post('/diet-plans', payload);
-      toast.show(editingPlanId ? 'Diet plan updated.' : 'Diet plan assigned.', 'success');
+      showToast(editingPlanId ? 'Diet plan updated.' : 'Diet plan assigned.', 'success');
       setEditingPlanId(''); setName(''); setMeals({ breakfast: '', lunch: '', dinner: '', snacks: '' }); setStartDate(today()); setEndDate('');
       await load();
-    } catch (err: any) { toast.show(err.response?.data?.message || 'Could not assign the diet plan.', 'error'); }
+    } catch (err: any) { showToast(err.response?.data?.message || 'Could not assign the diet plan.', 'error'); }
     finally { setSaving(false); }
   };
   const visiblePlans = plans.filter((plan) => {

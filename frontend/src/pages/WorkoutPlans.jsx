@@ -643,7 +643,8 @@ const WorkoutPlans = () => {
                                                                     else if (hasSets) volume = `${ex.sets} sets`;
                                                                     else if (hasReps) volume = `${ex.reps} reps`;
 
-                                                                    const weight = ex.weight ? `(${ex.weight}kg)` : '';
+                                                                    const weightText = String(ex.weight || '').trim();
+                                                                    const weight = weightText ? (/^\d+(\.\d+)?$/.test(weightText) ? `(${weightText} kg)` : `(${weightText})`) : '';
                                                                     const spec = [volume, weight].filter(Boolean).join(' ');
 
                                                                     return (
@@ -1068,6 +1069,15 @@ const WorkoutPlans = () => {
                                     </button>
                                 </div>
 
+                                <div className="workout-exercise-row" style={{ marginBottom: '0.4rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                    <span>Day</span>
+                                    <span>Exercise</span>
+                                    <span>Sets</span>
+                                    <span>Reps</span>
+                                    <span>Weight / Note</span>
+                                    <span></span>
+                                </div>
+
                                 {exercises.map((ex, index) => (
                                     <div key={index} className="workout-exercise-row">
                                         <select 
@@ -1169,6 +1179,15 @@ const WorkoutPlans = () => {
                                     <button type="button" className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleAddExercise(true)}>
                                         + Add Row
                                     </button>
+                                </div>
+
+                                <div className="workout-exercise-row" style={{ marginBottom: '0.4rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                    <span>Day</span>
+                                    <span>Exercise</span>
+                                    <span>Sets</span>
+                                    <span>Reps</span>
+                                    <span>Weight / Note</span>
+                                    <span></span>
                                 </div>
 
                                 {templateExercises.map((ex, index) => (

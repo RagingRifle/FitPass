@@ -15,7 +15,7 @@ const today = () => {
 };
 export default function TrainerWorkoutPlan() {
   const { memberId } = useLocalSearchParams<{ memberId: string }>();
-  const toast = useToast();
+  const showToast = useToast((s) => s.show);
   const [memberName, setMemberName] = useState('Member');
   const [name, setName] = useState('');
   const [exercises, setExercises] = useState<Exercise[]>([{ name: '', sets: '3', reps: '10' }]);
@@ -37,27 +37,27 @@ export default function TrainerWorkoutPlan() {
       setMemberName(memberRes.data.name || 'Member');
       setPlans(plansRes.data?.data || []);
     } catch {
-      toast.show('Could not load this member’s workout plans.', 'error');
+      showToast('Could not load this member’s workout plans.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [memberId, toast]);
+  }, [memberId, showToast]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
   const update = (index: number, key: keyof Exercise, value: string) => setExercises((items) => items.map((item, i) => i === index ? { ...item, [key]: value } : item));
   const save = async () => {
     const planName = name.trim();
     const rows = exercises.filter((item) => item.name.trim()).map((item) => ({ name: item.name.trim(), sets: Number(item.sets) || 3, reps: Number(item.reps) || 10 }));
-    if (!planName || !rows.length) return toast.show('Enter a plan name and at least one exercise.', 'error');
-    if (startDate && endDate && startDate > endDate) return toast.show('The end date must be after the start date.', 'error');
+    if (!planName || !rows.length) return showToast('Enter a plan name and at least one exercise.', 'error');
+    if (startDate && endDate && startDate > endDate) return showToast('The end date must be after the start date.', 'error');
     setSaving(true);
     try {
       const payload = { memberId, name: planName, exercises: rows, startDate: startDate || null, endDate: endDate || null };
       if (editingPlanId) await API_CLIENT.put(`/workout-plans/${editingPlanId}`, payload);
       else await API_CLIENT.post('/workout-plans', payload);
-      toast.show(editingPlanId ? 'Workout plan updated.' : 'Workout plan assigned.', 'success');
+      showToast(editingPlanId ? 'Workout plan updated.' : 'Workout plan assigned.', 'success');
       setEditingPlanId(''); setName(''); setExercises([{ name: '', sets: '3', reps: '10' }]); setStartDate(today()); setEndDate('');
       await load();
-    } catch (err: any) { toast.show(err.response?.data?.message || 'Could not assign the workout plan.', 'error'); }
+    } catch (err: any) { showToast(err.response?.data?.message || 'Could not assign the workout plan.', 'error'); }
     finally { setSaving(false); }
   };
   const visiblePlans = plans.filter((plan) => {

@@ -18,7 +18,7 @@ const shiftDate = (iso: string, days: number) => {
 };
 
 export default function TrainerLeaveScreen() {
-  const toast = useToast();
+  const showToast = useToast((s) => s.show);
   const [startDate, setStartDate] = useState(today());
   const [endDate, setEndDate] = useState(today());
   const [reason, setReason] = useState('');
@@ -65,7 +65,7 @@ export default function TrainerLeaveScreen() {
 
   const submit = async () => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || startDate > endDate) {
-      toast.show('Enter valid YYYY-MM-DD dates with end date on or after start date.', 'error');
+      showToast('Enter valid YYYY-MM-DD dates with end date on or after start date.', 'error');
       return;
     }
     setSaving(true);
@@ -73,9 +73,9 @@ export default function TrainerLeaveScreen() {
       await API_CLIENT.post('/trainer-attendance/leave-requests', { startDate, endDate, reason: reason.trim(), timezoneOffset: new Date().getTimezoneOffset() });
       setReason('');
       await loadRequests();
-      toast.show('Leave request sent to your branch admin.', 'success');
+      showToast('Leave request sent to your branch admin.', 'success');
     } catch (err: any) {
-      toast.show(err.response?.data?.message || 'Could not send leave request.', 'error');
+      showToast(err.response?.data?.message || 'Could not send leave request.', 'error');
     } finally { setSaving(false); }
   };
 
