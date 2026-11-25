@@ -133,6 +133,25 @@ sudo systemctl reload nginx
 This update procedure does not apply database schema changes. Review and back
 up the database before any schema migration or update.
 
+The workout-plan notification fix requires the additive `Notification.dedupeKey`
+column and its unique index. After pulling the update and taking a verified
+database backup, apply the checked-in SQL migration before restarting the
+backend:
+
+```bash
+cd /var/www/gym-crm/backend
+npm ci
+npx prisma db execute --file prisma/migrations/20261125000000_notification_dedupe_key/migration.sql
+sudo systemctl restart gym-crm
+sudo systemctl status gym-crm --no-pager
+sudo journalctl -u gym-crm -n 100 --no-pager
+```
+
+The migration is safe to re-run. It adds a nullable column and a unique index;
+it does not alter or delete existing notification data. Do not use
+`npm run build` for this update because its current Prisma command can accept
+data loss.
+
 The FitPass/H4 store requires the `StoreProduct`, `StoreOrder`, and
 `CoinSettings` tables. After taking a database backup, apply the additive store
 schema SQL before restarting the backend if those tables are not already

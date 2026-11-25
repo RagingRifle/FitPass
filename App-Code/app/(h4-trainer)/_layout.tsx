@@ -26,7 +26,7 @@ export default function H4TrainerLayout() {
 }
 
 const styles = StyleSheet.create({
-  bar: { backgroundColor: '#171713', paddingTop: 7, borderTopWidth: 1, borderTopColor: '#39382F', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: .16, shadowRadius: 8 }, android: { elevation: 12 } }) },
+  bar: { backgroundColor: '#171713', transform: [{ translateY: -8 }], paddingTop: 7, borderTopWidth: 1, borderTopColor: '#39382F', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: .16, shadowRadius: 8 }, android: { elevation: 12 } }) },
   item: { paddingVertical: 2 },
   label: { fontSize: 9, fontWeight: '700' },
 });

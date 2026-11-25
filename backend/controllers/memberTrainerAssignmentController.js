@@ -79,7 +79,7 @@ const getAssignments = catchAsync(async (req, res, next) => {
         const trainerIds = [...new Set(assignments.map(a => a.trainerId).filter(Boolean))];
 
         const [members, trainers] = await Promise.all([
-            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id name phone email').lean() : [],
+            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id name phone email registrationNumber heightCm status').lean() : [],
             trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
         ]);
 

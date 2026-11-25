@@ -3,6 +3,7 @@ const AppError = require('../utils/appError');
 const WorkoutPlan = require('../models/WorkoutPlan');
 const Member = require('../models/Member');
 const User = require('../models/User');
+const logger = require('../lib/logger');
 const { H4_GYM_IDS } = require('../config/constants');
 const { trainerCanManage } = require('../utils/trainerAccess');
 
@@ -111,8 +112,12 @@ const createPlan = catchAsync(async (req, res, next) => {
             branchId: req.user.branchId || (memberBranches.length === 1 ? member.branchId || null : null)
         });
 
-        const recipients = await User.find({ memberId: { $in: memberIds } }).lean();
-        await Promise.all(recipients.map((recipient) => require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId: member.gymId, type: 'plan_update', message: `A workout plan was added: ${name}.` })));
+        try {
+            const recipients = await User.find({ memberId: { $in: memberIds } }).lean();
+            await Promise.all(recipients.map((recipient) => require('../models/Notification').create({ recipientId: recipient.id || recipient._id, gymId: member.gymId, type: 'plan_update', message: `A workout plan was added: ${name}.` })));
+        } catch (error) {
+            logger.error({ err: error, workoutPlanId: plan.id }, 'Workout plan created but member notifications failed');
+        }
 
         res.status(201).json(plan);
     } catch (error) { next(error); }

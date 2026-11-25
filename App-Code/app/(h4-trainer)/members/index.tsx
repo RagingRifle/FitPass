@@ -20,8 +20,10 @@ export default function TrainerMembers() {
     refresh ? setRefreshing(true) : setLoading(true);
     setError('');
     try {
-      const { data } = await API_CLIENT.get('/members', { params: { page: 1, limit: 100 } });
-      setMembers(Array.isArray(data?.members) ? data.members : []);
+      const { data } = await API_CLIENT.get('/trainer-assignments', { params: { page: 1, limit: 100 } });
+      const assignments = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : null;
+      if (!assignments) throw new Error('The trainer assignments response was invalid.');
+      setMembers(assignments.flatMap((assignment: { member?: Member | null }) => assignment.member ? [assignment.member] : []));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Could not load your assigned members.');
     } finally { setLoading(false); setRefreshing(false); }
