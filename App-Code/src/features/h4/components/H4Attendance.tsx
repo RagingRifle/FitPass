@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { H4TopHeader } from './H4TopHeader';
 import { AttendanceActivityGrid } from '@/components/attendance/AttendanceActivityGrid';
+import { getPlanValidity } from '../utils/planValidity';
 
 export function H4Attendance() {
   const router = useRouter();
@@ -20,6 +21,11 @@ export function H4Attendance() {
   const checkInMutation = useH4CheckIn();
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const planValidity = getPlanValidity(passData?.member?.expiryDate);
+  const passStatus = planValidity.isExpired
+    ? 'EXPIRED'
+    : passData?.member?.status?.toUpperCase() || 'ACTIVE';
+  const isPassActive = passStatus === 'ACTIVE';
 
   // Countdown timer for 60-second rotating pass
   useEffect(() => {
@@ -63,21 +69,28 @@ export function H4Attendance() {
               </Typography>
             </View>
 
-            <View style={[styles.countdownBadge, { backgroundColor: 'rgba(22, 163, 74, 0.12)', borderColor: 'rgba(22, 163, 74, 0.3)' }]}>
-              <CheckCircle size={12} color="#16A34A" />
-              <Typography variant="caption" style={[styles.countdownText, { color: '#16A34A' }]}>
-                ACTIVE
+            <View style={[styles.countdownBadge, {
+              backgroundColor: isPassActive ? 'rgba(22, 163, 74, 0.12)' : 'rgba(185, 28, 28, 0.08)',
+              borderColor: isPassActive ? 'rgba(22, 163, 74, 0.3)' : 'rgba(185, 28, 28, 0.35)',
+            }]}>
+              <CheckCircle size={12} color={isPassActive ? '#16A34A' : '#B91C1C'} />
+              <Typography variant="caption" style={[styles.countdownText, { color: isPassActive ? '#16A34A' : '#B91C1C' }]}>
+                {passStatus}
               </Typography>
             </View>
           </View>
 
-          {/* Session Credits Badge (if session-based or unlimited) */}
-          <View style={styles.sessionStatusBanner}>
-            <Typography variant="caption" style={{ color: '#0F172A', fontWeight: '700' }}>
-              Sessions Remaining:
-            </Typography>
-            <Typography variant="bodySm" style={{ color: theme.colors.primaryText, fontWeight: '900' }}>
-              {passData?.member?.sessionsTotal ? `${passData?.member?.sessionsRemaining} / ${passData?.member?.sessionsTotal} Sessions` : 'Unlimited Access'}
+          <View style={[styles.validityBanner, planValidity.isExpired && styles.expiredValidityBanner]}>
+            <View>
+              <Typography variant="caption" style={styles.validityEyebrow}>
+                PLAN VALIDITY
+              </Typography>
+              <Typography variant="bodySm" style={[styles.validityDate, planValidity.isExpired && styles.expiredValidityText]}>
+                {planValidity.expiryLabel}
+              </Typography>
+            </View>
+            <Typography variant="caption" style={[styles.validityRemaining, planValidity.isExpired && styles.expiredValidityText]}>
+              {planValidity.remainingLabel}
             </Typography>
           </View>
 
@@ -255,17 +268,41 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 10,
   },
-  sessionStatusBanner: {
+  validityBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    backgroundColor: theme.colors.brandLight,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 8,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.primary,
+  },
+  expiredValidityBanner: {
+    backgroundColor: 'rgba(185, 28, 28, 0.08)',
+    borderColor: 'rgba(185, 28, 28, 0.35)',
+  },
+  validityEyebrow: {
+    color: theme.colors.textSecondary,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  validityDate: {
+    color: theme.colors.primaryText,
+    fontWeight: '900',
+    marginTop: 2,
+  },
+  validityRemaining: {
+    color: theme.colors.primaryText,
+    fontWeight: '800',
+    textAlign: 'right',
+    flexShrink: 1,
+  },
+  expiredValidityText: {
+    color: '#B91C1C',
   },
   progressBarTrack: {
     width: 170,

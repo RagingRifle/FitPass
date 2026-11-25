@@ -23,6 +23,8 @@ function translateQuery(query) {
       }
     } else if (key === '$or') {
       prismaWhere['OR'] = val.map(translateQuery);
+    } else if (key === '$and') {
+      prismaWhere['AND'] = val.map(translateQuery);
     } else if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
       const fieldOperators = {};
       for (const op of Object.keys(val)) {

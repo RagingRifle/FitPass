@@ -160,9 +160,21 @@ const getH4Plans = catchAsync(async (req, res) => {
   const h4GymIds = [...new Set([...H4_GYM_IDS, member.gymId, ...allH4Gyms.map(item => item.id)])];
   const plans = await prisma.plan.findMany({
     where: {
-      AND: [
-        { gymId: { in: h4GymIds } },
-        { OR: [{ branchId: null }, { gymId: member.gymId, branchId: member.branchId || '__NO_BRANCH__' }] },
+      OR: [
+        {
+          AND: [
+            { gymId: { in: h4GymIds } },
+            { OR: [{ branchId: null }, { gymId: member.gymId, branchId: member.branchId || '__NO_BRANCH__' }] },
+          ],
+        },
+        {
+          gymId: 'SYSTEM',
+          AND: [
+            { OR: [{ sessions: null }, { sessions: 0 }] },
+            { name: { contains: 'h4', mode: 'insensitive' } },
+            { OR: [{ branchId: null }, { branchId: member.branchId || '__NO_BRANCH__' }] },
+          ],
+        },
       ],
     },
     orderBy: { price: 'asc' },
@@ -449,7 +461,8 @@ const getMyDigitalPass = catchAsync(async (req, res, next) => {
             sessionsRemaining: member.sessionsRemaining ?? 0,
             sessionsTotal: member.sessionsTotal ?? 0,
             fitpassCoins: member.fitpassCoins ?? 0,
-            planName: plan?.name || 'Active Membership'
+            planName: plan?.name || 'Active Membership',
+            expiryDate: member.expiryDate ? member.expiryDate.toISOString() : null
         },
         memberId: member.id,
         qrData,

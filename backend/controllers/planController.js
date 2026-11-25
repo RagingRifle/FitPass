@@ -6,12 +6,20 @@ const prisma = require('../config/prisma');
 const { logAudit } = require('../utils/auditLogger');
 const { H4_GYM_IDS } = require('../config/constants');
 
+const getH4GymIds = async (...extraIds) => {
+    const h4Gyms = await prisma.gym.findMany({
+        where: { name: { contains: 'h4', mode: 'insensitive' } },
+        select: { id: true }
+    });
+    return [...new Set([...H4_GYM_IDS, ...extraIds, ...h4Gyms.map(gym => gym.id)].filter(Boolean))];
+};
+
 const getPlanScope = async (req) => {
     const currentGymId = String(req.user?.gymId || '');
     const selectedGymId = String(req.tenantFilter?.gymId || '');
     const h4Superadmin = req.user?.role === 'superadmin' && await isH4Gym(selectedGymId);
     const where = { gymId: req.user?.role === 'h4_admin' || h4Superadmin
-        ? { $in: [...new Set([...H4_GYM_IDS, currentGymId, selectedGymId].filter(Boolean))] }
+        ? { $in: await getH4GymIds(currentGymId, selectedGymId) }
         : currentGymId };
     if (req.user?.branchId) where.$or = [{ branchId: req.user.branchId }, { branchId: null }];
     return where;
@@ -99,12 +107,19 @@ const getPlans = catchAsync(async (req, res, next) => {
         const isH4Scope = req.user.role === 'h4_admin' || await isH4Gym(currentGymId) || (req.user.role === 'superadmin' && await isH4Gym(selectedGymId));
         let query;
         if (isH4Scope) {
+            const h4GymIds = await getH4GymIds(currentGymId, selectedGymId);
             query = { $or: [
-                { gymId: { $in: [...new Set([...H4_GYM_IDS, currentGymId, selectedGymId].filter(Boolean))] } },
+                { gymId: { $in: h4GymIds } },
                 // Legacy H4 duration plans were sometimes saved under SYSTEM.
                 // FitPass catalogs filter for positive session counts, so only
                 // these old non-session plans appear in the H4 management UI.
-                { gymId: 'SYSTEM', sessions: { $in: [null, 0] } },
+                {
+                    gymId: 'SYSTEM',
+                    $and: [
+                        { $or: [{ sessions: null }, { sessions: 0 }] },
+                        { name: { $regex: 'h4' } },
+                    ],
+                },
             ] };
             // H4's central plan catalog is shared across branches. Branch selection
             // applies to member operations, but should not hide plans from this list.
