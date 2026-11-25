@@ -365,7 +365,13 @@ const createMember = catchAsync(async (req, res, next) => {
             ? Math.max(0, Number(req.body.finalPrice))
             : Math.max(0, catalogPrice - numericDiscount);
 
-        const numericPaid = Number(req.body.paidAmount) || 0;
+        const numericPaid = require('../utils/fitPassRegistrationPayment')({
+            role: req.user.role,
+            targetGymId,
+            plan,
+            paidAmount: req.body.paidAmount,
+            planPrice: netAgreedPrice
+        });
 
         const { allocateMemberCode } = require('../utils/idGenerator');
         const memberCode = await allocateMemberCode();
