@@ -4,14 +4,14 @@ const logger = require('../lib/logger');
 const connectDB = async (retries = 8, delay = 4000) => {
   for (let i = 1; i <= retries; i++) {
     try {
-      // Run a simple raw query to test connection to Neon DB
+      // Run a simple raw query to test the PostgreSQL connection.
       await prisma.$queryRaw`SELECT 1`;
-      logger.info('Neon DB (PostgreSQL) connected successfully via Prisma');
+      logger.info('PostgreSQL connected successfully via Prisma');
       return;
     } catch (error) {
-      logger.error({ err: error, attempt: i, retries }, 'Neon DB connection attempt failed');
+      logger.error({ err: error, attempt: i, retries }, 'PostgreSQL connection attempt failed');
       if (i === retries) {
-        logger.warn('Neon DB connection warning: could not reach Neon DB right away, server will remain online and automatically retry DB connection on incoming requests');
+        logger.warn('PostgreSQL connection warning: the database could not be reached during startup; the server will remain online and retry on incoming requests');
         return;
       }
       logger.info(`Retrying in ${delay / 1000} seconds...`);

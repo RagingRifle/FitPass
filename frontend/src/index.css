@@ -2577,9 +2577,18 @@ tbody tr:hover {
 .products-field input, .products-field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid #d6cdbb; border-radius: 9px; background: #fff; color: #24211b; font: inherit; font-weight: 450; }
 .products-field input::placeholder, .products-field textarea::placeholder { color: #777062; opacity: 1; }
 .products-field input:focus-visible, .products-field textarea:focus-visible { outline: 3px solid rgba(169, 126, 0, .2); border-color: #9b7400; }
-.products-field input[type="file"] { padding: 7px; font-size: .82rem; }
 .products-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .products-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.products-image-field { align-content: start; }
+.products-image-picker { position: relative; display: flex; min-width: 0; min-height: 44px; align-items: center; gap: 9px; overflow: hidden; padding: 4px 8px; border: 1px solid #d6cdbb; border-radius: 9px; background: #fff; cursor: pointer; }
+.products-image-picker:focus-within { outline: 3px solid rgba(169, 126, 0, .2); border-color: #9b7400; }
+.products-image-picker input { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; opacity: 0; cursor: pointer; }
+.products-image-picker-preview { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+.products-image-picker-icon { flex: 0 0 22px; color: #806000; }
+.products-image-picker-copy { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.products-image-picker-copy strong { overflow: hidden; color: #302c24; font-size: .77rem; text-overflow: ellipsis; white-space: nowrap; }
+.products-image-picker-copy small { color: #70695d; font-size: .67rem; font-weight: 500; white-space: nowrap; }
+.products-image-picker-button { flex: 0 0 auto; padding: 6px 8px; border-radius: 6px; background: #f3efe5; color: #403a30; font-size: .73rem; font-weight: 750; }
 .products-description { grid-column: 1 / -1; }
 .products-field textarea { min-height: 86px; resize: vertical; }
 .products-form-footer { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 2px; }
@@ -2599,7 +2608,9 @@ tbody tr:hover {
 .products-card-actions { display: flex; gap: 8px; margin-top: 14px; }
 .products-card-actions button { flex: 1; }
 .products-empty, .products-load-error { padding: 16px; border-radius: 10px; color: #484237; background: #f1ecdf; }
-.products-load-error { margin-bottom: 18px; border: 1px solid #d9ad63; background: #fff4da; color: #654600; }
+.products-load-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; border: 1px solid #d9ad63; background: #fff4da; color: #654600; }
+.products-retry-button { flex: 0 0 auto; padding: 6px 10px; border: 1px solid #b78a37; border-radius: 7px; background: #fffaf0; color: #654600; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.products-retry-button:focus-visible { outline: 3px solid rgba(169, 126, 0, .25); outline-offset: 2px; }
 
 /* Gym partner Explore profile editor */
 .gym-discovery-fields { display: grid; gap: 18px; color: #29261f; }

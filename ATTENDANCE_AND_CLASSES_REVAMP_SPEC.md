@@ -234,7 +234,7 @@ A common concern with dynamic security is server strain and phone battery drain.
 | **Server Bandwidth** | **0% Increase** | The phone does **not** fetch new QR codes from the server. It calculates them offline locally. |
 | **Backend Latency** | **< 2 milliseconds** | Verification is a single HMAC comparison in memory, avoiding heavy SQL queries. |
 | **Phone Battery** | **< 0.01%** | The React Native SVG component re-renders once every 60 seconds on a lightweight interval. |
-| **Hosting Compatibility** | **100% Compatible** | Runs effortlessly on low-tier or free hosting (Render, Vercel, Supabase, Neon). |
+| **Hosting Compatibility** | **100% Compatible** | Runs on standard Node.js hosting and PostgreSQL services. |
 
 ---
 

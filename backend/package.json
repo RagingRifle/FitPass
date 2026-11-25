@@ -6,6 +6,7 @@
   "scripts": {
     "start": "prisma db push && node server.js",
     "dev": "prisma db push && nodemon server.js",
+    "dev:server": "nodemon server.js",
     "db:sync": "prisma db push",
     "seed:showcase": "node scripts/dev/seed-showcase.js",
     "build": "prisma generate && prisma db push",
@@ -17,8 +18,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
-    "@prisma/adapter-neon": "^7.8.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "axios": "^1.13.5",

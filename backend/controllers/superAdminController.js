@@ -298,8 +298,10 @@ const updatePartnerGym = catchAsync(async (req, res, next) => {
 // @access  Private (Super Admin)
 const getPartnerGyms = catchAsync(async (req, res, next) => {
     const allGyms = await Gym.find({}).lean();
-    // Exclude H4 gyms from partner list
-    const gyms = allGyms.filter(g => !g.name || !g.name.toLowerCase().includes('h4'));
+    const isH4Gym = gym => H4_GYM_IDS.includes(String(gym?._id || gym?.id || ''))
+        || String(gym?.name || '').toLowerCase().includes('h4');
+    const gyms = allGyms.filter(gym => !isH4Gym(gym));
+    const gymById = new Map(allGyms.map(gym => [String(gym._id || gym.id), gym]));
     const users = await User.find({ role: { $in: ['admin', 'partner'] } });
 
     const gymIds = gyms.map(gym => gym._id || gym.id).filter(Boolean);
@@ -318,10 +320,12 @@ const getPartnerGyms = catchAsync(async (req, res, next) => {
         const fitPassBranches = await prisma.branch.findMany();
 
         const branchItems = fitPassBranches.filter(branch => {
-            const parentGym = allGyms.find(g => (g._id || g.id) === branch.gymId);
-            return branch.fitPassEnabled || parentGym?.name?.toLowerCase().includes('h4');
+            const parentGym = gymById.get(String(branch.gymId));
+            return branch.fitPassEnabled
+                && !H4_GYM_IDS.includes(String(branch.gymId))
+                && !isH4Gym(parentGym);
         }).map(branch => {
-            const parentGym = allGyms.find(g => (g._id || g.id) === branch.gymId);
+            const parentGym = gymById.get(String(branch.gymId));
             const parentName = parentGym ? parentGym.name : 'H4';
             return {
                 _id: branch.id,

@@ -329,11 +329,6 @@ function PartnerGyms() {
                                     <div className="partner-gym-card-header">
                                         <div>
                                             <h3 className="partner-gym-name">{gym.name}</h3>
-                                            {gym.isBranch && (
-                                                <span style={{ fontSize: '0.72rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, marginTop: '4px', display: 'inline-block' }}>
-                                                    FitPass Branch
-                                                </span>
-                                            )}
                                         </div>
                                         <span className="status-badge status-active">Active</span>
                                     </div>
@@ -442,9 +437,6 @@ function PartnerGyms() {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <Building2 size={16} style={{ color: 'var(--primary)' }} />
                                                     <span>{gym.name}</span>
-                                                    {gym.isBranch && (
-                                                        <span style={{ fontSize: '0.7rem', background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px' }}>Branch</span>
-                                                    )}
                                                 </div>
                                             </td>
                                             <td style={{ color: 'var(--text-secondary)' }}>{gym.address || 'N/A'}</td>

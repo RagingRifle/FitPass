@@ -15,25 +15,24 @@ appropriate provider's secret manager, not in Git.
 | Project directory on VPS | `/var/www/gym-crm` |
 | Backend service | `gym-crm` (systemd), port `5000` on localhost |
 | Web frontend | Nginx serves `/var/www/gym-crm/frontend/dist` on port `80` |
-| Database | Neon PostgreSQL, using `backend/.env` on the VPS |
+| Database | PostgreSQL, using `backend/.env` on the VPS |
 | Image uploads | Cloudinary, if its credentials are configured |
 | Android app | Expo/EAS project; API URL currently configured to `http://50.6.44.247/api/v1` |
 | Domain / HTTPS | Not configured; current IP deployment uses HTTP |
 
 The frontend and Android app call the same backend API. The backend uses the
-database URL in its server-side `.env`; the database is not stored on the VPS.
+database URL in its server-side `.env`; the PostgreSQL database is hosted on
+the VPS.
 
 ## Important status and safety notes
 
 - The VPS's `/api/health` endpoint returned `200 OK`, and Nginx served the
   frontend during setup. This verifies the web server and API process respond;
-  it **does not prove Neon is connected or that application login/data
+  it **does not prove PostgreSQL is connected or that application login/data
   operations work**.
-- The Neon account/project owner was not identified during setup. The database
-  URL existed in the developer's local `backend/.env` and was entered on the
-  VPS, but database ownership, billing, backups, quota, and connection were not
-  independently confirmed. Recover access to the Neon account and verify the
-  connection before relying on or handing over production data.
+- The PostgreSQL server and database owner, backup process, and connection
+  were not independently confirmed during setup. Verify these before relying
+  on or handing over production data.
 - HTTP is unencrypted. The current IP-based site and Android API endpoint are
   for testing only. Do not use real member, password, or payment data until a
   domain and HTTPS are configured.
@@ -61,7 +60,7 @@ by the client/new project owner.
 | `deploy` account password and SSH access | VPS login and administration |
 | GitHub repository owner and administrator access | Source code and deployments |
 | VPS GitHub deploy key | Read-only clone/pull from this repository |
-| `DATABASE_URL` and Neon account recovery | PostgreSQL connection, ownership, billing, backups |
+| PostgreSQL server access and `DATABASE_URL` | Database connection, ownership, backups, and recovery |
 | `JWT_SECRET` | Backend user sessions/authentication |
 | Cloudinary account/API credentials | Gym and profile image uploads |
 | SMTP credentials | Email notifications, if enabled |
@@ -134,6 +133,51 @@ sudo systemctl reload nginx
 This update procedure does not apply database schema changes. Review and back
 up the database before any schema migration or update.
 
+The FitPass/H4 store requires the `StoreProduct`, `StoreOrder`, and
+`CoinSettings` tables. After taking a database backup, apply the additive store
+schema SQL before restarting the backend if those tables are not already
+present:
+
+```bash
+cd /var/www/gym-crm/backend
+npx prisma db execute --file prisma/migrations/20261123000000_store_catalog/migration.sql
+```
+
+This SQL creates only the store tables and indexes, and is safe to re-run.
+It does not replace a database backup or a review of other schema changes.
+
+## Local development against VPS PostgreSQL
+
+The browser should continue to call the local API at
+`http://localhost:5000/api/v1`; do not point the browser directly at PostgreSQL.
+To test local backend code against the VPS database without exposing PostgreSQL
+port `5432` publicly, open an SSH tunnel in its own PowerShell window:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\gym-crm-vps" -N -L 55432:127.0.0.1:5432 deploy@50.6.44.247
+```
+
+In the local, untracked `backend/.env`, set `DATABASE_URL` to the forwarded
+port, using the VPS PostgreSQL database name, user, and password:
+
+```text
+DATABASE_URL=postgresql://USER:PASSWORD@127.0.0.1:55432/DBNAME?schema=public
+```
+
+Keep the real connection string private. Local API writes then change the VPS
+database, so use a staging database for routine testing or take a backup first.
+Start the backend with the schema-sync-free script, because the regular `dev`
+script runs `prisma db push` against the configured database:
+
+```powershell
+cd D:\Projects\GYM-CRM\backend
+npm run dev:server
+```
+
+Run the frontend with `npm run dev` in a separate terminal from `frontend/`.
+Its existing `VITE_API_URL=http://localhost:5000/api/v1` setting is correct for
+this local frontend/local backend setup.
+
 ## Android APK
 
 `App-Code/eas.json` has `preview` and `production` profiles configured to build
@@ -159,9 +203,9 @@ Never include EAS tokens or signing private keys in Git.
 
 ## Production readiness checklist
 
-- [ ] Confirm the Neon account and project are owned/accessible by the new
-  owner; confirm plan, storage quota, backup/PITR settings, and recovery access.
-- [ ] Verify Neon connection in backend logs and test a non-destructive
+- [ ] Confirm the PostgreSQL server and database are owned/accessible by the
+  new owner; confirm backups and recovery access.
+- [ ] Verify PostgreSQL connection in backend logs and test a non-destructive
   application login/read/write flow with approved test data.
 - [ ] Take and verify a database backup before schema changes or data transfer.
 - [ ] Point a client-owned domain to the VPS and set up/renew HTTPS.
@@ -172,7 +216,7 @@ Never include EAS tokens or signing private keys in Git.
   Cloudinary, SMTP, and payment integrations.
 - [ ] Review repository contents and Git history for credentials or private
   client data before transferring/publishing.
-- [ ] Confirm the new owner's access to GitHub, VPS, Neon, Cloudinary, Expo/EAS,
+- [ ] Confirm the new owner's access to GitHub, VPS, PostgreSQL, Cloudinary, Expo/EAS,
   domain/DNS, email, and payment accounts.
 - [ ] Test the new owner's SSH login, GitHub clone/pull, deployment, database
   access, and Android build before removing the previous owner's access.
@@ -199,12 +243,12 @@ accounts are separate.
    transfer, use its official process. Otherwise, create an administrator
    account/key for the client and test it before removing old access. Never
    hand over the developer's private SSH key or personal account password.
-5. **Transfer the database properly.** Recover the existing Neon account and
-   invite/transfer the client, or arrange a planned database migration with a
-   verified backup and restore. Do not merely create an empty database if
-   existing member/payment/attendance records must be retained. Update the
-   server `DATABASE_URL` after the new owner has control and rotate the
-   database password.
+5. **Transfer the database properly.** Transfer PostgreSQL server/database
+   ownership or arrange a planned database migration with a verified backup
+   and restore. Do not merely create an empty database if existing
+   member/payment/attendance records must be retained. Update the server
+   `DATABASE_URL` after the new owner has control and rotate the database
+   password.
 6. **Transfer file storage and integrations.** Move Cloudinary ownership or
    migrate assets; transfer/configure SMTP, Razorpay, and any other used
    integrations. Rotate their credentials and update the server `.env`.

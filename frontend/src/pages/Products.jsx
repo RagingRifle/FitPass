@@ -1,7 +1,8 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import API from '../services/api';
 import { useToast } from '../components/ui/Toast';
 import { AuthContext } from '../context/AuthContext';
+import { ImagePlus } from 'lucide-react';
 
 const empty = { name: '', description: '', priceCoins: 12, priceINR: '', imageUrl: '', division: 'fitpass', isActive: true, stock: '' };
 
@@ -14,6 +15,8 @@ export default function Products() {
   const fixedDivision = isFitPassAdmin ? 'fitpass' : (isH4Admin || isH4GymAdmin) ? 'h4' : null;
   const toast = useToast();
   const [products, setProducts] = useState([]);
+  const [imagePreview, setImagePreview] = useState('');
+  const imageInput = useRef(null);
   const [division, setDivision] = useState(fixedDivision || activeDivision || 'fitpass');
   const [form, setForm] = useState(empty);
   const [image, setImage] = useState(null);
@@ -23,26 +26,40 @@ export default function Products() {
   const [savingRate, setSavingRate] = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  const load = async () => {
+  useEffect(() => {
+    if (!image) {
+      setImagePreview('');
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(image);
+    setImagePreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [image]);
+
+  const load = useCallback(async () => {
     try {
       const { data } = await API.get(`/store/products?division=${division}`);
       setProducts(Array.isArray(data) ? data : []);
       setLoadError('');
-    } catch {
-      setLoadError('Could not load products. Check that the store API and database schema are up to date.');
+    } catch (error) {
+      const message = error.response?.data?.message;
+      setLoadError(message ? `Could not load products: ${message}` : 'Could not load products. Check your connection and try again.');
     }
-  };
+  }, [division]);
 
   useEffect(() => {
     load();
     API.get(`/store/coin-settings?division=${division}`).then(({ data }) => setCoinsPerSession(data.coinsPerSession)).catch(() => {});
-  }, [division]);
+  }, [division, load]);
 
   useEffect(() => {
     if (!fixedDivision && activeDivision && activeDivision !== division) {
       setDivision(activeDivision);
       setForm({ ...empty, division: activeDivision });
+      setImage(null);
       setEditing(null);
+      if (imageInput.current) imageInput.current.value = '';
     }
   }, [activeDivision, fixedDivision, division]);
 
@@ -68,13 +85,26 @@ export default function Products() {
         data: image ? body : payload,
         // Let the browser/Axios add the multipart boundary when uploading a file.
       });
-      setForm({ ...empty, division }); setImage(null); setEditing(null); await load(); toast.success('Product saved.');
+      setForm({ ...empty, division }); setImage(null); setEditing(null);
+      if (imageInput.current) imageInput.current.value = '';
+      await load(); toast.success('Product saved.');
     } catch (error) { toast.error(error.response?.data?.message || 'Could not save product.'); }
     finally { setBusy(false); }
   };
 
-  const edit = (product) => { setEditing(product.id); setForm({ ...product, stock: product.stock ?? '' }); setImage(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
-  const cancelEdit = () => { setEditing(null); setImage(null); setForm({ ...empty, division }); };
+  const edit = (product) => {
+    setEditing(product.id);
+    setForm({ ...product, stock: product.stock ?? '' });
+    setImage(null);
+    if (imageInput.current) imageInput.current.value = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const cancelEdit = () => {
+    setEditing(null);
+    setImage(null);
+    setForm({ ...empty, division });
+    if (imageInput.current) imageInput.current.value = '';
+  };
   const remove = async (id) => { try { await API.delete(`/store/products/${id}`); await load(); toast.success('Product hidden from the shop.'); } catch { toast.error('Could not update product.'); } };
   const permanentlyRemove = async (product) => {
     if (!window.confirm(`Permanently delete “${product.name}”? This removes it from the catalog. Existing order history is kept.`)) return;
@@ -92,7 +122,7 @@ export default function Products() {
       <div><p className="products-eyebrow">STORE MANAGEMENT</p><h1>{division === 'h4' ? 'H4 Merchandise' : 'FitPass Product Catalog'}</h1><p>{division === 'h4' ? 'Show H4 members available merchandise. Purchases happen in person at an H4 gym.' : 'Create products, set FitCoin prices, and publish them to the FitPass app and member shop.'}</p></div>
     </header>
 
-    {loadError && <div className="products-load-error" role="alert">{loadError}</div>}
+    {loadError && <div className="products-load-error" role="alert"><span>{loadError}</span><button type="button" className="products-retry-button" onClick={load}>Try again</button></div>}
 
     {division !== 'h4' && <section className="products-rate-panel">
       <div><h2>Check-in conversion rate</h2><p>FitCoins charged for each partner gym check-in.</p></div>
@@ -107,7 +137,20 @@ export default function Products() {
         {division !== 'h4' && field('priceCoins', 'Price (FitCoins)', 'number')}
         {division === 'h4' && field('priceINR', 'Cost (INR)', 'number')}
         {field('stock', 'Stock (optional)', 'number')}
-        <label className="products-field">{editing ? 'Replace product image' : 'Product image'}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setImage(e.target.files?.[0] || null)} />{editing && form.imageUrl && !image && <img src={form.imageUrl} alt={`${form.name} current product`} style={{ display: 'block', width: 120, height: 90, objectFit: 'cover', borderRadius: 8, marginTop: 8 }} />}{image && <small>{image.name}</small>}</label>
+        <div className="products-field products-image-field">
+          <span>{editing ? 'Replace product image' : 'Product image'}</span>
+          <label className="products-image-picker">
+            {imagePreview || form.imageUrl
+              ? <img src={imagePreview || form.imageUrl} alt="" className="products-image-picker-preview" />
+              : <ImagePlus size={21} aria-hidden="true" className="products-image-picker-icon" />}
+            <span className="products-image-picker-copy">
+              <strong title={image?.name || (form.imageUrl ? 'Current image' : 'Choose an image')}>{image?.name || (form.imageUrl ? 'Current image' : 'Choose an image')}</strong>
+              <small>JPG, PNG or WebP · optional</small>
+            </span>
+            <span className="products-image-picker-button">Browse</span>
+            <input ref={imageInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Choose product image" onChange={e => setImage(e.target.files?.[0] || null)} />
+          </label>
+        </div>
         <label className="products-field products-description">Description<textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></label>
         <div className="products-form-footer"><label className="products-checkbox"><input type="checkbox" checked={form.isActive} onChange={e => setForm({ ...form, isActive: e.target.checked })} /> Available in shop</label><button className="products-primary-button" disabled={busy}>{busy ? 'Saving…' : editing ? 'Update product' : 'Add product'}</button></div>
       </form>

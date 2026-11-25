@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   checkInBtn: {
-    backgroundColor: '#adff2f', // Web neon green color
+    backgroundColor: '#adff2f', // Bright green accent for the web dashboard
     height: 40,
     minHeight: 40,
   },

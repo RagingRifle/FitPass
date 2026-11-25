@@ -162,7 +162,7 @@ Define your routes in `backend/routes/` and mount them in [server.js](file:///d:
 ### Environment Setup
 Create a `.env` file in the `backend/` directory. You can copy the values from `.env.example`.
 Key items to configure:
-* `DATABASE_URL`: Connection string to the PostgreSQL database (e.g. Neon, local PG).
+* `DATABASE_URL`: Connection string to the PostgreSQL database.
 * `JWT_SECRET`: Generate using `node scripts/generateSecret.js`.
 * `RAZORPAY_KEY_ID` & `RAZORPAY_KEY_SECRET`: Razorpay keys. (In development, if left blank or set to placeholders, the system falls back to **Mock Payment Mode** so you can purchase plans for free).
 * `SMTP_HOST` & `SMTP_PASS`: Credentials for sending OTP login emails.
