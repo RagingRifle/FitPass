@@ -511,7 +511,7 @@ const WorkoutPlans = () => {
                                     <p>Design a custom routine or pull a template to assign workout to a member.</p>
                                 </div>
                             ) : (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
                                     {filteredPlans.map((plan) => {
                                         const assignedMembers = (plan.members?.length ? plan.members : [plan.member].filter(Boolean));
                                         const assignedCount = assignedMembers.length;
@@ -702,7 +702,7 @@ const WorkoutPlans = () => {
 
                     {/* TAB Content: TEMPLATES */}
                     {activeTab === 'templates' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
                             {templates.length === 0 ? (
                                 <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-secondary)' }}>
                                     <FolderHeart size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
