@@ -169,6 +169,41 @@ const saveProduct = catchAsync(async (req, res) => {
   const product = id
     ? await prisma.storeProduct.update({ where: { id }, data })
     : await prisma.storeProduct.create({ data });
+
+  if (!id && safeDivision === 'h4' && data.isActive) {
+    try {
+      const h4Gym = await prisma.gym.findFirst({
+        where: { OR: [{ id: { in: H4_GYM_IDS } }, { name: { contains: 'h4', mode: 'insensitive' } }] },
+        select: { id: true },
+      });
+      if (h4Gym?.id) {
+        const settings = await prisma.gymSettings.findUnique({
+          where: { gymId: h4Gym.id },
+          select: { notifyNewProductToMembers: true },
+        });
+        const shouldNotify = settings?.notifyNewProductToMembers ?? true;
+        if (shouldNotify) {
+          const memberUsers = await prisma.user.findMany({
+            where: { gymId: h4Gym.id, role: 'member', isActive: true, status: 'Active' },
+            select: { id: true },
+          });
+          if (memberUsers.length > 0) {
+            await prisma.notification.createMany({
+              data: memberUsers.map(u => ({
+                recipientId: u.id,
+                gymId: h4Gym.id,
+                type: 'new_product',
+                message: `New in H4 Shop: ${product.name}${product.priceINR != null ? ` (₹${Number(product.priceINR).toLocaleString('en-IN')})` : ''}. Check it out in the app!`,
+              })),
+            });
+          }
+        }
+      }
+    } catch (notifyErr) {
+      console.error('New product member notification failed:', notifyErr?.message || notifyErr);
+    }
+  }
+
   res.json(product);
 });
 

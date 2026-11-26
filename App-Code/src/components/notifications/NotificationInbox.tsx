@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCircle2, Clock3 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_CLIENT } from '@/lib/api-client';
@@ -22,6 +23,7 @@ interface NotificationInboxProps {
 }
 
 export function NotificationInbox({ title, subtitle }: NotificationInboxProps) {
+  const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,7 +35,9 @@ export function NotificationInbox({ title, subtitle }: NotificationInboxProps) {
     setError('');
     try {
       const { data } = await API_CLIENT.get('/notifications');
-      setNotifications(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setNotifications(list);
+      queryClient.setQueryData(['h4', 'notifications'], list);
     } catch (requestError: any) {
       setError(requestError?.response?.data?.message || 'Could not load notifications. Pull down to try again.');
     } finally {
@@ -54,6 +58,7 @@ export function NotificationInbox({ title, subtitle }: NotificationInboxProps) {
       setNotifications(current => current.map(notification => (
         (notification.id || notification._id) === id ? { ...notification, read: true } : notification
       )));
+      void queryClient.invalidateQueries({ queryKey: ['h4', 'notifications'] });
     } catch (requestError: any) {
       Alert.alert('Could not update notification', requestError?.response?.data?.message || 'Try again in a moment.');
     }

@@ -33,7 +33,7 @@ export const CustomTabBar: React.FC<CustomTabBarProps> = ({ state, portalType })
     .map((name) => state.routes.find((route: any) => route.name === name))
     .filter(Boolean);
   const currentRouteName = state.routes[state.index]?.name;
-  const h4MoreRoutes = ['diets', 'payments', 'classes', 'pt-sessions', 'assessments', 'support', 'shop'];
+  const h4MoreRoutes = ['diets', 'payments', 'classes', 'pt-sessions', 'assessments', 'support', 'shop', 'notifications'];
   const fitPassGymRoutes = ['gym/[id]'];
   const fitPassHomeRoutes = ['workouts', 'history', 'diets'];
   const selectedRouteName = isH4 && h4MoreRoutes.includes(currentRouteName)

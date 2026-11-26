@@ -51,6 +51,8 @@ const runDailyReminders = async () => {
             inactivityReminderRepeatDaily: true,
             leadReminderDaysBefore: true,
             leadReminderRepeatDaily: true,
+            dueReminderDaysAfter: true,
+            dueReminderRepeatDaily: true,
         }
     });
 
@@ -79,7 +81,9 @@ const runDailyReminders = async () => {
                         inactivityReminderDays: true,
                         inactivityReminderRepeatDaily: true,
                         leadReminderDaysBefore: true,
-                        leadReminderRepeatDaily: true
+                        leadReminderRepeatDaily: true,
+                        dueReminderDaysAfter: true,
+                        dueReminderRepeatDaily: true,
                     }
                 })
                 : Promise.resolve([])
@@ -94,11 +98,15 @@ const runDailyReminders = async () => {
                     inactivityReminderDays: branch.inactivityReminderDays ?? config.inactivityReminderDays,
                     inactivityReminderRepeatDaily: branch.inactivityReminderRepeatDaily ?? config.inactivityReminderRepeatDaily,
                     leadReminderDaysBefore: branch.leadReminderDaysBefore ?? config.leadReminderDaysBefore,
-                    leadReminderRepeatDaily: branch.leadReminderRepeatDaily ?? config.leadReminderRepeatDaily
+                    leadReminderRepeatDaily: branch.leadReminderRepeatDaily ?? config.leadReminderRepeatDaily,
+                    dueReminderDaysAfter: branch.dueReminderDaysAfter ?? config.dueReminderDaysAfter,
+                    dueReminderRepeatDaily: branch.dueReminderRepeatDaily ?? config.dueReminderRepeatDaily,
                 } : {})
             };
             const inactivityDays = Math.max(1, Number(branchConfig.inactivityReminderDays) || 5);
             const leadDaysBefore = Math.max(0, Number(branchConfig.leadReminderDaysBefore) || 0);
+            const dueDaysAfter = Math.max(0, Number(branchConfig.dueReminderDaysAfter ?? 3));
+            const dueRepeatDaily = branchConfig.dueReminderRepeatDaily ?? true;
 
             const leads = isH4Gym ? await prisma.lead.findMany({
                 where: {
@@ -208,6 +216,47 @@ const runDailyReminders = async () => {
                             : `We have missed you at the gym. It has been ${daysSince} days since your last check-in.`,
                         dedupeKey
                     });
+                }
+            }
+
+            // Pending-due reminders for H4 members (automatically stops once paidAmount >= planPrice).
+            if (isH4Gym) {
+                const membersWithPlans = await prisma.member.findMany({
+                    where: {
+                        gymId: config.gymId,
+                        ...branchScope,
+                        status: { in: ['Active', 'Frozen'] },
+                        planPrice: { gt: 0 },
+                    },
+                    select: { id: true, name: true, planPrice: true, paidAmount: true, joinDate: true, createdAt: true },
+                });
+
+                for (const member of membersWithPlans) {
+                    const dueAmount = Math.max(0, Number(member.planPrice || 0) - Number(member.paidAmount || 0));
+                    if (dueAmount <= 0) continue; // Payment settled -> stop notifying
+
+                    const anchorDate = member.joinDate || member.createdAt;
+                    const daysSinceDue = getDaysSince(anchorDate, today);
+                    if (daysSinceDue < dueDaysAfter) continue;
+
+                    const linkedUsers = memberUsers.filter(user => user.memberId === member.id);
+                    for (const recipient of linkedUsers) {
+                        const dedupeKey = createReminderDedupeKey({
+                            type: 'pending_due',
+                            subjectId: member.id,
+                            recipientId: recipient.id,
+                            cycleKey: getUtcDateKey(anchorDate),
+                            repeatDaily: dueRepeatDaily,
+                            today,
+                        });
+                        await createScheduledNotification({
+                            recipientId: recipient.id,
+                            gymId: config.gymId,
+                            type: 'pending_due',
+                            message: `Payment reminder: You have a pending membership balance of ₹${dueAmount.toLocaleString('en-IN')}. Please settle it at the desk.`,
+                            dedupeKey,
+                        });
+                    }
                 }
             }
         }

@@ -37,20 +37,32 @@ const reminderSettingsSelect = {
     inactivityReminderRepeatDaily: true,
     leadReminderDaysBefore: true,
     leadReminderRepeatDaily: true,
+    dueReminderDaysAfter: true,
+    dueReminderRepeatDaily: true,
+    notifyNewProductToMembers: true,
 };
 
 const getH4GymId = async (req) => {
-    if (!['h4_admin', 'h4_branch_admin', 'superadmin'].includes(req.user?.role)
+    if (!['h4_admin', 'h4_branch_admin', 'admin', 'superadmin'].includes(req.user?.role)
         && !isAssignedBranchAdmin(req.user)) return null;
     const gymId = String(
         req.user.role === 'superadmin'
             ? req.tenantFilter?.gymId || req.user.gymId || ''
             : req.user.gymId || ''
     );
-    if (!gymId || gymId === 'SYSTEM') return null;
-    if (H4_GYM_IDS.includes(gymId)) return gymId;
-    const gym = await prisma.gym.findUnique({ where: { id: gymId }, select: { id: true, name: true } });
-    return gym?.name?.toLowerCase().includes('h4') ? gym.id : null;
+    if (gymId && gymId !== 'SYSTEM') {
+        if (H4_GYM_IDS.includes(gymId)) return gymId;
+        const gym = await prisma.gym.findUnique({ where: { id: gymId }, select: { id: true, name: true } });
+        return gym?.name?.toLowerCase().includes('h4') ? gym.id : null;
+    }
+    if (req.user.role === 'superadmin') {
+        const h4Gym = await prisma.gym.findFirst({
+            where: { OR: [{ id: { in: H4_GYM_IDS } }, { name: { contains: 'H4', mode: 'insensitive' } }] },
+            select: { id: true },
+        }).catch(() => null);
+        return h4Gym?.id || null;
+    }
+    return null;
 };
 
 const getBranchReminderSettings = async (req, gymId) => {
@@ -104,17 +116,17 @@ const updateReminderSettings = catchAsync(async (req, res) => {
     if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to manage reminders.' });
 
     const updates = {};
-    for (const field of ['inactivityReminderDays', 'leadReminderDaysBefore']) {
+    for (const field of ['inactivityReminderDays', 'leadReminderDaysBefore', 'dueReminderDaysAfter']) {
         if (req.body[field] === undefined) continue;
         const days = Number(req.body[field]);
-        const minimum = 1;
+        const minimum = field === 'dueReminderDaysAfter' ? 0 : 1;
         if (!Number.isInteger(days) || days < minimum || days > 365) {
             return res.status(400).json({ message: `${field} must be between ${minimum} and 365 days.` });
         }
         updates[field] = days;
     }
 
-    for (const field of ['inactivityReminderRepeatDaily', 'leadReminderRepeatDaily']) {
+    for (const field of ['inactivityReminderRepeatDaily', 'leadReminderRepeatDaily', 'dueReminderRepeatDaily', 'notifyNewProductToMembers']) {
         if (req.body[field] === undefined) continue;
         if (typeof req.body[field] !== 'boolean') {
             return res.status(400).json({ message: `${field} must be true or false.` });
@@ -277,10 +289,162 @@ const createUniqueNotification = async (recipientId, gymId, type, message) => {
     }
 };
 
+const resolveFilteredH4Members = async (req, gymId, filters = {}) => {
+    const branchLocked = isAssignedBranchAdmin(req.user);
+    const effectiveBranchId = branchLocked
+        ? String(req.user.userBranchId || req.user.branchId || '')
+        : String(filters.branchId || '').trim();
+
+    const where = {
+        gymId,
+        ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+        ...(filters.status ? { status: String(filters.status) } : {}),
+        ...(filters.planId ? { planId: String(filters.planId) } : {}),
+    };
+
+    const inactiveDays = filters.inactiveDays !== '' && filters.inactiveDays != null
+        ? Number(filters.inactiveDays)
+        : null;
+    if (Number.isInteger(inactiveDays) && inactiveDays > 0) {
+        const now = new Date();
+        const cutoff = new Date(
+            (Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000)
+                - inactiveDays + 1) * 86400000
+        );
+        where.OR = [
+            { lastCheckInAt: { lt: cutoff } },
+            { lastCheckInAt: null, joinDate: { lt: cutoff } },
+        ];
+    }
+
+    const search = String(filters.search || '').trim().toLowerCase();
+    const members = await prisma.member.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            registrationNumber: true,
+            status: true,
+            branchId: true,
+            branchName: true,
+            planName: true,
+            planPrice: true,
+            paidAmount: true,
+            lastCheckInAt: true,
+        },
+    });
+
+    const filtered = members.filter(member => {
+        if (filters.hasPendingDues && !(Number(member.planPrice || 0) > Number(member.paidAmount || 0))) {
+            return false;
+        }
+        if (search) {
+            const hay = [member.name, member.phone, member.email, member.registrationNumber]
+                .map(v => String(v || '').toLowerCase())
+                .join(' ');
+            if (!hay.includes(search)) return false;
+        }
+        return true;
+    });
+
+    const memberIds = filtered.map(m => m.id);
+    const linkedUsers = memberIds.length
+        ? await prisma.user.findMany({
+            where: { memberId: { in: memberIds }, isActive: true, status: 'Active' },
+            select: { id: true, memberId: true },
+        })
+        : [];
+    const userByMemberId = new Map(linkedUsers.map(u => [u.memberId, u.id]));
+
+    return filtered.map(member => ({
+        ...member,
+        dueAmount: Math.max(0, Number(member.planPrice || 0) - Number(member.paidAmount || 0)),
+        hasAppAccount: userByMemberId.has(member.id),
+        recipientUserId: userByMemberId.get(member.id) || null,
+    }));
+};
+
+const previewCustomNotificationRecipients = catchAsync(async (req, res) => {
+    const gymId = await getH4GymId(req);
+    if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to preview recipients.' });
+    const members = await resolveFilteredH4Members(req, gymId, req.body || {});
+    res.json({
+        totalMatched: members.length,
+        appReachableCount: members.filter(m => m.hasAppAccount).length,
+        members: members.slice(0, 150),
+    });
+});
+
+const sendCustomNotification = catchAsync(async (req, res) => {
+    const gymId = await getH4GymId(req);
+    if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to send notifications.' });
+
+    const message = String(req.body?.message || '').trim();
+    if (!message) {
+        return res.status(400).json({ message: 'Notification message is required.' });
+    }
+    const type = String(req.body?.type || 'custom').trim() || 'custom';
+    const explicitMemberIds = Array.isArray(req.body?.memberIds)
+        ? req.body.memberIds.map(String).filter(Boolean)
+        : [];
+
+    let recipientUserIds = [];
+    let matchedCount = 0;
+
+    if (explicitMemberIds.length > 0) {
+        const branchLocked = isAssignedBranchAdmin(req.user);
+        const scopedMembers = await prisma.member.findMany({
+            where: {
+                gymId,
+                id: { in: explicitMemberIds },
+                ...(branchLocked ? { branchId: String(req.user.userBranchId || req.user.branchId || '') } : {}),
+            },
+            select: { id: true },
+        });
+        matchedCount = scopedMembers.length;
+        const users = scopedMembers.length
+            ? await prisma.user.findMany({
+                where: { memberId: { in: scopedMembers.map(m => m.id) }, isActive: true, status: 'Active' },
+                select: { id: true },
+            })
+            : [];
+        recipientUserIds = [...new Set(users.map(u => u.id))];
+    } else {
+        const members = await resolveFilteredH4Members(req, gymId, req.body?.filters || {});
+        matchedCount = members.length;
+        recipientUserIds = [...new Set(members.map(m => m.recipientUserId).filter(Boolean))];
+    }
+
+    if (recipientUserIds.length > 0) {
+        await prisma.notification.createMany({
+            data: recipientUserIds.map(recipientId => ({
+                recipientId,
+                gymId,
+                type,
+                message,
+            })),
+        });
+    }
+
+    res.status(201).json({
+        success: true,
+        matchedCount,
+        sentCount: recipientUserIds.length,
+        message: recipientUserIds.length > 0
+            ? `Sent notification to ${recipientUserIds.length} member app account${recipientUserIds.length === 1 ? '' : 's'}.`
+            : 'No matching members currently have an active mobile app account.',
+    });
+});
+
 module.exports = {
     getNotifications,
     markAsRead,
     createAnnouncement,
     getReminderSettings,
     updateReminderSettings,
+    previewCustomNotificationRecipients,
+    sendCustomNotification,
 };

@@ -83,7 +83,7 @@ export default function H4Layout() {
       <Tabs.Screen name="assessments" options={{ href: '/(h4)/assessments', title: 'Body Progress' }} />
       <Tabs.Screen name="support"     options={{ href: '/(h4)/support', title: 'Help & Support' }} />
       <Tabs.Screen name="shop"        options={{ href: '/(h4)/shop', title: 'H4 Merchandise' }} />
-      <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
+      <Tabs.Screen name="notifications" options={{ href: '/(h4)/notifications', title: 'Notifications' }} />
     </Tabs>
   );
 }
