@@ -28,20 +28,16 @@ const ProtectedRoute = ({ children, roles }) => {
         return <Navigate to={user.role === 'trainer' ? '/attendance' : '/classes'} replace />;
     }
 
-    const isH4BranchAdmin = user.role === 'h4_branch_admin' || (user.role === 'h4_admin' && user.branchId);
-    const h4BranchPaths = ['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/staff', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'];
+    const isH4BranchAdmin = user.role === 'h4_branch_admin'
+        || user.role === 'h4_admin' && user.branchId
+        || user.role === 'admin' && isH4Gym && user.branchId;
+    const h4BranchPaths = ['/staff', '/reports'];
     if (isH4BranchAdmin && !h4BranchPaths.includes(window.location.pathname)) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/staff" replace />;
     }
 
     const partnerAllowedPaths = [
-        '/partner/visit-log',
-        '/partner/fitpass-leads',
-        '/staff',
-        '/fitpass-classes',
-        '/gym-social-profile',
-        '/explore-gyms',
-        '/settings'
+        '/partner/visit-log'
     ];
 
     if (isPartnerAdmin && !partnerAllowedPaths.includes(window.location.pathname)) {
@@ -52,7 +48,8 @@ const ProtectedRoute = ({ children, roles }) => {
         || (user.role === 'h4_branch_admin' && roles?.includes('h4_admin'));
     if (roles && user.role !== 'superadmin' && !roleAllowed && !isPartnerAdmin) {
         const defaultPath = user.role === 'fitpass_admin' ? '/superadmin/dashboard' :
-            ['h4_admin', 'h4_branch_admin'].includes(user.role) ? '/dashboard' :
+            isH4BranchAdmin ? '/staff' :
+            user.role === 'h4_admin' ? '/dashboard' :
             user.role === 'superadmin' ? '/superadmin/dashboard' :
             user.role === 'admin' ? '/dashboard' :
                 user.role === 'trainer' ? '/attendance' :

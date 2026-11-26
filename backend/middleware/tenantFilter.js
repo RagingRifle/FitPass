@@ -20,7 +20,7 @@ const tenantFilter = (req, res, next) => {
         }
         filter.gymId = req.user.gymId;
         if (req.user.branchId) filter.branchId = req.user.branchId;
-    } else if (['h4_admin', 'h4_branch_admin'].includes(req.user?.role)) {
+    } else if (['h4_admin', 'h4_branch_admin'].includes(req.user?.role) || req.user?.isH4BranchAdmin) {
         filter.gymId = req.user.gymId;
         const isBranchAdmin = req.user.role === 'h4_branch_admin' || Boolean(req.user.branchId);
         if (isBranchAdmin) {
@@ -41,7 +41,7 @@ const tenantFilter = (req, res, next) => {
         filter.gymId = req.user.gymId;
     }
 
-    if (req.user?.role !== 'trainer' && !['h4_admin', 'h4_branch_admin'].includes(req.user?.role)) {
+    if (req.user?.role !== 'trainer' && !['h4_admin', 'h4_branch_admin'].includes(req.user?.role) && !req.user?.isH4BranchAdmin) {
         if (req.query.branchId) {
             filter.branchId = req.query.branchId;
         } else if (headerBranchId && headerBranchId !== 'null' && headerBranchId !== 'undefined') {

@@ -26,7 +26,6 @@ const PAGE_TITLES = {
     '/member-dashboard': 'My Fitness Portal',
     '/member-classes': 'My Class Schedule',
     '/partner/visit-log': 'FitPass Member Check-Ins',
-    '/partner/fitpass-leads': 'FitPass Member Audit & Leads',
 };
 
 const AppHeader = () => {
@@ -67,7 +66,7 @@ const AppHeader = () => {
                 } catch (err) {
                     console.error('Failed to fetch gyms for selector:', err);
                 }
-            } else if (['partner', 'h4_admin', 'h4_branch_admin', 'admin'].includes(user?.role)) {
+            } else if (['h4_admin', 'h4_branch_admin'].includes(user?.role)) {
                 try {
                     const { data: branches } = await API.get('/branches');
                     setGyms(Array.isArray(branches) ? branches : []);

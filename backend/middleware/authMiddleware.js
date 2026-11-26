@@ -118,6 +118,14 @@ const protect = async (req, res, next) => {
                 // All other roles (admin, receptionist, trainer, member) are strictly isolated
                 req.user.gymId = user.gymId;
                 req.user.branchId = user.userBranchId || user.branchId || null;
+                if (user.role === 'admin' && user.gymId) {
+                    const adminGym = H4_GYM_IDS.includes(String(user.gymId))
+                        ? null
+                        : await Gym.findById(user.gymId).select('name').lean();
+                    req.user.isFitPassPartnerAdmin = !H4_GYM_IDS.includes(String(user.gymId))
+                        && !adminGym?.name?.toLowerCase().includes('h4');
+                    req.user.isH4BranchAdmin = Boolean(user.branchId) && !req.user.isFitPassPartnerAdmin;
+                }
             }
 
             next();
@@ -142,8 +150,16 @@ const authorize = (...roles) => {
             res.status(401);
             return next(new Error('Not authorized, missing user data'));
         }
-        const isH4BranchAdmin = req.user.role === 'h4_branch_admin' && roles.includes('h4_admin');
-        if (req.user.role === 'superadmin' || roles.includes(req.user.role) || isH4BranchAdmin) {
+        const isBranchScopedH4Admin = req.user.role === 'h4_branch_admin'
+            || req.user.role === 'h4_admin' && Boolean(req.user.branchId)
+            || req.user.isH4BranchAdmin === true;
+        const isFitPassPartnerAdmin = req.user.role === 'partner' || req.user.isFitPassPartnerAdmin === true;
+        const roleIsAllowed = isBranchScopedH4Admin
+            ? roles.includes('h4_branch_admin')
+            : isFitPassPartnerAdmin
+                ? roles.includes('partner')
+                : roles.includes(req.user.role);
+        if (req.user.role === 'superadmin' || roleIsAllowed) {
             return next();
         }
         res.status(403);

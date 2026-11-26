@@ -18,6 +18,7 @@ const { z } = require('zod');
 const prisma = require('../config/prisma');
 const { dedupeMembers } = require('../utils/memberIdentity');
 const Gym = require('../models/Gym');
+const Branch = require('../models/Branch');
 const Member = require('../models/Member');
 const { logAudit } = require('../utils/auditLogger');
 const { expireIfDue, attemptCheckIn } = require('../utils/sessionHelpers');
@@ -974,6 +975,12 @@ const getPartnerVisitLog = catchAsync(async (req, res, next) => {
     if (!gymId) {
       return res.status(403).json({ success: false, message: 'No gym associated with this account.' });
     }
+    if (!req.user.branchId) {
+      const gymBranch = await Branch.findOne({ gymId }).select('_id').lean();
+      if (gymBranch) {
+        return res.status(403).json({ success: false, message: 'This partner account must be assigned to a branch by a superadmin.' });
+      }
+    }
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const pageSize = Math.min(100, parseInt(req.query.pageSize) || 50);
@@ -982,6 +989,7 @@ const getPartnerVisitLog = catchAsync(async (req, res, next) => {
     const where = {
       gymIdVisited: gymId,
       accessStatus: 'Success',
+      ...(req.user.branchId ? { branchIdVisited: req.user.branchId } : {}),
     };
 
     // Optional date range filter

@@ -59,11 +59,14 @@ const createGymSchema = z.object({
     longitude: z.number().nullable().optional(),
     // Per-gym default session duration for FitPrime check-ins (minutes).
     defaultSessionDurationMinutes: z.number().int().min(15).max(600).optional(),
-    adminName: z.string().min(1, 'Admin name is required').max(120),
-    adminEmail: z.string().email('A valid admin email is required'),
-    adminPassword: z.string().min(6, 'Admin password must be at least 6 characters'),
+    adminName: z.string().min(1, 'Admin name is required').max(120).optional(),
+    adminEmail: z.string().email('A valid admin email is required').optional(),
+    adminPassword: z.string().min(6, 'Admin password must be at least 6 characters').optional(),
     profile: gymProfileInputSchema.optional(),
-});
+}).refine(value => {
+    const accountFields = [value.adminName, value.adminEmail, value.adminPassword];
+    return accountFields.every(Boolean) || accountFields.every(field => field === undefined);
+}, { message: 'Provide all partner admin credentials or leave them all empty.' });
 
 const updateGymSchema = z.object({
     name: z.string().min(1).max(120).optional(),
@@ -106,17 +109,26 @@ const createPartnerGym = catchAsync(async (req, res, next) => {
         throw new Error(parsed.error.issues[0].message);
     }
     const { gymName, gymAddress, phone, email, latitude, longitude, defaultSessionDurationMinutes, adminName, adminEmail, adminPassword, profile = {} } = parsed.data;
+    const hasAdminDetails = Boolean(adminName && adminEmail && adminPassword);
+
+    if (req.user.role === 'superadmin' && !hasAdminDetails) {
+        return res.status(400).json({ message: 'Superadmin must provide the initial partner admin credentials.' });
+    }
+    if (req.user.role !== 'superadmin' && (adminName || adminEmail || adminPassword)) {
+        return res.status(403).json({ message: 'Only a superadmin can create partner admin accounts.' });
+    }
 
     if (gymName && (gymName.toLowerCase() === 'h4' || gymName.toLowerCase().includes('h4'))) {
         res.status(400);
         throw new Error('H4 is a separate division and cannot be created as a FitPass partner.');
     }
-
-    const normalizedEmail = adminEmail.trim().toLowerCase();
-    const userExists = await User.findOne({ email: normalizedEmail });
-    if (userExists) {
-        res.status(400);
-        throw new Error('User already exists');
+    const normalizedEmail = adminEmail?.trim().toLowerCase();
+    if (normalizedEmail) {
+        const userExists = await User.findOne({ email: normalizedEmail });
+        if (userExists) {
+            res.status(400);
+            throw new Error('User already exists');
+        }
     }
 
     const gym = await Gym.create({
@@ -158,36 +170,31 @@ const createPartnerGym = catchAsync(async (req, res, next) => {
         },
     });
 
-    const user = await User.create({
+    const user = hasAdminDetails ? await User.create({
         name: adminName,
         email: normalizedEmail,
         password: adminPassword,
         gymId: gym._id,
         role: 'partner'
-    });
+    }) : null;
 
-    if (user) {
-        await logAudit(req, 'GYM_CREATED', 'Gym', gym._id, `Super admin created partner gym: ${gymName}`, gymName);
-        res.status(201).json({
-            gym: {
-                _id: gym._id,
-                name: gym.name,
-                address: gym.address,
-                latitude: gym.latitude,
-                longitude: gym.longitude,
-                defaultSessionDurationMinutes: gym.defaultSessionDurationMinutes,
-            },
-            admin: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            }
-        });
-    } else {
-        res.status(400);
-        throw new Error('Invalid data');
-    }
+    await logAudit(req, 'GYM_CREATED', 'Gym', gym._id, `${req.user.role} created partner gym: ${gymName}${user ? ' with partner admin' : ''}`, gymName);
+    res.status(201).json({
+        gym: {
+            _id: gym._id,
+            name: gym.name,
+            address: gym.address,
+            latitude: gym.latitude,
+            longitude: gym.longitude,
+            defaultSessionDurationMinutes: gym.defaultSessionDurationMinutes,
+        },
+        admin: user ? {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        } : null,
+    });
 });
 
 // @desc    Update a partner gym (incl. default session duration setting)
@@ -198,6 +205,9 @@ const updatePartnerGym = catchAsync(async (req, res, next) => {
     if (!parsed.success) {
         res.status(400);
         throw new Error(parsed.error.issues[0].message);
+    }
+    if (parsed.data.adminPassword && req.user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Only a superadmin can change partner admin credentials.' });
     }
 
     const targetId = req.params.id;
@@ -312,7 +322,7 @@ const getPartnerGyms = catchAsync(async (req, res, next) => {
         return {
             ...gym,
             discoveryProfile: profileByGymId.get(gym._id || gym.id) || null,
-            admins: admins.map(a => ({ _id: a._id, name: a.name, email: a.email }))
+            admins: req.user.role === 'superadmin' ? admins.map(a => ({ _id: a._id, name: a.name, email: a.email })) : []
         };
     });
 
@@ -397,6 +407,10 @@ const deletePartnerGym = catchAsync(async (req, res, next) => {
         }
         res.status(404);
         throw new Error('Gym or Branch not found');
+    }
+
+    if (req.user.role !== 'superadmin') {
+        return res.status(403).json({ message: 'Only a superadmin can delete partner gyms and their admin accounts.' });
     }
 
     try {
@@ -526,6 +540,7 @@ const updateAdminSchema = z.object({
     password: z.string().min(6, 'Password must be at least 6 characters').optional(),
     status: z.enum(['Active', 'Inactive']).optional(),
     fitPassPayoutAccess: z.boolean().optional(),
+    branchId: z.string().optional(),
 });
 
 // @desc    Get all dedicated admins (fitpass_admin, h4_admin)
@@ -565,10 +580,15 @@ const getAdminAccountScopes = catchAsync(async (req, res) => {
         Gym.find({}).select('id name').lean(),
         Branch.find({}).select('id name gymId').lean(),
     ]);
+    const h4Gym = gyms.find(gym => gym.name.toLowerCase() === 'h4') || null;
+    const h4GymId = h4Gym && String(h4Gym.id || h4Gym._id);
+    const scopedBranches = req.user.role === 'h4_admin'
+        ? branches.filter(branch => String(branch.gymId) === h4GymId)
+        : branches;
     res.json({
-        h4Gym: gyms.find(gym => gym.name.toLowerCase() === 'h4') || null,
-        fitpassGyms: gyms.filter(gym => gym.name.toLowerCase() !== 'h4'),
-        branches: branches.filter(branch => req.user.role !== 'h4_admin' || !req.user.branchId || String(branch.id || branch._id) === String(req.user.branchId)).map(branch => ({ ...branch, id: branch.id || branch._id })),
+        h4Gym,
+        fitpassGyms: req.user.role === 'superadmin' ? gyms.filter(gym => gym.name.toLowerCase() !== 'h4') : [],
+        branches: scopedBranches.map(branch => ({ ...branch, id: branch.id || branch._id })),
     });
 });
 
@@ -583,11 +603,8 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
     }
     const { name, email, password, role, gymId: requestedGymId, branchId } = parsed.data;
 
-    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && (role !== 'h4_branch_admin' || req.user.branchId)) {
+    if (isH4BranchAdmin(req.user) || req.user.role === 'h4_admin' && role !== 'h4_branch_admin') {
         return res.status(403).json({ message: 'Only H4 administrators can create H4 administrator accounts.' });
-    }
-    if (req.user.role === 'fitpass_admin' && role !== 'fitpass_partner') {
-        return res.status(403).json({ message: 'FitPass administrators can only create FitPass accounts.' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -619,12 +636,20 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
             throw new Error('Select a valid FitPass partner gym.');
         }
         gymId = gym._id || gym.id;
+        const existingBranch = await Branch.findOne({ gymId: String(gymId) }).select('_id').lean();
+        if (existingBranch && !branchId) {
+            res.status(400);
+            throw new Error('Select a branch for this FitPass partner account.');
+        }
+        if (branchId) {
+            const branch = await Branch.findOne({ _id: branchId, gymId: String(gymId) });
+            if (!branch) {
+                res.status(400);
+                throw new Error('Select a branch that belongs to the selected FitPass gym.');
+            }
+            actualBranchId = branch._id || branch.id;
+        }
         actualRole = 'partner';
-    }
-
-    if (req.user.role === 'fitpass_admin' && role === 'fitpass_partner' && requestedGymId) {
-        const allowedGym = await Gym.findOne({ _id: requestedGymId });
-        if (!allowedGym || allowedGym.name.toLowerCase() === 'h4') return res.status(400).json({ message: 'Select a valid FitPass partner gym.' });
     }
 
     const admin = await User.create({
@@ -670,9 +695,10 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
         throw new Error('Admin not found');
     }
 
+    const isH4BranchAccount = admin.role === 'h4_branch_admin'
+        || Boolean(admin.branchId && ['h4_admin', 'admin'].includes(admin.role));
     const sameDivision = req.user.role === 'superadmin'
-        || (req.user.role === 'h4_admin' && !req.user.branchId && ['h4_admin', 'h4_branch_admin'].includes(admin.role) && (admin.role === 'h4_branch_admin' || admin.branchId) && String(admin.gymId) === String(req.user.gymId))
-        || (req.user.role === 'fitpass_admin' && admin.role === 'partner');
+        || (req.user.role === 'h4_admin' && !req.user.branchId && isH4BranchAccount && String(admin.gymId) === String(req.user.gymId));
     if (!sameDivision || String(admin._id || admin.id) === String(req.user._id || req.user.id)) return res.status(403).json({ message: 'You cannot update this account.' });
 
     const updates = parsed.data;
@@ -686,6 +712,26 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
         admin.isActive = updates.status === 'Active';
     }
     if (updates.fitPassPayoutAccess !== undefined) admin.fitPassPayoutAccess = updates.fitPassPayoutAccess;
+    if (updates.branchId !== undefined) {
+        const accountGym = await Gym.findById(admin.gymId).select('name').lean();
+        const isFitPassPartnerAccount = admin.role === 'partner'
+            || admin.role === 'admin'
+                && !H4_GYM_IDS.includes(String(admin.gymId))
+                && !accountGym?.name?.toLowerCase().includes('h4');
+        if (!isFitPassPartnerAccount || !admin.gymId) {
+            return res.status(403).json({ message: 'Branch assignment is only available for FitPass partner accounts.' });
+        }
+        const requestedBranchId = updates.branchId.trim();
+        if (!requestedBranchId) {
+            const existingBranch = await Branch.findOne({ gymId: String(admin.gymId) }).select('_id').lean();
+            if (existingBranch) return res.status(400).json({ message: 'Assign this partner account to a branch.' });
+            admin.branchId = null;
+        } else {
+            const branch = await Branch.findOne({ _id: requestedBranchId, gymId: String(admin.gymId) });
+            if (!branch) return res.status(400).json({ message: 'Select a branch that belongs to this FitPass gym.' });
+            admin.branchId = branch._id || branch.id;
+        }
+    }
     await admin.save();
 
     await logAudit(req, 'ADMIN_UPDATED', 'User', admin._id, `Updated dedicated admin: ${admin.name}`, admin.name);
@@ -696,6 +742,7 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
         email: admin.email,
         role: admin.role,
         status: admin.status,
+        branchId: admin.branchId || null,
         fitPassPayoutAccess: Boolean(admin.fitPassPayoutAccess),
     });
 });
@@ -709,9 +756,10 @@ const deleteDedicatedAdmin = catchAsync(async (req, res, next) => {
         res.status(404);
         throw new Error('Admin not found');
     }
+    const isH4BranchAccount = admin.role === 'h4_branch_admin'
+        || Boolean(admin.branchId && ['h4_admin', 'admin'].includes(admin.role));
     const sameDivision = req.user.role === 'superadmin'
-        || (req.user.role === 'h4_admin' && !req.user.branchId && ['h4_admin', 'h4_branch_admin'].includes(admin.role) && (admin.role === 'h4_branch_admin' || admin.branchId) && String(admin.gymId) === String(req.user.gymId))
-        || (req.user.role === 'fitpass_admin' && admin.role === 'partner');
+        || (req.user.role === 'h4_admin' && !req.user.branchId && isH4BranchAccount && String(admin.gymId) === String(req.user.gymId));
     if (!sameDivision || String(admin._id || admin.id) === String(req.user._id || req.user.id)) return res.status(403).json({ message: 'You cannot revoke this account.' });
     await admin.deleteOne();
     await logAudit(req, 'ADMIN_DELETED', 'User', admin._id, `Super admin deleted dedicated admin: ${admin.name}`, admin.name);

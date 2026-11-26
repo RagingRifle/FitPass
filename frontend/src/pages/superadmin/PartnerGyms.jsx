@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import API from '../../services/api';
 import Modal from '../../components/Modal';
 import GymDiscoveryFields from '../../components/GymDiscoveryFields';
 import ResetFiltersButton from '../../components/ResetFiltersButton';
+import { AuthContext } from '../../context/AuthContext';
 import { QRCodeCanvas } from 'qrcode.react';
 import { 
     Building2, 
@@ -29,6 +30,8 @@ import {
 } from 'lucide-react';
 
 function PartnerGyms() {
+    const { user } = useContext(AuthContext);
+    const canManagePartnerAdmins = user?.role === 'superadmin';
     const [gyms, setGyms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -90,12 +93,16 @@ function PartnerGyms() {
                 longitude: longitude ? Number(longitude) : undefined,
                 defaultSessionDurationMinutes: Number(sessionHours) * 60 || 120,
                 profile: createProfile,
-                adminName: adminName.trim(), 
-                adminEmail: adminEmail.trim(), 
-                adminPassword: adminPassword.trim()
+                ...(canManagePartnerAdmins ? {
+                    adminName: adminName.trim(),
+                    adminEmail: adminEmail.trim(),
+                    adminPassword: adminPassword.trim()
+                } : {})
             });
 
-            setSuccessMsg(`Partner gym "${gymName}" created successfully with admin account!`);
+            setSuccessMsg(canManagePartnerAdmins
+                ? `Partner gym "${gymName}" created successfully with admin account!`
+                : `Partner gym "${gymName}" created. A superadmin must assign its partner admin.`);
             setGymName(''); setGymAddress(''); setLatitude(''); setLongitude(''); setSessionHours(2); setCreatePhone(''); setCreateEmail(''); setCreateProfile({});
             setAdminName(''); setAdminEmail(''); setAdminPassword('');
             setIsCreateModalOpen(false);
@@ -232,7 +239,7 @@ function PartnerGyms() {
                     </div>
                 </div>
 
-                <div className="fitprime-stat-card">
+                {canManagePartnerAdmins && <div className="fitprime-stat-card">
                     <div className="fitprime-stat-icon">
                         <Users size={22} />
                     </div>
@@ -240,7 +247,7 @@ function PartnerGyms() {
                         <div className="fitprime-stat-val">{totalAdminsCount}</div>
                         <div className="fitprime-stat-lbl">Assigned Admins</div>
                     </div>
-                </div>
+                </div>}
 
                 <div className="fitprime-stat-card">
                     <div className="fitprime-stat-icon">
@@ -270,7 +277,7 @@ function PartnerGyms() {
                     <input 
                         className="input" 
                         type="text" 
-                        placeholder="Search gyms by name, address, or admin email..." 
+                        placeholder={canManagePartnerAdmins ? 'Search gyms by name, address, or admin email...' : 'Search gyms by name or address...'}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -338,7 +345,7 @@ function PartnerGyms() {
                                             <MapPin size={16} className="partner-gym-info-icon" />
                                             <span>{gym.address || 'Address not specified'}</span>
                                         </div>
-                                        <div className="partner-gym-info-item">
+                                        {canManagePartnerAdmins && <div className="partner-gym-info-item">
                                             <User size={16} className="partner-gym-info-icon" />
                                             <div>
                                                 <strong style={{ color: 'var(--text-primary)' }}>{adminObj?.name || 'Unassigned Admin'}</strong>
@@ -346,7 +353,7 @@ function PartnerGyms() {
                                                     <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{adminObj.email}</div>
                                                 )}
                                             </div>
-                                        </div>
+                                        </div>}
                                     </div>
 
                                     {/* Session Duration Timeout Controls */}
@@ -399,13 +406,13 @@ function PartnerGyms() {
                                         <Pencil size={15} />
                                         Edit
                                     </button>
-                                    <button 
+                                    {canManagePartnerAdmins && <button
                                         className="btn btn-danger" 
                                         onClick={() => handleDeleteGym(gym._id, gym.name)}
                                         title="Delete Gym"
                                     >
                                         <Trash2 size={15} />
-                                    </button>
+                                    </button>}
                                 </div>
                             </div>
                         );
@@ -419,7 +426,7 @@ function PartnerGyms() {
                                 <tr>
                                     <th>Gym / Branch Name</th>
                                     <th>Address</th>
-                                    <th>Assigned Admin</th>
+                                    {canManagePartnerAdmins && <th>Assigned Admin</th>}
                                     <th>Session Timeout</th>
                                     <th>Actions</th>
                                 </tr>
@@ -440,10 +447,10 @@ function PartnerGyms() {
                                                 </div>
                                             </td>
                                             <td style={{ color: 'var(--text-secondary)' }}>{gym.address || 'N/A'}</td>
-                                            <td>
+                                            {canManagePartnerAdmins && <td>
                                                 <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{adminObj?.name || 'Unassigned'}</div>
                                                 <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{adminObj?.email || ''}</div>
-                                            </td>
+                                            </td>}
                                             <td>
                                                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                                                     <Timer size={14} style={{ color: 'var(--primary-color)' }} />
@@ -488,13 +495,13 @@ function PartnerGyms() {
                                                     >
                                                         <Pencil size={14} />
                                                     </button>
-                                                    <button 
+                                                    {canManagePartnerAdmins && <button
                                                         className="btn btn-danger" 
                                                         style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }} 
                                                         onClick={() => handleDeleteGym(gym._id, gym.name)}
                                                     >
                                                         <Trash2 size={14} />
-                                                    </button>
+                                                    </button>}
                                                 </div>
                                             </td>
                                         </tr>
@@ -590,50 +597,56 @@ function PartnerGyms() {
                         <GymDiscoveryFields profile={createProfile} onChange={setCreateProfile} showContactFields={false} />
                     </div>
 
-                    <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
-                        <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <ShieldCheck size={16} />
-                            Administrator Credentials
-                        </h4>
+                    {canManagePartnerAdmins ? (
+                        <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
+                            <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <ShieldCheck size={16} />
+                                Administrator Credentials
+                            </h4>
 
-                        <div className="input-group">
-                            <label>Admin Name</label>
-                            <input 
-                                className="input" 
-                                type="text" 
-                                placeholder="e.g. John Doe" 
-                                value={adminName} 
-                                onChange={(e) => setAdminName(e.target.value)} 
-                                required 
-                            />
-                        </div>
-
-                        <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
                             <div className="input-group">
-                                <label>Admin Email</label>
-                                <input 
-                                    className="input" 
-                                    type="email" 
-                                    placeholder="e.g. admin@gym.com" 
-                                    value={adminEmail} 
-                                    onChange={(e) => setAdminEmail(e.target.value)} 
-                                    required 
+                                <label>Admin Name</label>
+                                <input
+                                    className="input"
+                                    type="text"
+                                    placeholder="e.g. John Doe"
+                                    value={adminName}
+                                    onChange={(e) => setAdminName(e.target.value)}
+                                    required
                                 />
                             </div>
 
-                            <div className="input-group">
-                                <label>Admin Password</label>
-                                <input 
-                                    className="input" 
-                                    type="text" 
-                                    placeholder="Password" 
-                                    value={adminPassword} 
-                                    onChange={(e) => setAdminPassword(e.target.value)} 
-                                    required 
-                                />
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="input-group">
+                                    <label>Admin Email</label>
+                                    <input
+                                        className="input"
+                                        type="email"
+                                        placeholder="e.g. admin@gym.com"
+                                        value={adminEmail}
+                                        onChange={(e) => setAdminEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="input-group">
+                                    <label>Admin Password</label>
+                                    <input
+                                        className="input"
+                                        type="text"
+                                        placeholder="Password"
+                                        value={adminPassword}
+                                        onChange={(e) => setAdminPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <p style={{ marginTop: '1.25rem', color: 'var(--text-secondary)' }}>
+                            A superadmin assigns partner admin access from the Admin Directory after the gym is created.
+                        </p>
+                    )}
 
                     <div style={{ display: 'flex', gap: '12px', marginTop: '1.5rem' }}>
                         <button 
@@ -650,7 +663,7 @@ function PartnerGyms() {
                             disabled={submitting}
                             style={{ flex: 1 }}
                         >
-                            {submitting ? 'Creating...' : 'Create Gym & Admin'}
+                            {submitting ? 'Creating...' : canManagePartnerAdmins ? 'Create Gym & Admin' : 'Create Gym'}
                         </button>
                     </div>
                 </form>

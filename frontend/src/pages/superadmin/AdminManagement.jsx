@@ -32,6 +32,7 @@ function AdminManagement({ scope = 'all' }) {
     const [editPassword, setEditPassword] = useState('');
     const [editStatus, setEditStatus] = useState('Active');
     const [editFitPassPayoutAccess, setEditFitPassPayoutAccess] = useState(false);
+    const [editBranchId, setEditBranchId] = useState('');
 
     const fetchAdmins = async () => {
         try {
@@ -51,6 +52,7 @@ function AdminManagement({ scope = 'all' }) {
     }, []);
 
     const h4Branches = scopeData.branches.filter(branch => String(branch.gymId) === String(scopeData.h4Gym?.id || scopeData.h4Gym?._id));
+    const fitpassBranches = scopeData.branches.filter(branch => String(branch.gymId) === String(gymId));
     const visibleAdmins = admins.filter(admin => division === 'all' || (division === 'h4' ? ['h4_admin', 'h4_branch_admin'].includes(admin.roleScope) : ['fitpass_admin', 'fitpass_partner'].includes(admin.roleScope)));
     const roleNames = { fitpass_admin: 'FitPass Admin', h4_admin: 'H4 Admin', h4_branch_admin: 'H4 Branch Admin', fitpass_partner: 'FitPass Partner' };
     const canManageAdmin = (admin) => user?.role === 'superadmin'
@@ -70,7 +72,7 @@ function AdminManagement({ scope = 'all' }) {
                 password,
                 role,
                 ...(role === 'h4_branch_admin' ? { branchId } : {}),
-                ...(role === 'fitpass_partner' ? { gymId } : {}),
+                ...(role === 'fitpass_partner' ? { gymId, branchId } : {}),
             });
             setName('');
             setEmail('');
@@ -92,6 +94,7 @@ function AdminManagement({ scope = 'all' }) {
         setEditPassword('');
         setEditStatus(admin.status || 'Active');
         setEditFitPassPayoutAccess(Boolean(admin.fitPassPayoutAccess));
+        setEditBranchId(admin.branchId || '');
     };
 
     const handleUpdateAdmin = async (e) => {
@@ -100,6 +103,7 @@ function AdminManagement({ scope = 'all' }) {
         setSuccessMessage('');
         try {
             const body = { name: editName, status: editStatus };
+            if (editingAdmin.roleScope === 'fitpass_partner') body.branchId = editBranchId;
             if (editPassword) {
                 body.password = editPassword;
             }
@@ -132,18 +136,18 @@ function AdminManagement({ scope = 'all' }) {
 
     const pageTitle = scope === 'h4'
         ? 'H4 Branch Admins'
-        : scope === 'fitpass' ? 'FitPass Partner Accounts' : 'Admins Directory';
+        : scope === 'fitpass' ? 'FitPass Admins & Partner Accounts' : 'Admins Directory';
     const pageDescription = scope === 'h4'
         ? 'Create and manage administrator access for individual H4 branches.'
         : scope === 'fitpass'
-            ? 'Create and manage FitPass partner-gym access.'
+            ? 'Manage FitPass administrator and partner-gym accounts.'
             : 'Manage FitPass and H4 administrator accounts. Division-specific access is managed in each division.';
     const provisionTitle = scope === 'h4'
         ? 'Add H4 Branch Admin'
-        : scope === 'fitpass' ? 'Add FitPass Partner Account' : 'Provision Admin Account';
+        : scope === 'fitpass' ? 'Add FitPass Admin or Partner Account' : 'Provision Admin Account';
     const provisionButtonLabel = scope === 'h4'
         ? 'Create H4 Branch Admin'
-        : scope === 'fitpass' ? 'Create Partner Account' : 'Provision Admin Account';
+        : scope === 'fitpass' ? 'Create FitPass Account' : 'Provision Admin Account';
     const showDivisionTabs = user?.role === 'superadmin' && scope === 'all';
 
     if (loading && admins.length === 0) return (
@@ -241,9 +245,12 @@ function AdminManagement({ scope = 'all' }) {
                             </select>
                         </div>
                     </div>
-                    {role === 'fitpass_partner' && <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>Partner gym</label><select className="input" value={gymId} onChange={e => setGymId(e.target.value)} required><option value="">Select a FitPass gym</option>{scopeData.fitpassGyms.map(gym => <option key={gym.id || gym._id} value={gym.id || gym._id}>{gym.name}</option>)}</select></div>}
+                    {role === 'fitpass_partner' && <>
+                        <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>Partner gym</label><select className="input" value={gymId} onChange={e => { setGymId(e.target.value); setBranchId(''); }} required><option value="">Select a FitPass gym</option>{scopeData.fitpassGyms.map(gym => <option key={gym.id || gym._id} value={gym.id || gym._id}>{gym.name}</option>)}</select></div>
+                        {gymId && fitpassBranches.length > 0 && <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>Partner branch</label><select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required><option value="">Select a branch</option>{fitpassBranches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
+                    </>}
                     {role === 'h4_branch_admin' && <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>H4 branch</label><select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required><option value="">Select an H4 branch</option>{h4Branches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
-                    <p style={{ margin: '0.75rem 0 0', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{role === 'h4_branch_admin' ? 'Branch access is locked to the selected H4 location.' : role === 'h4_admin' ? 'H4-wide access across all H4 branches.' : role === 'fitpass_partner' ? 'Partner access is limited to the selected gym.' : 'FitPass network-wide administration.'}</p>
+                    <p style={{ margin: '0.75rem 0 0', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{role === 'h4_branch_admin' ? 'Branch access is locked to the selected H4 location.' : role === 'h4_admin' ? 'H4-wide access across all H4 branches.' : role === 'fitpass_partner' ? 'Partner access is limited to the selected branch.' : 'FitPass network-wide administration.'}</p>
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
                         {provisionButtonLabel}
                     </button>
@@ -361,6 +368,7 @@ function AdminManagement({ scope = 'all' }) {
                                 <input type="checkbox" checked={editFitPassPayoutAccess} onChange={event => setEditFitPassPayoutAccess(event.target.checked)} style={{ marginTop: 3 }} />
                                 <span><strong>Allow FitPass branch payouts</strong><br /><small style={{ color: 'var(--text-secondary)' }}>Grants this FitPass admin access to the branch payout ledger and settlement tools.</small></span>
                             </label>}
+                            {editingAdmin.roleScope === 'fitpass_partner' && <div className="input-group"><label>Partner branch</label><select className="input" value={editBranchId} onChange={event => setEditBranchId(event.target.value)} required={scopeData.branches.some(branch => String(branch.gymId) === String(editingAdmin.gymId))}><option value="">{scopeData.branches.some(branch => String(branch.gymId) === String(editingAdmin.gymId)) ? 'Select a branch' : 'No branches available'}</option>{scopeData.branches.filter(branch => String(branch.gymId) === String(editingAdmin.gymId)).map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
                                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
                                 <button type="button" className="btn btn-secondary" onClick={() => setEditingAdmin(null)} style={{ flex: 1 }}>Cancel</button>

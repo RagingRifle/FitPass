@@ -39,16 +39,16 @@ const bookClassSchema = z.object({
 });
 
 router.route('/')
-    .get(protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), tenantFilter, getClasses)
-    .post(protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'h4_admin'), validate({ body: createClassSchema }), createClass);
+    .get(protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'receptionist', 'h4_admin'), tenantFilter, getClasses)
+    .post(protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'h4_admin'), validate({ body: createClassSchema }), createClass);
 
-router.delete('/:id', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'h4_admin'), deleteClass);
-router.get('/:id/bookings', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), getClassBookings);
-router.post('/:id/book', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), validate({ body: bookClassSchema }), adminBookClass);
-router.delete('/:id/bookings/:memberId', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), adminCancelBooking);
+router.delete('/:id', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'h4_admin'), deleteClass);
+router.get('/:id/bookings', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'receptionist', 'h4_admin'), getClassBookings);
+router.post('/:id/book', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'receptionist', 'h4_admin'), validate({ body: bookClassSchema }), adminBookClass);
+router.delete('/:id/bookings/:memberId', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'receptionist', 'h4_admin'), adminCancelBooking);
 
 // Attendee verification via QR scan or manual roster toggle
-router.post('/:id/verify-attendee', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), verifyClassAttendee);
-router.put('/:id/attendees/:memberId', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'partner', 'trainer', 'receptionist', 'h4_admin'), toggleAttendeeStatus);
+router.post('/:id/verify-attendee', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'receptionist', 'h4_admin'), verifyClassAttendee);
+router.put('/:id/attendees/:memberId', protect, authorize('superadmin', 'fitpass_admin', 'admin', 'trainer', 'receptionist', 'h4_admin'), toggleAttendeeStatus);
 
 module.exports = router;

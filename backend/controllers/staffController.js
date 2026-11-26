@@ -29,8 +29,9 @@ const getStaff = catchAsync(async (req, res, next) => {
         const gymId = await resolveStaffGymId(req);
         if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
         const h4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user.role) || await isH4Gym(gymId);
+        const branchScoped = req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && Boolean(req.user.branchId) || req.user.isH4BranchAdmin;
         const query = {
-            role: { $in: h4Scope ? ['trainer', 'h4_admin', 'h4_branch_admin'] : ['admin', 'trainer', 'receptionist'] },
+            role: { $in: h4Scope ? branchScoped ? ['trainer'] : ['trainer', 'h4_admin', 'h4_branch_admin'] : ['admin', 'trainer', 'receptionist'] },
             ...req.tenantFilter,
             gymId
         };

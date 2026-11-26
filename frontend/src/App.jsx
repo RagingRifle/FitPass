@@ -46,7 +46,6 @@ const DietPlans = lazy(() => import('./pages/DietPlans'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Reminders = lazy(() => import('./pages/Reminders'));
 const FitPassVisitLog = lazy(() => import('./pages/FitPassVisitLog'));
-const FitPassPartnerLeads = lazy(() => import('./pages/FitPassPartnerLeads'));
 const GymProfileDiscovery = lazy(() => import('./pages/GymProfileDiscovery'));
 const DiscoveryApprovalQueue = lazy(() => import('./pages/superadmin/DiscoveryApprovalQueue'));
 const FitPassGymExplore = lazy(() => import('./pages/FitPassGymExplore'));
@@ -125,7 +124,7 @@ function App() {
         } />
 
         <Route path="/h4/admins" element={<ProtectedRoute roles={['h4_admin']}><Layout><AdminManagement scope="h4" /></Layout></ProtectedRoute>} />
-        <Route path="/fitpass/admins" element={<ProtectedRoute roles={['fitpass_admin']}><Layout><AdminManagement scope="fitpass" /></Layout></ProtectedRoute>} />
+        <Route path="/fitpass/admins" element={<ProtectedRoute roles={['superadmin']}><Layout><AdminManagement scope="fitpass" /></Layout></ProtectedRoute>} />
 
         <Route path="/superadmin/fitpass-analytics" element={
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>
@@ -302,14 +301,6 @@ function App() {
           <ProtectedRoute roles={['partner', 'admin']}>
             <Layout>
               <FitPassVisitLog />
-            </Layout>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/partner/fitpass-leads" element={
-          <ProtectedRoute roles={['partner', 'admin']}>
-            <Layout>
-              <FitPassPartnerLeads />
             </Layout>
           </ProtectedRoute>
         } />

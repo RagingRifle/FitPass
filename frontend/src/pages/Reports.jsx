@@ -191,11 +191,13 @@ const Reports = () => {
   const [branchId, setBranchId] = useState(selectedBranchId || '');
   const [branches, setBranches] = useState([]);
   const isH4 = activeDivision === 'h4' || ['h4_admin', 'h4_branch_admin'].includes(user?.role);
-  const lockedBranch = ['h4_admin', 'h4_branch_admin'].includes(user?.role) && (user?.userBranchId || user?.branchId);
+  const isH4GymAdmin = user?.role === 'admin' && isH4;
+  const lockedBranch = (['h4_admin', 'h4_branch_admin'].includes(user?.role) || isH4GymAdmin)
+    && (user?.userBranchId || user?.branchId);
 
   useEffect(() => {
-    if (isH4) API.get('/branches').then(({ data }) => setBranches(data || [])).catch(() => setBranches([]));
-  }, [isH4]);
+    if (isH4 && !lockedBranch) API.get('/branches').then(({ data }) => setBranches(data || [])).catch(() => setBranches([]));
+  }, [isH4, lockedBranch]);
 
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);

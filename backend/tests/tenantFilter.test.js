@@ -80,6 +80,22 @@ describe('tenantFilter trainer scope', () => {
         expect(next).not.toHaveBeenCalled();
     });
 
+    it('locks legacy branch-scoped H4 admins to their assigned branch', () => {
+        const req = {
+            user: { role: 'admin', gymId: 'h4-gym', branchId: 'assigned-branch', isH4BranchAdmin: true },
+            query: { gymId: 'other-gym', branchId: 'other-branch' },
+            headers: { 'x-gym-id': 'header-gym', 'x-branch-id': 'header-branch' }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        const next = jest.fn();
+
+        tenantFilter(req, res, next);
+
+        expect(req.tenantFilter).toEqual({ gymId: 'h4-gym', branchId: 'assigned-branch' });
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(res.status).not.toHaveBeenCalled();
+    });
+
     it('does not allow overall H4 admins to override their gym scope', () => {
         const req = {
             user: { role: 'h4_admin', gymId: 'h4-gym', branchId: null },

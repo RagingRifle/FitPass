@@ -8,10 +8,10 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.route('/')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'partner', 'h4_admin', 'fitpass_admin'), getAssignments)
-    .post(protect, authorize('admin', 'partner', 'h4_admin', 'fitpass_admin'), assignTrainer);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'h4_admin', 'fitpass_admin'), getAssignments)
+    .post(protect, authorize('admin', 'h4_admin', 'fitpass_admin'), assignTrainer);
 
 router.route('/:id')
-    .delete(protect, authorize('admin', 'partner', 'h4_admin', 'fitpass_admin'), removeAssignment);
+    .delete(protect, authorize('admin', 'h4_admin', 'fitpass_admin'), removeAssignment);
 
 module.exports = router;

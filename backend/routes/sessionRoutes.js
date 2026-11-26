@@ -25,7 +25,7 @@ router.post(
 router.get(
   '/member-summary/:memberId',
   protect,
-  authorize('admin', 'partner', 'superadmin', 'fitpass_admin'),
+  authorize('admin', 'superadmin', 'fitpass_admin'),
   getMemberFitPassSummary
 );
 
@@ -41,7 +41,7 @@ router.get(
 router.get(
   '/partner-visits',
   protect,
-  authorize('partner', 'admin'),
+  authorize('partner'),
   getPartnerVisitLog
 );
 

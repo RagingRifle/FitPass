@@ -48,7 +48,7 @@ router.get('/summary', protect, authorize('admin', 'receptionist', 'h4_admin', '
 // GET leads — admins + partner (read-only, scoped by gymId in controller)
 // POST leads — admins only (partners cannot create leads)
 router.route('/')
-  .get(protect, authorize('admin', 'receptionist', 'h4_admin', 'partner', 'superadmin'), tenantFilter, ensureH4SuperadminScope, getLeads)
+  .get(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, getLeads)
   .post(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, validate({ body: createLeadSchema }), createLead);
 
 // PUT / DELETE — admins only

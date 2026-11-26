@@ -11,6 +11,9 @@ const Staff = () => {
     const { user, activeDivision } = useContext(AuthContext);
     const navigate = useNavigate();
     const isH4Scope = activeDivision === 'h4' || ['h4_admin', 'h4_branch_admin'].includes(user?.role);
+    const isBranchScopedH4Admin = user?.role === 'h4_branch_admin'
+        || user?.role === 'h4_admin' && Boolean(user?.branchId)
+        || user?.role === 'admin' && activeDivision === 'h4' && Boolean(user?.branchId);
     const canCreateBranchH4Admin = ['superadmin', 'h4_admin'].includes(user?.role);
     const canCreateOverallH4Admin = user?.role === 'superadmin';
     const [activeTab, setActiveTab] = useState('directory');
@@ -59,8 +62,10 @@ const Staff = () => {
 
     useEffect(() => {
         fetchStaff();
-        API.get('/branches').then(({ data }) => setBranchList(Array.isArray(data) ? data : data.branches || [])).catch(() => setBranchList([]));
-    }, []);
+        if (!isBranchScopedH4Admin) {
+            API.get('/branches').then(({ data }) => setBranchList(Array.isArray(data) ? data : data.branches || [])).catch(() => setBranchList([]));
+        }
+    }, [isBranchScopedH4Admin]);
 
     useEffect(() => {
         if (activeTab !== 'assignments') return;
@@ -214,14 +219,14 @@ const Staff = () => {
             <section className="staff-page__stats" aria-label="Staff summary">
                 <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--ink"><Users size={17} /></span><div><strong>{staffList.length}</strong><span>Team members</span></div></div>
                 <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--yellow"><Dumbbell size={17} /></span><div><strong>{trainerCount}</strong><span>Trainers</span></div></div>
-                <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--sand"><ShieldCheck size={17} /></span><div><strong>{adminCount}</strong><span>Administrators</span></div></div>
+                {!isBranchScopedH4Admin && <div className="staff-page__stat"><span className="staff-page__stat-icon staff-page__stat-icon--sand"><ShieldCheck size={17} /></span><div><strong>{adminCount}</strong><span>Administrators</span></div></div>}
             </section>
 
             {/* TAB SELECTOR */}
             <div className="staff-page__tabs" role="tablist" aria-label="Staff management views">
                 <button className={activeTab === 'directory' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'directory'} onClick={() => setActiveTab('directory')}>Directory <span>{staffList.length}</span></button>
-                <button className={activeTab === 'assignments' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')}>Trainer assignments</button>
-                <button className={activeTab === 'matrix' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'matrix'} onClick={() => setActiveTab('matrix')}>Role access</button>
+                {!isBranchScopedH4Admin && <button className={activeTab === 'assignments' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'assignments'} onClick={() => setActiveTab('assignments')}>Trainer assignments</button>}
+                {!isBranchScopedH4Admin && <button className={activeTab === 'matrix' ? 'is-active' : ''} role="tab" aria-selected={activeTab === 'matrix'} onClick={() => setActiveTab('matrix')}>Role access</button>}
             </div>
 
             {error && !isModalOpen && <div className="staff-page__error" role="alert">{error}</div>}
@@ -231,7 +236,7 @@ const Staff = () => {
                 <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-secondary" type="button" onClick={() => navigator.clipboard?.writeText(`${issuedCredentials.email}\t${issuedCredentials.password}`)}><Copy size={15} /> Copy login</button><button className="btn btn-secondary" type="button" aria-label="Dismiss credentials" onClick={() => setIssuedCredentials(null)}><X size={15} /></button></div>
             </div>}
 
-            {activeTab === 'assignments' && <div className="card" style={{ padding: '1.5rem' }}>
+            {activeTab === 'assignments' && !isBranchScopedH4Admin && <div className="card" style={{ padding: '1.5rem' }}>
                 <h3>Member to trainer assignments</h3>
                 <p style={{ color: 'var(--text-secondary)' }}>FitPass members receive trainer access only after an administrator assigns them. H4 branch members are assigned automatically as capacity allows.</p>
                 <form onSubmit={submitTrainerAssignment} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
@@ -252,8 +257,10 @@ const Staff = () => {
                             <option value="">All Roles</option>
                             <option value="trainer">Trainer</option>
                             {isH4Scope ? <>
-                                <option value="h4_branch_admin">H4 Branch Admin</option>
-                                <option value="h4_admin">Overall H4 Admin</option>
+                                {!isBranchScopedH4Admin && <>
+                                    <option value="h4_branch_admin">H4 Branch Admin</option>
+                                    <option value="h4_admin">Overall H4 Admin</option>
+                                </>}
                             </> : <>
                                 <option value="receptionist">Receptionist</option>
                                 <option value="admin">Admin</option>
@@ -342,7 +349,7 @@ const Staff = () => {
             )}
 
             {/* Matrix Tab */}
-            {activeTab === 'matrix' && (
+            {activeTab === 'matrix' && !isBranchScopedH4Admin && (
                 <div className="staff-page__access-guide">
                     <div className="staff-page__guide-heading"><div><span className="staff-page__eyebrow"><span /> PRESET ACCESS</span><h2>Access follows the role</h2><p>Core permissions are assigned by role. Trainer workloads and coaching permissions can be adjusted per staff member.</p></div></div>
                     <div className="staff-page__role-cards">

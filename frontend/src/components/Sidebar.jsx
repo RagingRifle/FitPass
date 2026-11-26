@@ -129,25 +129,9 @@ const NAV_GROUPS = {
     ],
     partner: [
         {
-            label: 'Member Operations',
+            label: 'Branch Operations',
             items: [
-                { name: 'FitPass Visits', path: '/partner/visit-log', icon: Zap },
-                { name: 'FitPass Leads', path: '/partner/fitpass-leads', icon: Target },
-                { name: 'Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
-                { name: 'Trainers & Staff', path: '/staff', icon: ShieldCheck },
-            ]
-        },
-        {
-            label: 'Brand & Discovery',
-            items: [
-                { name: 'Gym Social Profile', path: '/gym-social-profile', icon: Image },
-                { name: 'Explore Network', path: '/explore-gyms', icon: Compass },
-            ]
-        },
-        {
-            label: 'Account & Config',
-            items: [
-                { name: 'Partner Settings', path: '/settings', icon: Settings },
+                { name: 'Branch Metrics & Check-ins', path: '/partner/visit-log', icon: Zap },
             ]
         }
     ]
@@ -155,7 +139,7 @@ const NAV_GROUPS = {
 
 const Sidebar = () => {
     const { collapsed, toggle, mobileOpen, closeMobile } = useSidebar();
-    const { user, logout, changeSelectedGym, activeDivision, changeActiveDivision, selectedBranchId } = useContext(AuthContext);
+    const { user, logout, changeSelectedGym, activeDivision, changeActiveDivision, changeSelectedBranch } = useContext(AuthContext);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -285,7 +269,6 @@ const Sidebar = () => {
                     { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
                     { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
                     ...(user?.fitPassPayoutAccess ? [{ name: 'Branch Payouts', path: '/superadmin/fitpass-payouts', icon: IndianRupee }] : []),
-                    { name: 'Partner Accounts', path: '/fitpass/admins', icon: ShieldCheck },
                     { name: 'Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
                 ]
             },
@@ -345,6 +328,15 @@ const Sidebar = () => {
                 ]
             }
         ];
+        if (role === 'h4_branch_admin' || user?.branchId) {
+            groups = [{
+                label: 'Branch Operations',
+                items: [
+                    { name: 'Staff & Access', path: '/staff', icon: ShieldCheck },
+                    { name: 'Reports', path: '/reports', icon: FileText },
+                ]
+            }];
+        }
     } else {
         const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
         const userGymId = user?.gymId?._id || user?.gymId || '';
@@ -371,7 +363,7 @@ const Sidebar = () => {
             items: group.items.filter(item => {
                 if (item.path === '/branches') return false;
                 if (item.path === '/fitpass-classes' && ['h4_admin', 'h4_branch_admin'].includes(role)) return false;
-                if (['h4_admin', 'h4_branch_admin'].includes(role) && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/staff', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
+                if (role !== 'superadmin' && activeDivision === 'h4' && !['/staff', '/reports'].includes(item.path)) return false;
                 return true;
             })
         }));

@@ -13,13 +13,13 @@ const denyBranchScopedManagement = (req, res, next) => {
     return next();
 };
 router.route('/')
-    .get(authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'partner'), getBranches)
-    .post(authorize('admin', 'fitpass_admin', 'h4_admin', 'partner', 'superadmin'), denyBranchScopedManagement, createBranch);
+    .get(authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), getBranches)
+    .post(authorize('admin', 'fitpass_admin', 'h4_admin', 'superadmin'), denyBranchScopedManagement, createBranch);
 
 router.route('/:id')
-    .put(authorize('admin', 'fitpass_admin', 'h4_admin', 'partner', 'superadmin'), denyBranchScopedManagement, updateBranch)
-    .delete(authorize('admin', 'fitpass_admin', 'h4_admin', 'partner', 'superadmin'), denyBranchScopedManagement, deleteBranch);
+    .put(authorize('admin', 'fitpass_admin', 'h4_admin', 'superadmin'), denyBranchScopedManagement, updateBranch)
+    .delete(authorize('admin', 'fitpass_admin', 'h4_admin', 'superadmin'), denyBranchScopedManagement, deleteBranch);
 
-router.get('/:id/members', authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'partner'), getBranchMembers);
+router.get('/:id/members', authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), getBranchMembers);
 
 module.exports = router;

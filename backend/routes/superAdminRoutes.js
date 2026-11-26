@@ -63,14 +63,14 @@ router.route('/plans/:id')
 
 // Dedicated Admin CRUD routes
 router.route('/admins')
-    .get(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), getDedicatedAdmins)
-    .post(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), createDedicatedAdmin);
+    .get(protect, authorize('superadmin', 'h4_admin'), getDedicatedAdmins)
+    .post(protect, authorize('superadmin', 'h4_admin'), createDedicatedAdmin);
 
-router.get('/admin-scopes', protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), getAdminAccountScopes);
+router.get('/admin-scopes', protect, authorize('superadmin', 'h4_admin'), getAdminAccountScopes);
 
 router.route('/admins/:id')
-    .put(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), updateDedicatedAdmin)
-    .delete(protect, authorize('superadmin', 'fitpass_admin', 'h4_admin'), deleteDedicatedAdmin);
+    .put(protect, authorize('superadmin', 'h4_admin'), updateDedicatedAdmin)
+    .delete(protect, authorize('superadmin', 'h4_admin'), deleteDedicatedAdmin);
 
 // ── FitPass SuperAdmin Analytics & Control ──────────────────────────────────
 router.get('/fitpass/overview',
