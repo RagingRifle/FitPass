@@ -168,14 +168,16 @@ function AdminManagement({ scope = 'all' }) {
 
     return (
         <div style={{ padding: '1rem 0' }}>
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <ShieldCheck size={28} style={{ color: 'var(--primary)' }} />
-                    <h2 style={{ margin: 0 }}>{pageTitle}</h2>
+            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                    <p className="plans-page-header__kicker">SYSTEM · ACCESS CONTROL</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <ShieldCheck size={26} style={{ color: 'var(--primary)' }} />
+                        <h2 style={{ margin: 0 }}>{pageTitle}</h2>
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0' }}>{pageDescription}</p>
                 </div>
             </header>
-
-            <p style={{ color: 'var(--text-secondary)', margin: '-1rem 0 1.2rem' }}>{pageDescription}</p>
             {error && (
                 <div className="error-message" style={{ color: 'var(--danger)', marginBottom: '1.5rem', padding: '0.75rem 1rem', background: 'rgba(255,0,68,0.1)', border: '1px solid rgba(255,0,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ShieldAlert size={18} />

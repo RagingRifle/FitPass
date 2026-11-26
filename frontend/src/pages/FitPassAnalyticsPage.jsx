@@ -138,14 +138,16 @@ const FitPassAnalyticsPage = () => {
 
   return (
     <div className="fade-in" style={{ padding: '1.5rem', color: 'var(--text-primary)' }}>
-      <header style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <Zap size={28} style={{ color: 'var(--primary-color)' }} />
-          <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0 }}>FitPass Universal Access Reports</h1>
+      <header className="plans-page-header" style={{ marginBottom: '1.5rem' }}>
+        <div>
+          <p className="plans-page-header__kicker">FITPASS · ANALYTICS</p>
+          <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Zap size={24} style={{ color: 'var(--primary-color)' }} /> FitPass Universal Access Reports
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.25rem 0 0' }}>
+            Monitor member registrations, network check-ins, session deduction velocity, and branch performance.
+          </p>
         </div>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-          Monitor member registrations, network check-ins, session deduction velocity, and branch performance.
-        </p>
       </header>
 
       <section className="card" style={{ marginBottom: '1.5rem' }}>

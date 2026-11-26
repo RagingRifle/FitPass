@@ -105,7 +105,7 @@ function App() {
         } />
 
         <Route path="/products" element={<ProtectedRoute roles={['admin', 'h4_admin', 'superadmin', 'fitpass_admin']}><Layout><Products /></Layout></ProtectedRoute>} />
-        <Route path="/h4/trial-codes" element={<ProtectedRoute roles={['admin', 'h4_admin']}><Layout><H4TrialCodes /></Layout></ProtectedRoute>} />
+        <Route path="/h4/trial-codes" element={<ProtectedRoute roles={['admin', 'h4_admin', 'superadmin']}><Layout><H4TrialCodes /></Layout></ProtectedRoute>} />
 
         <Route path="/superadmin/fitpass-members" element={
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>

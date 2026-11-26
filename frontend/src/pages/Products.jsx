@@ -315,8 +315,8 @@ export default function Products() {
   ]).values());
 
   return <main className="products-page">
-    <header className="products-header">
-      <div><p className="products-eyebrow">STORE MANAGEMENT</p><h1>{division === 'h4' ? 'H4 Merchandise' : 'FitPass Product Catalog'}</h1><p>{division === 'h4' ? 'Manage merchandise, record counter sales, and review purchase activity.' : 'Create products, set FitCoin prices, and publish them to the FitPass app and member shop.'}</p></div>
+    <header className="plans-page-header" style={{ marginBottom: '1.25rem' }}>
+      <div><p className="plans-page-header__kicker">{division === 'h4' ? 'H4 · STORE MANAGEMENT' : 'FITPASS · STORE MANAGEMENT'}</p><h2 style={{ margin: 0 }}>{division === 'h4' ? 'H4 Merchandise' : 'FitPass Product Catalog'}</h2><p style={{ margin: '0.25rem 0 0' }}>{division === 'h4' ? 'Manage merchandise, record counter sales, and review purchase activity.' : 'Create products, set FitCoin prices, and publish them to the FitPass app and member shop.'}</p></div>
     </header>
 
     <nav className="products-tabs" aria-label="Product management sections">

@@ -146,8 +146,8 @@ export default function FitPassBranchPayouts() {
   };
 
   return <div className="fade-in" style={{ maxWidth: 1500, margin: '0 auto', padding: '1.25rem 1.5rem 2rem' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-      <div><div style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '.7rem', letterSpacing: '.12em' }}>FITPASS · NETWORK FINANCE</div><h1 style={{ margin: '5px 0', fontSize: '1.7rem', fontWeight: 900 }}>Branch payouts</h1><p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '.88rem' }}>Settle partner branches from successful FitPass check-ins and track what the network retains.</p></div>
+    <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+      <div><p className="plans-page-header__kicker">FITPASS · NETWORK FINANCE</p><h2 style={{ margin: 0 }}>Branch payouts</h2><p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0', fontSize: '.88rem' }}>Settle partner branches from successful FitPass check-ins and track what the network retains.</p></div>
       <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-secondary" onClick={exportCsv} disabled={!displayedRecords.length} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Download size={15} /> Export CSV</button><button className="btn btn-primary" onClick={openCreate} disabled={!branches.length} style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}><Plus size={16} /> Create settlement</button></div>
     </div>
 

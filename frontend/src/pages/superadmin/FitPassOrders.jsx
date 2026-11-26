@@ -48,10 +48,10 @@ export default function FitPassOrders() {
   const shippedCount = orders.filter(order => order.status === 'SHIPPED').length;
   const deliveredCount = orders.filter(order => order.status === 'DELIVERED').length;
 
-  return <main style={{ minHeight: '100vh', padding: '30px clamp(18px, 3vw, 42px)', background: '#f7f5ef', color: '#24211b' }}>
-    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 20, flexWrap: 'wrap', marginBottom: 24 }}>
-      <div><span style={{ color: '#8d6b00', fontSize: 12, fontWeight: 800, letterSpacing: '.12em' }}>FITPASS STORE</span><h1 style={{ margin: '8px 0', fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 850 }}>Product orders</h1><p style={{ margin: 0, color: '#716b60' }}>Review purchases and keep members up to date as orders move.</p></div>
-      <button type="button" onClick={load} disabled={loading} style={buttonStyle}><RefreshCw size={16} /> Refresh orders</button>
+  return <main className="fade-in" style={{ paddingBottom: 32 }}>
+    <header className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 22 }}>
+      <div><p className="plans-page-header__kicker">FITPASS · STORE</p><h2 style={{ margin: 0 }}>Product orders</h2><p style={{ margin: '0.25rem 0 0', color: 'var(--text-secondary)' }}>Review purchases and keep members up to date as orders move.</p></div>
+      <button type="button" onClick={load} disabled={loading} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}><RefreshCw size={16} /> Refresh orders</button>
     </header>
 
     <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 12, marginBottom: 22 }}>

@@ -11,8 +11,16 @@ const isH4Gym = async (gymId) => {
 };
 
 const adminGymId = async (req) => {
-  const gymId = String(req.user?.gymId || req.tenantFilter?.gymId || '');
-  return await isH4Gym(gymId) ? gymId : '';
+  const candidate = req.tenantFilter?.gymId || (req.user?.gymId && req.user.gymId !== 'SYSTEM' ? req.user.gymId : '');
+  if (candidate && await isH4Gym(candidate)) return String(candidate);
+  if (req.user?.role === 'superadmin') {
+    const h4Gym = await prisma.gym.findFirst({
+      where: { OR: [{ id: { in: H4_GYM_IDS } }, { name: { contains: 'H4', mode: 'insensitive' } }] },
+      select: { id: true },
+    }).catch(() => null);
+    if (h4Gym?.id) return h4Gym.id;
+  }
+  return '';
 };
 
 const listCoupons = catchAsync(async (req, res) => {

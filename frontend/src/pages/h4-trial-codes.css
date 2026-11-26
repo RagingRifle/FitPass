@@ -1,10 +1,59 @@
 .h4-trial-layout {
   display: grid;
-  grid-template-columns: minmax(300px, .85fr) minmax(420px, 1.3fr);
-  gap: 18px;
+  grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
 }
 
-@media (max-width: 800px) {
-  .h4-trial-layout { grid-template-columns: 1fr; }
+.h4-trial-form-card,
+.h4-trial-register-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.h4-trial-form-card .input-group {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.h4-trial-form-card .input {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.h4-trial-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.h4-trial-checkbox-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #faf9f4;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.h4-trial-checkbox-card input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 960px) {
+  .h4-trial-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .h4-trial-form-row {
+    grid-template-columns: 1fr;
+  }
 }

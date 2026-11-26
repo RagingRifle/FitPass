@@ -219,6 +219,7 @@ const Sidebar = () => {
                 { name: `Plans${suffix}`, path: '/plans', icon: Package },
                 { name: 'Products & Reports', path: '/products', icon: Banknote },
                 { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
+                { name: 'Trial referral codes', path: '/h4/trial-codes', icon: Ticket },
                 { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
                 { name: `Staff & Access${suffix}`, path: '/staff', icon: ShieldCheck },
                 { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },

@@ -169,11 +169,14 @@ const Settings = () => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Header */}
-            <div>
-                <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>Settings & Configurations</h2>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#6B7280' }}>
-                    Manage platform parameters, security credentials, branding, and automated rules
-                </p>
+            <div className="plans-page-header">
+                <div>
+                    <p className="plans-page-header__kicker">SYSTEM · CONFIGURATION</p>
+                    <h2 style={{ margin: 0 }}>Settings &amp; Configurations</h2>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        Manage platform parameters, security credentials, branding, and automated rules
+                    </p>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '1.5rem', alignItems: 'start' }}>

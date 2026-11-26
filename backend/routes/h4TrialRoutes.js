@@ -4,7 +4,7 @@ const tenantFilter = require('../middleware/tenantFilter');
 const { listCoupons, createCoupon, deactivateCoupon } = require('../controllers/h4TrialController');
 
 const router = express.Router();
-router.use(protect, authorize('h4_admin', 'admin'), tenantFilter);
+router.use(protect, authorize('h4_admin', 'admin', 'superadmin'), tenantFilter);
 router.get('/', listCoupons);
 router.post('/', createCoupon);
 router.patch('/:id/deactivate', deactivateCoupon);

@@ -1785,10 +1785,10 @@ tbody tr:hover {
     justify-content: space-between;
     align-items: center;
     gap: var(--space-16);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-24);
+    background: linear-gradient(112deg, color-mix(in srgb, var(--primary) 10%, var(--bg)), var(--bg) 62%);
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+    border-radius: 16px;
+    padding: 1.35rem 1.5rem;
     box-shadow: var(--shadow-sm);
 }
 
