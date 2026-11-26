@@ -187,6 +187,29 @@ const AppHeader = () => {
         }
     };
 
+    const handleDeleteNotification = async (e, id) => {
+        e.stopPropagation();
+        try {
+            await API.delete(`/notifications/${id}`);
+            setNotifications(prev => {
+                const target = prev.find(n => n._id === id);
+                if (target && !target.read) setUnreadCount(cnt => Math.max(0, cnt - 1));
+                return prev.filter(n => n._id !== id);
+            });
+        } catch (error) {
+            console.error('Failed to delete notification:', error);
+        }
+    };
+
+    const handleClearRead = async () => {
+        try {
+            await API.delete('/notifications/clear?mode=read');
+            setNotifications(prev => prev.filter(n => !n.read));
+        } catch (error) {
+            console.error('Failed to clear read notifications:', error);
+        }
+    };
+
     return (
         <header className="app-header">
             <div className="header-start">
@@ -403,9 +426,20 @@ const AppHeader = () => {
                             border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)',
                             boxShadow: 'var(--shadow-lg)', zIndex: 1000, overflow: 'hidden'
                         }}>
-                            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                                 <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Notifications</span>
-                                {unreadCount > 0 && <span className="badge badge-active">{unreadCount} new</span>}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {unreadCount > 0 && <span className="badge badge-active">{unreadCount} new</span>}
+                                    {notifications.some(n => n.read) && (
+                                        <button
+                                            type="button"
+                                            onClick={handleClearRead}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', padding: 0 }}
+                                        >
+                                            Clear read
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div style={{ maxHeight: 320, overflowY: 'auto' }}>
                                 {notifications.length === 0 ? (
@@ -421,15 +455,43 @@ const AppHeader = () => {
                                             borderBottom: '1px solid var(--border)',
                                             background: n.read ? 'transparent' : 'var(--primary-light)',
                                             cursor: n.read ? 'default' : 'pointer',
-                                            transition: 'background 0.15s'
+                                            transition: 'background 0.15s',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            justifyContent: 'space-between',
+                                            gap: '0.75rem',
                                         }}
                                     >
-                                        <div style={{ fontSize: '0.85rem', fontWeight: n.read ? 400 : 600, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
-                                            {n.message}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: n.read ? 400 : 600, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+                                                {n.message}
+                                            </div>
+                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                                {new Date(n.createdAt).toLocaleString()} {!n.read && '· Click to mark read'}
+                                            </div>
                                         </div>
-                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                                            {new Date(n.createdAt).toLocaleString()} {!n.read && '· Click to mark read'}
-                                        </div>
+                                        {n.read && (
+                                            <button
+                                                type="button"
+                                                aria-label="Delete notification"
+                                                title="Delete notification"
+                                                onClick={(e) => handleDeleteNotification(e, n._id)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--text-muted)',
+                                                    cursor: 'pointer',
+                                                    padding: '2px 4px',
+                                                    borderRadius: 6,
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>

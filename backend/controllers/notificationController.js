@@ -40,6 +40,7 @@ const reminderSettingsSelect = {
     dueReminderDaysAfter: true,
     dueReminderRepeatDaily: true,
     notifyNewProductToMembers: true,
+    notificationCleanupDays: true,
 };
 
 const getH4GymId = async (req) => {
@@ -116,7 +117,7 @@ const updateReminderSettings = catchAsync(async (req, res) => {
     if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to manage reminders.' });
 
     const updates = {};
-    for (const field of ['inactivityReminderDays', 'leadReminderDaysBefore', 'dueReminderDaysAfter']) {
+    for (const field of ['inactivityReminderDays', 'leadReminderDaysBefore', 'dueReminderDaysAfter', 'notificationCleanupDays']) {
         if (req.body[field] === undefined) continue;
         const days = Number(req.body[field]);
         const minimum = field === 'dueReminderDaysAfter' ? 0 : 1;
@@ -439,9 +440,38 @@ const sendCustomNotification = catchAsync(async (req, res) => {
     });
 });
 
+const deleteNotification = catchAsync(async (req, res) => {
+    const userId = String(req.user._id || req.user.id || '');
+    const deleted = await prisma.notification.deleteMany({
+        where: { id: req.params.id, recipientId: userId },
+    });
+    if (!deleted.count) {
+        return res.status(404).json({ success: false, message: 'Notification not found' });
+    }
+    res.json({ success: true, message: 'Notification deleted' });
+});
+
+const clearNotifications = catchAsync(async (req, res) => {
+    const userId = String(req.user._id || req.user.id || '');
+    const mode = String(req.query.mode || 'read');
+    const olderThanDays = req.query.olderThanDays != null ? Number(req.query.olderThanDays) : null;
+
+    const where = { recipientId: userId };
+    if (Number.isFinite(olderThanDays) && olderThanDays > 0) {
+        where.createdAt = { lt: new Date(Date.now() - olderThanDays * 86400000) };
+    } else if (mode !== 'all') {
+        where.read = true;
+    }
+
+    const result = await prisma.notification.deleteMany({ where });
+    res.json({ success: true, deletedCount: result.count || 0 });
+});
+
 module.exports = {
     getNotifications,
     markAsRead,
+    deleteNotification,
+    clearNotifications,
     createAnnouncement,
     getReminderSettings,
     updateReminderSettings,

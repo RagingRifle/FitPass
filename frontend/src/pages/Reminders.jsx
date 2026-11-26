@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { Bell, CalendarClock, Check, Clock3, IndianRupee, Save, Send, ShoppingBag, UsersRound } from 'lucide-react';
+import { Bell, CalendarClock, Check, Clock3, IndianRupee, Save, Send, ShoppingBag, Trash2, UsersRound } from 'lucide-react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 
@@ -11,6 +11,7 @@ const INITIAL_SETTINGS = {
     dueReminderDaysAfter: 3,
     dueReminderRepeatDaily: true,
     notifyNewProductToMembers: true,
+    notificationCleanupDays: 14,
 };
 
 const INITIAL_FILTERS = {
@@ -174,6 +175,7 @@ export default function Reminders() {
                 inactivityReminderDays: Number(settings.inactivityReminderDays),
                 leadReminderDaysBefore: Number(settings.leadReminderDaysBefore),
                 dueReminderDaysAfter: Number(settings.dueReminderDaysAfter),
+                notificationCleanupDays: Number(settings.notificationCleanupDays),
             };
             const { data } = await API.put('/notifications/reminder-settings', payload);
             setSettings(current => ({ ...current, ...data.settings }));
@@ -311,6 +313,20 @@ export default function Reminders() {
                             onChange={setRepeat('notifyNewProductToMembers')}
                             title="Notify all H4 members on new product"
                             description="Sends an instant in-app alert when a new active item is created in H4 Merchandise."
+                        />
+                    </ReminderCard>
+
+                    <ReminderCard
+                        icon={<Trash2 size={20} />}
+                        eyebrow="INBOX CLEANUP"
+                        title="Auto-sweep old notifications"
+                        description="Keep the web and mobile notification inbox clean by automatically removing notifications older than this threshold."
+                    >
+                        <NumberSetting
+                            label="Delete notifications older than"
+                            value={settings.notificationCleanupDays}
+                            onChange={setNumber('notificationCleanupDays')}
+                            min={1}
                         />
                     </ReminderCard>
                 </div>

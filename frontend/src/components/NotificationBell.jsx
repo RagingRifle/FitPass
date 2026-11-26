@@ -71,6 +71,27 @@ const NotificationBell = () => {
         }
     };
 
+    const handleDeleteNotification = async (e, id) => {
+        e.stopPropagation();
+        try {
+            await API.delete(`/notifications/${id}`);
+            setNotifications(prev => prev.filter(n => n._id !== id));
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Notification could not be deleted.');
+        }
+    };
+
+    const handleClearRead = async () => {
+        try {
+            await API.delete('/notifications/clear?mode=read');
+            setNotifications(prev => prev.filter(n => !n.read));
+            setError('');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Read notifications could not be cleared.');
+        }
+    };
+
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
@@ -139,14 +160,24 @@ const NotificationBell = () => {
                         <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700' }}>
                             Notifications {unreadCount > 0 && <span style={{ color: 'var(--primary-color)' }}>({unreadCount})</span>}
                         </h4>
-                        {unreadCount > 0 && (
-                            <button
-                                onClick={handleMarkAllRead}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--primary-color)' }}
-                            >
-                                Mark all read
-                            </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={handleMarkAllRead}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--primary-color)' }}
+                                >
+                                    Mark all read
+                                </button>
+                            )}
+                            {notifications.some(n => n.read) && (
+                                <button
+                                    onClick={handleClearRead}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary)' }}
+                                >
+                                    Clear read
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Notification List */}
@@ -198,6 +229,26 @@ const NotificationBell = () => {
                                             {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
                                     </div>
+                                    {n.read && (
+                                        <button
+                                            type="button"
+                                            aria-label="Delete notification"
+                                            title="Delete notification"
+                                            onClick={(e) => handleDeleteNotification(e, n._id)}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'var(--text-secondary)',
+                                                cursor: 'pointer',
+                                                padding: '2px 5px',
+                                                fontSize: '0.85rem',
+                                                lineHeight: 1,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            ×
+                                        </button>
+                                    )}
                                     {!n.read && (
                                         <div style={{
                                             width: '8px', height: '8px', borderRadius: '50%',

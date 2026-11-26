@@ -24,6 +24,32 @@ const createScheduledNotification = async ({ recipientId, gymId, type, message, 
     }
 };
 
+const DEFAULT_CLEANUP_DAYS = 14;
+
+const sweepOldNotifications = async (configs = [], now = new Date()) => {
+    let totalRemoved = 0;
+    const seenGyms = new Set();
+
+    for (const config of configs) {
+        if (!config?.gymId || seenGyms.has(config.gymId)) continue;
+        seenGyms.add(config.gymId);
+        const days = Math.max(1, Number(config.notificationCleanupDays) || DEFAULT_CLEANUP_DAYS);
+        const cutoff = new Date(now.getTime() - days * 86400000);
+        const result = await prisma.notification.deleteMany({
+            where: {
+                gymId: config.gymId,
+                createdAt: { lt: cutoff },
+            },
+        });
+        totalRemoved += result?.count || 0;
+    }
+
+    if (totalRemoved) {
+        logger.info(`[NotificationSweep] Removed ${totalRemoved} expired notification(s).`);
+    }
+    return totalRemoved;
+};
+
 /**
  * Generates deduplicated lead follow-up and inactive-member reminder
  * notifications for all configured gyms and H4 branches.
@@ -53,7 +79,12 @@ const runDailyReminders = async () => {
             leadReminderRepeatDaily: true,
             dueReminderDaysAfter: true,
             dueReminderRepeatDaily: true,
+            notificationCleanupDays: true,
         }
+    });
+
+    await sweepOldNotifications(configs).catch(err => {
+        logger.error({ err }, '[NotificationSweep] Cleanup failed.');
     });
 
     const today = new Date();

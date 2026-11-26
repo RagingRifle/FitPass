@@ -63,6 +63,7 @@ model GymSettings {
   dueReminderDaysAfter Int @default(3)
   dueReminderRepeatDaily Boolean @default(true)
   notifyNewProductToMembers Boolean @default(true)
+  notificationCleanupDays Int @default(14)
   
   // Business Hours (Stored as JSON string)
   hours           String   @default("{\"weekday\":\"06:00 AM - 10:00 PM\",\"saturday\":\"07:00 AM - 08:00 PM\",\"sunday\":\"08:00 AM - 02:00 PM\"}")
@@ -438,6 +439,7 @@ model Branch {
   dueReminderDaysAfter Int?
   dueReminderRepeatDaily Boolean?
   notifyNewProductToMembers Boolean?
+  notificationCleanupDays Int?
   latitude       Float?
   longitude      Float?
   createdAt      DateTime @default(now())
