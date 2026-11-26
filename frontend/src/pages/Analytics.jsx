@@ -107,11 +107,12 @@ const Analytics = () => {
     return (
         <div className="fade-in" style={{ padding: '0.25rem 0 2rem' }}>
             {/* Header */}
-            <div style={{ marginBottom: '1.75rem' }}>
-                <h2 style={{ fontWeight: '900', marginBottom: '0.25rem', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Activity size={24} style={{ color: '#92700A' }} /> Churn & Retention Analytics
+            <div className="plans-page-header" style={{ marginBottom: '1.75rem' }}>
+                <p className="plans-page-header__kicker">H4 · ANALYTICS</p>
+                <h2 style={{ fontWeight: '900', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Activity size={24} style={{ color: '#92700A' }} /> Churn &amp; Retention Analytics
                 </h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
                     Business intelligence metrics, member retention tracking, and cohort performance
                 </p>
             </div>

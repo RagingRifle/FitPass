@@ -299,8 +299,8 @@ const Reports = () => {
   return (
     <div className="fade-in" style={{ padding: '1.5rem', maxWidth: 1400, margin: '0 auto' }}>
 
-      {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div style={{
+      {/* -- Page Header ------------------------------------------------- */}
+      <div className="plans-page-header" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -309,6 +309,7 @@ const Reports = () => {
         marginBottom: '1.5rem'
       }}>
         <div>
+          <p className="plans-page-header__kicker">H4 · BUSINESS INTELLIGENCE</p>
           <h1 style={{
             fontSize: '1.75rem',
             fontWeight: 800,

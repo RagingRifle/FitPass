@@ -159,10 +159,11 @@ const Attendance = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}> Attendance Control Hub</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <p className="plans-page-header__kicker">H4 · OPERATIONS</p>
+                    <h2 style={{ margin: 0 }}>Attendance Control Hub</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
                         Manage daily physical member check-ins and staff presence
                     </p>
                 </div>

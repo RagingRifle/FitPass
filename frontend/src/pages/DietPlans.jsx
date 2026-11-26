@@ -441,12 +441,13 @@ const DietPlans = () => {
     return (
         <div className="fade-in">
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Apple color="var(--primary)" /> Nutrition & Diets
+                    <p className="plans-page-header__kicker">H4 · NUTRITION</p>
+                    <h2 style={{ fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Apple color="var(--primary)" /> Nutrition &amp; Diets
                     </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Meal templates, daily macros, and hydration logs</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>Meal templates, daily macros, and hydration logs</p>
                 </div>
                 {isTrainerOrAdmin && activeTab === 'plans' && (
                     <button className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => { resetForm(); setShowModal(true); }}>

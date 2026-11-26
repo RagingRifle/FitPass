@@ -45,14 +45,14 @@ const LiveSessionTimer = ({ expiresAt }) => {
     );
 };
 
-const DashboardMetricCard = ({ icon, label, value, detail, tone }) => (
-    <article className={`dashboard-metric-card dashboard-metric-card--${tone}`}>
-        <div className="dashboard-metric-copy">
+const DashboardMetricCard = ({ icon, label, value, detail }) => (
+    <article className="dashboard-metric-card">
+        <div className="dashboard-metric-card-head">
             <p className="dashboard-metric-label">{label}</p>
-            <strong className="dashboard-metric-value">{value}</strong>
-            <p className="dashboard-metric-detail">{detail}</p>
+            <span className="dashboard-metric-icon" aria-hidden="true">{icon}</span>
         </div>
-        <span className="dashboard-metric-icon" aria-hidden="true">{icon}</span>
+        <strong className="dashboard-metric-value">{value}</strong>
+        <p className="dashboard-metric-detail">{detail}</p>
     </article>
 );
 
@@ -210,7 +210,16 @@ const Dashboard = () => {
     const recentCheckins = stats?.recentCheckins || [];
     const activeLiveSessions = stats?.activeLiveSessions || [];
 
-    const cards = [
+    const cards = activeDivision === 'h4' ? [
+        { title: 'Total Members', value: stats?.totalMembers || 0, icon: <Users size={22} />, color: 'var(--primary-color)' },
+        { title: 'Active Members', value: stats?.activeMembers || 0, icon: <CheckCircle2 size={22} />, color: 'var(--success-color)' },
+        { title: 'Expired Members', value: stats?.expiredMembers || 0, icon: <AlertTriangle size={22} />, color: '#ef4444' },
+        { title: 'Expiring Soon', value: stats?.expiringSoonCount || 0, icon: <Clock size={22} />, color: '#f59e0b' },
+        { title: 'New Members in Period', value: stats?.newMembersThisMonth || 0, icon: <Sparkles size={22} />, color: 'var(--accent-color)' },
+        { title: 'Period Revenue', value: `₹${(stats?.monthlyRevenue || 0).toLocaleString('en-IN')}`, icon: <IndianRupee size={22} />, color: '#10b981' },
+        { title: 'Period Expenses', value: `₹${(stats?.monthlyExpenses || 0).toLocaleString('en-IN')}`, icon: <TrendingDown size={22} />, color: '#ef4444' },
+        { title: 'Period Profit', value: `₹${(stats?.monthlyProfit || 0).toLocaleString('en-IN')}`, icon: <TrendingUp size={22} />, color: '#10b981' },
+    ] : [
         { title: 'Active Members', value: activeLiveSessions.length, icon: <CheckCircle2 size={22} />, color: 'var(--success-color)' },
         { title: 'Total Check-Ins Today', value: (stats?.todayAttendanceCount || 0) + (stats?.todaySessionsCount || 0), icon: <CheckCircle2 size={22} />, color: 'var(--warning-color)' },
     ];
@@ -309,7 +318,19 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {activeDivision === 'h4' ? (
+            <div className={`kpi-grid${activeDivision === 'h4' ? ' dashboard-h4-kpi-grid' : ''}`}>
+                {cards.map((card, index) => (
+                    <div key={index} className="kpi-card" style={{ '--kpi-color': card.color, '--kpi-bg': `${card.color}18` }}>
+                        <div className="kpi-header">
+                            <span className="kpi-label">{card.title}</span>
+                            <div className="kpi-icon">{card.icon}</div>
+                        </div>
+                        <div className="kpi-value">{card.value}</div>
+                    </div>
+                ))}
+            </div>
+
+            {activeDivision === 'h4' && (
                 <div className="dashboard-insights">
                     <section className="dashboard-insight-section" aria-labelledby="dashboard-retention-title">
                         <div className="dashboard-insight-heading">
@@ -330,28 +351,24 @@ const Dashboard = () => {
                                 label="Inactive in Period"
                                 value={analyticsLoading ? '…' : analyticsData ? (analyticsData.inactiveCount ?? 0).toLocaleString('en-IN') : '—'}
                                 detail="Active members with no visits in range"
-                                tone="gold"
                             />
                             <DashboardMetricCard
                                 icon={<TrendingDown size={19} />}
                                 label="Churn Rate"
                                 value={analyticsLoading ? '…' : analyticsData ? `${analyticsData.churnRate ?? 0}%` : '—'}
                                 detail={analyticsData ? `${analyticsData.expiredLast30 ?? 0} memberships expired in range` : 'Memberships expired in range'}
-                                tone="red"
                             />
                             <DashboardMetricCard
                                 icon={<TrendingUp size={19} />}
                                 label="Renewal Rate"
                                 value={analyticsLoading ? '…' : analyticsData ? `${analyticsData.renewalRate ?? 0}%` : '—'}
                                 detail={analyticsData ? `${analyticsData.renewedCount ?? 0} active renewals at period end` : 'Active renewals at period end'}
-                                tone="green"
                             />
                             <DashboardMetricCard
                                 icon={<IndianRupee size={19} />}
                                 label="Avg Lifetime Value"
                                 value={analyticsLoading ? '…' : analyticsData ? formatCurrency(analyticsData.avgLTV || 0) : '—'}
                                 detail="Average total revenue paid per member"
-                                tone="blue"
                             />
                         </div>
                     </section>
@@ -364,26 +381,14 @@ const Dashboard = () => {
                             </div>
                         </div>
                         <div className="dashboard-metric-grid dashboard-metric-grid--six">
-                            <DashboardMetricCard icon={<IndianRupee size={19} />} label="Total Revenue" value={periodSummary ? formatCurrency(periodSummary.totalRevenue) : '—'} detail="Collected in selected period" tone="gold" />
-                            <DashboardMetricCard icon={<TrendingDown size={19} />} label="Total Expenses" value={periodSummary ? formatCurrency(periodSummary.totalExpenses) : '—'} detail="Recorded in selected period" tone="red" />
-                            <DashboardMetricCard icon={<TrendingUp size={19} />} label="Net Profit" value={periodSummary ? formatCurrency(periodSummary.netProfit) : '—'} detail="Revenue less expenses" tone="green" />
-                            <DashboardMetricCard icon={<Users size={19} />} label="Total Members" value={periodSummary ? periodSummary.totalMembers.toLocaleString('en-IN') : '—'} detail="Members in this H4 scope" tone="blue" />
-                            <DashboardMetricCard icon={<CheckCircle2 size={19} />} label="Attendance in Range" value={periodSummary ? periodSummary.attendanceInRange.toLocaleString('en-IN') : '—'} detail="Check-ins in selected period" tone="teal" />
-                            <DashboardMetricCard icon={<Sparkles size={19} />} label="New Members in Range" value={periodSummary ? periodSummary.newMembersInRange.toLocaleString('en-IN') : '—'} detail="Joined in selected period" tone="purple" />
+                            <DashboardMetricCard icon={<IndianRupee size={19} />} label="Total Revenue" value={periodSummary ? formatCurrency(periodSummary.totalRevenue) : '—'} detail="Collected in selected period" />
+                            <DashboardMetricCard icon={<TrendingDown size={19} />} label="Total Expenses" value={periodSummary ? formatCurrency(periodSummary.totalExpenses) : '—'} detail="Recorded in selected period" />
+                            <DashboardMetricCard icon={<TrendingUp size={19} />} label="Net Profit" value={periodSummary ? formatCurrency(periodSummary.netProfit) : '—'} detail="Revenue less expenses" />
+                            <DashboardMetricCard icon={<Users size={19} />} label="Total Members" value={periodSummary ? periodSummary.totalMembers.toLocaleString('en-IN') : '—'} detail="Members in this H4 scope" />
+                            <DashboardMetricCard icon={<CheckCircle2 size={19} />} label="Attendance in Range" value={periodSummary ? periodSummary.attendanceInRange.toLocaleString('en-IN') : '—'} detail="Check-ins in selected period" />
+                            <DashboardMetricCard icon={<Sparkles size={19} />} label="New Members in Range" value={periodSummary ? periodSummary.newMembersInRange.toLocaleString('en-IN') : '—'} detail="Joined in selected period" />
                         </div>
                     </section>
-                </div>
-            ) : (
-                <div className="kpi-grid">
-                    {cards.map((card, index) => (
-                        <div key={index} className="kpi-card" style={{ '--kpi-color': card.color, '--kpi-bg': `${card.color}18` }}>
-                            <div className="kpi-header">
-                                <span className="kpi-label">{card.title}</span>
-                                <div className="kpi-icon">{card.icon}</div>
-                            </div>
-                            <div className="kpi-value">{card.value}</div>
-                        </div>
-                    ))}
                 </div>
             )}
 

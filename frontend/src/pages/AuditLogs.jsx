@@ -131,10 +131,11 @@ const AuditLogs = () => {
                 </div>
             )}
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.55rem' }}><Search size={25} strokeWidth={2.2} /> Audit Logs</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{total} total events tracked</p>
+                    <p className="plans-page-header__kicker">H4 · SECURITY</p>
+                    <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.55rem' }}><Search size={25} strokeWidth={2.2} /> Audit Logs</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>{total} total events tracked</p>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button onClick={() => setTab('timeline')} className="btn" style={{ background: tab === 'timeline' ? 'var(--primary-color)' : 'var(--bg-secondary)', color: tab === 'timeline' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.85rem' }}><ClipboardList size={16} /> Activity</button>

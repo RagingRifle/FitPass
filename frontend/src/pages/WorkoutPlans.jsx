@@ -409,12 +409,13 @@ const WorkoutPlans = () => {
     return (
         <div className="fade-in">
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ fontWeight: '800', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <p className="plans-page-header__kicker">H4 · FITNESS</p>
+                    <h2 style={{ fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Dumbbell color="var(--primary)" /> Workout Hub
                     </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Design routines, load templates, and track fitness compliance</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>Design routines, load templates, and track fitness compliance</p>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>

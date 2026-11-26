@@ -145,8 +145,8 @@ const Payments = () => {
     );
 
     return <div className="fade-in">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-            <div><h2 style={{ marginBottom: 4 }}>Payments Management</h2><p style={{ color: 'var(--text-secondary)', margin: 0 }}>Filter collected payments by date, member, branch, collector, type, source, and method.</p></div>
+        <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div><p className="plans-page-header__kicker">H4 · FINANCE</p><h2 style={{ margin: 0 }}>Payments Management</h2><p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>Filter collected payments by date, member, branch, collector, type, source, and method.</p></div>
             <div style={{ display: 'flex', gap: '.75rem' }}><button onClick={() => navigate('/reports')} className="btn btn-secondary">Export</button><button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>+ Record Payment</button></div>
         </div>
 

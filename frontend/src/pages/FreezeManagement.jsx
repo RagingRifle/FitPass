@@ -87,10 +87,11 @@ const FreezeManagement = () => {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}> Membership Freeze</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <p className="plans-page-header__kicker">H4 · MEMBER SERVICES</p>
+                    <h2 style={{ margin: 0 }}>Membership Freeze</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
                         Frozen: {members.filter(m => m.status === 'Frozen').length} member(s)
                     </p>
                 </div>

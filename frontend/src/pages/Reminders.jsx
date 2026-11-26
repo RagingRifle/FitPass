@@ -123,12 +123,12 @@ export default function Reminders() {
 
     return (
         <div style={{ maxWidth: 1040, margin: '0 auto', paddingBottom: 32 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 22 }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 22 }}>
                 <div>
-                    <p style={{ margin: '0 0 5px', color: '#92700A', fontSize: 11, fontWeight: 900, letterSpacing: '0.14em' }}>H4 · DAILY RHYTHM</p>
+                    <p className="plans-page-header__kicker">H4 · DAILY RHYTHM</p>
                     <h2 style={{ margin: 0 }}>Reminders</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '7px 0 0', maxWidth: 620 }}>
-                        Keep follow-ups moving and check in when a member’s routine goes quiet. {isBranchAdmin ? 'These settings apply only to your assigned branch.' : 'Branch-specific settings take precedence over these H4 defaults.'}
+                        Keep follow-ups moving and check in when a member's routine goes quiet. {isBranchAdmin ? 'These settings apply only to your assigned branch.' : 'Branch-specific settings take precedence over these H4 defaults.'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 11px', borderRadius: 99, background: '#171713', color: '#FEDF1E', fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>

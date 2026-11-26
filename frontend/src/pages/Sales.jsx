@@ -41,7 +41,7 @@ const Sales = () => {
     const set = (key, value) => setFilters(current => ({ ...current, [key]: value }));
 
     return <div className="fade-in">
-        <div style={{ marginBottom: '1.5rem' }}><h2 style={{ fontWeight: 800, marginBottom: 4 }}>Sales & Collections</h2><p style={{ color: 'var(--text-secondary)' }}>Track new memberships, renewals, upgrades, and balance payments by source, staff, branch, and time.</p></div>
+        <div className="plans-page-header" style={{ marginBottom: '1.5rem' }}><p className="plans-page-header__kicker">H4 · FINANCE</p><h2 style={{ fontWeight: 800, margin: 0 }}>Sales &amp; Collections</h2><p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>Track new memberships, renewals, upgrades, and balance payments by source, staff, branch, and time.</p></div>
         <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(145px,1fr))', gap: 12, marginBottom: 20 }}>
             <label>From<input className="input" type="date" value={filters.from} onChange={e => set('from', e.target.value)} /></label>
             <label>To<input className="input" type="date" value={filters.to} onChange={e => set('to', e.target.value)} /></label>

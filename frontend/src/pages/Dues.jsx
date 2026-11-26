@@ -70,9 +70,10 @@ const Dues = () => {
 
     return (
         <div className="fade-in">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.875rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>Due Management</h1>
+                    <p className="plans-page-header__kicker">H4 · FINANCE</p>
+                    <h2 style={{ margin: 0 }}>Pending Dues</h2>
                     <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>Track and collect outstanding balances from members.</p>
                 </div>
                 <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '0.75rem 1.25rem', borderRadius: '12px', textAlign: 'right' }}>

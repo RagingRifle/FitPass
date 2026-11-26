@@ -144,8 +144,8 @@ const Expenses = () => {
     };
 
     return <div className="fade-in">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
-            <div><h1 style={{ fontSize: '1.875rem', fontWeight: 750, color: 'var(--text-primary)', marginBottom: 4 }}>Expenses</h1><p style={{ color: 'var(--text-secondary)' }}>See operating costs by time, category, and branch.</p></div>
+        <div className="plans-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+            <div><p className="plans-page-header__kicker">H4 · FINANCE</p><h1 style={{ fontSize: '1.875rem', fontWeight: 750, color: 'var(--text-primary)', margin: 0 }}>Expenses</h1><p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>See operating costs by time, category, and branch.</p></div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 {!isBranchScopedAdmin && <button onClick={() => { setNotice(''); setShowCategoryModal(true); }} className="btn btn-secondary"><Pencil size={16} /> Manage categories</button>}
                 <button onClick={() => navigate('/reports')} className="btn btn-secondary">Export</button>

@@ -3918,7 +3918,8 @@ tbody tr:hover {
     background: linear-gradient(112deg, color-mix(in srgb, var(--primary) 10%, var(--bg)), var(--bg) 62%);
 }
 
-.plans-page-kicker {
+.plans-page-kicker,
+.plans-page-header__kicker {
     display: block;
     margin-bottom: 0.3rem;
     color: #8A6500;
