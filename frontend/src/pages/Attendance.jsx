@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { getMembers, getTodayAttendance, getMemberAttendance } from '../services/apiService';
 import API from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import MemberFilterSelect from '../components/MemberFilterSelect';
 import QRScanner from '../components/QRScanner';
 import { QRCodeCanvas } from 'qrcode.react';
-import { ShieldCheck, UserCheck, QrCode, Clock, Calendar, Check, AlertCircle, Search, X, Keyboard, Loader } from 'lucide-react';
+import { ShieldCheck, UserCheck, QrCode, Clock, Calendar, Check, AlertCircle, Search, X, Keyboard, Loader, Building2 } from 'lucide-react';
 
 const Attendance = () => {
+    const { user, selectedBranchId } = useContext(AuthContext);
+    const isBranchScoped = Boolean(user?.branchId);
     const [activeTab, setActiveTab] = useState('member_attendance'); // 'member_attendance' | 'staff_duty'
     const [members, setMembers] = useState([]);
     const [todayList, setTodayList] = useState([]);
@@ -19,6 +22,11 @@ const Attendance = () => {
     const [selectedMemberHistory, setSelectedMemberHistory] = useState(null);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [dutyQRModal, setDutyQRModal] = useState(null);
+    const [dutyQROpen, setDutyQROpen] = useState(false);
+    const [dutyQRBranchId, setDutyQRBranchId] = useState('');
+    const [dutyQRLoading, setDutyQRLoading] = useState(false);
+    const [dutyQRError, setDutyQRError] = useState('');
+    const [branches, setBranches] = useState([]);
     const [isQuickCheckInOpen, setIsQuickCheckInOpen] = useState(false);
     const [quickSearch, setQuickSearch] = useState('');
     const [quickMembers, setQuickMembers] = useState([]);
@@ -142,12 +150,49 @@ const Attendance = () => {
         }
     };
 
-    const handleShowBranchDutyQR = async () => {
+    const fetchDutyQRForBranch = async (branchIdToLoad = '') => {
+        setDutyQRLoading(true);
+        setDutyQRError('');
         try {
-            const { data } = await API.get('/attendance/branch-duty-qr');
+            const params = branchIdToLoad ? { branchId: branchIdToLoad } : undefined;
+            const { data } = await API.get('/attendance/branch-duty-qr', { params });
             setDutyQRModal(data);
         } catch (err) {
-            alert('Could not fetch duty QR: ' + (err.response?.data?.message || err.message));
+            setDutyQRModal(null);
+            setDutyQRError(err.response?.data?.message || 'Could not fetch duty QR.');
+        } finally {
+            setDutyQRLoading(false);
+        }
+    };
+
+    const handleShowBranchDutyQR = async () => {
+        setDutyQROpen(true);
+        setDutyQRError('');
+        setDutyQRModal(null);
+
+        if (isBranchScoped) {
+            setDutyQRBranchId(String(user.branchId));
+            await fetchDutyQRForBranch();
+            return;
+        }
+
+        let branchList = branches;
+        if (branchList.length === 0) {
+            try {
+                const { data } = await API.get('/branches');
+                branchList = Array.isArray(data) ? data : (data?.branches || []);
+                setBranches(branchList);
+            } catch {
+                branchList = [];
+            }
+        }
+
+        const initialBranchId = selectedBranchId || '';
+        setDutyQRBranchId(initialBranchId);
+        if (initialBranchId) {
+            await fetchDutyQRForBranch(initialBranchId);
+        } else if (branchList.length === 0) {
+            await fetchDutyQRForBranch('');
         }
     };
 
@@ -416,22 +461,77 @@ const Attendance = () => {
             </Modal>
 
             {/* Branch Daily Duty QR Modal */}
-            <Modal isOpen={!!dutyQRModal} onClose={() => setDutyQRModal(null)} title=" Daily Branch Duty Standee QR">
-                {dutyQRModal && (
-                    <div style={{ textAlign: 'center', padding: '1.5rem' }}>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-                            Display this dynamic QR on the front desk tablet or print it for daily duty clock-in. Valid for {dutyQRModal.date}.
-                        </p>
-                        <div style={{ background: '#FFFFFF', padding: '1.5rem', borderRadius: '16px', display: 'inline-block' }}>
-                            <QRCodeCanvas value={dutyQRModal.qrData} size={220} level="H" />
+            <Modal
+                isOpen={dutyQROpen}
+                onClose={() => { setDutyQROpen(false); setDutyQRModal(null); setDutyQRError(''); }}
+                title="Daily Branch Duty Standee QR"
+            >
+                <div style={{ textAlign: 'center', padding: '1rem 1.25rem 1.5rem' }}>
+                    {!isBranchScoped && branches.length > 0 && (
+                        <div className="input-group" style={{ textAlign: 'left', marginBottom: '1.25rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Building2 size={14} /> Select H4 Branch
+                            </label>
+                            <select
+                                className="input"
+                                value={dutyQRBranchId}
+                                onChange={(e) => {
+                                    const nextId = e.target.value;
+                                    setDutyQRBranchId(nextId);
+                                    if (nextId) {
+                                        fetchDutyQRForBranch(nextId);
+                                    } else {
+                                        setDutyQRModal(null);
+                                        setDutyQRError('');
+                                    }
+                                }}
+                            >
+                                <option value="">Choose a branch...</option>
+                                {branches.map(branch => (
+                                    <option key={branch.id || branch._id} value={branch.id || branch._id}>
+                                        {branch.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div style={{ marginTop: '1.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '700', background: 'rgba(240, 160, 32, 0.12)', color: '#92700A', padding: '0.3rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(146, 112, 10, 0.2)' }}>
-                                Date: {dutyQRModal.date}
-                            </span>
+                    )}
+
+                    {dutyQRLoading ? (
+                        <div style={{ padding: '2rem 0', color: 'var(--text-secondary)' }}>
+                            <Loader className="spinner" size={28} style={{ color: 'var(--primary)' }} />
+                            <p style={{ margin: '0.65rem 0 0', fontSize: '0.85rem' }}>Generating branch QR...</p>
                         </div>
-                    </div>
-                )}
+                    ) : dutyQRError ? (
+                        <div style={{ padding: '1rem', borderRadius: 10, background: '#fef2f2', color: '#b91c1c', fontSize: '0.85rem' }}>
+                            {dutyQRError}
+                        </div>
+                    ) : dutyQRModal ? (
+                        <>
+                            {dutyQRModal.branchName && (
+                                <div style={{ marginBottom: '0.75rem' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0.35rem 0.85rem', borderRadius: 999, background: '#fff8d8', border: '1px solid #efdf99', color: '#594600', fontSize: '0.82rem', fontWeight: 700 }}>
+                                        <Building2 size={14} /> {dutyQRModal.branchName}
+                                    </span>
+                                </div>
+                            )}
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.25rem', fontSize: '0.85rem' }}>
+                                Display this unique branch QR on the front desk tablet or print it for daily duty clock-in. Valid for {dutyQRModal.date}.
+                            </p>
+                            <div style={{ background: '#FFFFFF', padding: '1.35rem', borderRadius: '16px', display: 'inline-block', border: '1px solid var(--border)' }}>
+                                <QRCodeCanvas value={dutyQRModal.qrData} size={220} level="H" />
+                            </div>
+                            <div style={{ marginTop: '1.25rem' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '700', background: 'rgba(240, 160, 32, 0.12)', color: '#92700A', padding: '0.3rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(146, 112, 10, 0.2)' }}>
+                                    Date: {dutyQRModal.date}
+                                </span>
+                            </div>
+                        </>
+                    ) : (
+                        <div style={{ padding: '1.75rem 1rem', borderRadius: 12, background: 'var(--bg-secondary)', border: '1px dashed var(--border)', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                            Select an H4 branch above to display its unique daily duty QR code.
+                        </div>
+                    )}
+                </div>
             </Modal>
 
             {isQuickCheckInOpen && <div role="dialog" aria-modal="true" aria-label="Quick member check-in" style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'var(--bg-primary, #f7f5ef)', display: 'flex', flexDirection: 'column', padding: 'clamp(1rem, 4vw, 3rem)', overflowY: 'auto' }}>

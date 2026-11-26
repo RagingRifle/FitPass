@@ -22,7 +22,7 @@ router.get('/today', protect, authorize('superadmin', 'admin', 'trainer', 'recep
 router.get('/member/:memberId', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist', 'h4_admin', 'h4_branch_admin'), getMemberAttendance);
 
 // Branch duty QR for reception desk display
-router.get('/branch-duty-qr', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist', 'h4_admin', 'h4_branch_admin'), getBranchDutyQR);
+router.get('/branch-duty-qr', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist', 'h4_admin', 'h4_branch_admin'), tenantFilter, getBranchDutyQR);
 
 // Staff daily duty clock-in
 router.post('/staff-clock-in', protect, authorize('superadmin', 'admin', 'trainer', 'receptionist', 'h4_admin', 'h4_branch_admin'), staffClockIn);

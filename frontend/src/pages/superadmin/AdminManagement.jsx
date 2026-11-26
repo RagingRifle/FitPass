@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import API from '../../services/api';
-import { Loader,  ShieldCheck, Plus, Trash2, Edit2, Lock, Mail, User, ShieldAlert } from 'lucide-react';
-import { useContext } from 'react';
+import { Loader, ShieldCheck, Plus, Trash2, Edit2, Lock, Mail, User, ShieldAlert, Users } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
+import './AdminManagement.css';
 
 function AdminManagement({ scope = 'all' }) {
     const { user, activeDivision } = useContext(AuthContext);
@@ -13,10 +13,12 @@ function AdminManagement({ scope = 'all' }) {
     const initialRole = division === 'h4'
         ? 'h4_branch_admin'
         : user?.role === 'superadmin' ? 'fitpass_admin' : 'fitpass_partner';
+
     const [admins, setAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [search, setSearch] = useState('');
 
     // Form state for creating
     const [name, setName] = useState('');
@@ -49,7 +51,9 @@ function AdminManagement({ scope = 'all' }) {
 
     useEffect(() => {
         fetchAdmins();
-        API.get('/superadmin/admin-scopes').then(({ data }) => setScopeData(data)).catch((err) => setError(err.response?.data?.message || 'Could not load account scopes.'));
+        API.get('/superadmin/admin-scopes')
+            .then(({ data }) => setScopeData(data))
+            .catch((err) => setError(err.response?.data?.message || 'Could not load account scopes.'));
     }, []);
 
     const h4Branches = scopeData.branches.filter(branch => String(branch.gymId) === String(scopeData.h4Gym?.id || scopeData.h4Gym?._id));
@@ -57,12 +61,19 @@ function AdminManagement({ scope = 'all' }) {
     const visibleAdmins = admins.filter(admin => division === 'h4'
         ? ['h4_admin', 'h4_branch_admin'].includes(admin.roleScope)
         : ['fitpass_admin', 'fitpass_partner'].includes(admin.roleScope));
+
+    const filteredAdmins = visibleAdmins.filter(admin => {
+        const q = search.trim().toLowerCase();
+        if (!q) return true;
+        return [admin.name, admin.email, admin.branchName, admin.gymName, admin.roleScope]
+            .some(val => String(val || '').toLowerCase().includes(q));
+    });
+
+    const activeCount = visibleAdmins.filter(a => (a.status || 'Active') === 'Active').length;
     const roleNames = { fitpass_admin: 'FitPass Admin', h4_admin: 'H4 Admin', h4_branch_admin: 'H4 Branch Admin', fitpass_partner: 'FitPass Partner' };
     const canManageAdmin = (admin) => user?.role === 'superadmin'
         || (user?.role === 'h4_admin' && !user?.branchId && admin.roleScope === 'h4_branch_admin')
         || (user?.role === 'fitpass_admin' && admin.roleScope === 'fitpass_partner');
-
-
 
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
@@ -152,13 +163,14 @@ function AdminManagement({ scope = 'all' }) {
     const provisionTitle = scope === 'h4'
         ? 'Add H4 Branch Admin'
         : scope === 'fitpass'
-            ? 'Add FitPass Admin or Partner Account'
-            : division === 'h4' ? 'Add H4 Admin' : 'Add FitPass Admin or Partner Account';
+            ? 'Add FitPass Account'
+            : division === 'h4' ? 'Add H4 Admin' : 'Add FitPass Account';
     const provisionButtonLabel = scope === 'h4'
         ? 'Create H4 Branch Admin'
         : scope === 'fitpass'
             ? 'Create FitPass Account'
             : division === 'h4' ? 'Create H4 Admin' : 'Create FitPass Account';
+    const kickerText = division === 'h4' ? 'H4 · ACCESS CONTROL' : 'FITPASS · ACCESS CONTROL';
 
     if (loading && admins.length === 0) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -167,85 +179,93 @@ function AdminManagement({ scope = 'all' }) {
     );
 
     return (
-        <div style={{ padding: '1rem 0' }}>
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div className="fade-in admin-dir-page">
+            <header className="plans-page-header" style={{ marginBottom: '1.5rem' }}>
                 <div>
-                    <p className="plans-page-header__kicker">SYSTEM · ACCESS CONTROL</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <ShieldCheck size={26} style={{ color: 'var(--primary)' }} />
+                    <p className="plans-page-header__kicker">{kickerText}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <ShieldCheck size={24} style={{ color: 'var(--primary)' }} />
                         <h2 style={{ margin: 0 }}>{pageTitle}</h2>
                     </div>
-                    <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0' }}>{pageDescription}</p>
+                    <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>{pageDescription}</p>
+                </div>
+                <div className="admin-dir-stats">
+                    <span className="admin-dir-stat-pill">
+                        <Users size={15} />
+                        <strong>{activeCount}</strong> active of {visibleAdmins.length}
+                    </span>
                 </div>
             </header>
+
             {error && (
-                <div className="error-message" style={{ color: 'var(--danger)', marginBottom: '1.5rem', padding: '0.75rem 1rem', background: 'rgba(255,0,68,0.1)', border: '1px solid rgba(255,0,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="error-message" style={{ color: 'var(--danger)', marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'rgba(255,0,68,0.08)', border: '1px solid rgba(255,0,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ShieldAlert size={18} />
                     <span>{error}</span>
                 </div>
             )}
 
             {successMessage && (
-                <div style={{ color: 'var(--success)', marginBottom: '1.5rem', padding: '0.75rem 1rem', background: 'rgba(46,125,50,0.1)', border: '1px solid rgba(46,125,50,0.2)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ color: 'var(--success)', marginBottom: '1.25rem', padding: '0.75rem 1rem', background: 'rgba(46,125,50,0.08)', border: '1px solid rgba(46,125,50,0.2)', borderRadius: 'var(--radius-md)' }}>
                     {successMessage}
                 </div>
             )}
 
-            <div className="card" style={{ marginBottom: '2.5rem', padding: '2rem' }}>
-                <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Plus size={20} />
-                    <span>{provisionTitle}</span>
-                </h3>
-                <form onSubmit={handleCreateAdmin}>
-                    <div className="form-grid">
-                        <div className="input-group">
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <User size={14} /> Name
-                            </label>
-                            <input 
-                                className="input" 
-                                type="text" 
-                                placeholder="e.g. Rachel Green" 
-                                value={name} 
-                                onChange={(e) => setName(e.target.value)} 
-                                required 
-                            />
-                        </div>
-                        <div className="input-group">
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                                <Mail size={14} /> Email Address
-                            </label>
-                            <input 
-                                className="input" 
-                                type="email" 
-                                placeholder="e.g. rachel@fitprime.com" 
-                                value={email} 
-                                onChange={(e) => setEmail(e.target.value)} 
-                                required 
-                            />
+            <div className="admin-dir-layout">
+                {/* Provision Form Card */}
+                <section className="card admin-dir-card" style={{ padding: 0 }}>
+                    <div className="admin-dir-card__header">
+                        <div>
+                            <h3><Plus size={18} /> {provisionTitle}</h3>
+                            <small>Assign role scope and login credentials.</small>
                         </div>
                     </div>
-                    <div className="form-grid">
+                    <form onSubmit={handleCreateAdmin} className="admin-dir-form">
                         <div className="input-group">
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <User size={14} /> Name
+                            </label>
+                            <input
+                                className="input"
+                                type="text"
+                                placeholder="e.g. Rachel Green"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <Mail size={14} /> Email Address
+                            </label>
+                            <input
+                                className="input"
+                                type="email"
+                                placeholder="e.g. rachel@fitprime.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                 <Lock size={14} /> Password
                             </label>
-                            <input 
-                                className="input" 
-                                type="password" 
-                                placeholder="Minimum 6 characters" 
-                                value={password} 
-                                onChange={(e) => setPassword(e.target.value)} 
-                                required 
+                            <input
+                                className="input"
+                                type="password"
+                                placeholder="Minimum 6 characters"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
                                 minLength={6}
                             />
                         </div>
                         <div className="input-group">
                             <label>Administrative Role</label>
-                            <select 
-                                className="input" 
-                                value={role} 
-                                onChange={(e) => { setRole(e.target.value); setBranchId(''); setGymId(''); }} 
+                            <select
+                                className="input"
+                                value={role}
+                                onChange={(e) => { setRole(e.target.value); setBranchId(''); setGymId(''); }}
                                 required
                             >
                                 {division === 'fitpass' && (user?.role === 'superadmin'
@@ -256,119 +276,184 @@ function AdminManagement({ scope = 'all' }) {
                                     : <option value="h4_branch_admin">H4 Branch Admin (One H4 branch)</option>)}
                             </select>
                         </div>
-                    </div>
-                    {role === 'fitpass_partner' && <>
-                        <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>Partner gym</label><select className="input" value={gymId} onChange={e => { setGymId(e.target.value); setBranchId(''); }} required><option value="">Select a FitPass gym</option>{scopeData.fitpassGyms.map(gym => <option key={gym.id || gym._id} value={gym.id || gym._id}>{gym.name}</option>)}</select></div>
-                        {gymId && fitpassBranches.length > 0 && <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>Partner branch</label><select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required><option value="">Select a branch</option>{fitpassBranches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
-                    </>}
-                    {role === 'h4_branch_admin' && <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>H4 branch</label><select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required><option value="">Select an H4 branch</option>{h4Branches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
-                    <p style={{ margin: '0.75rem 0 0', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{role === 'h4_branch_admin' ? 'Branch access is locked to the selected H4 location.' : role === 'h4_admin' ? 'H4-wide access across all H4 branches.' : role === 'fitpass_partner' ? 'Partner access is limited to the selected branch.' : 'FitPass network-wide administration.'}</p>
-                    <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-                        {provisionButtonLabel}
-                    </button>
-                </form>
-            </div>
 
-            <div className="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role Scope</th>
-                            <th>Status</th>
-                            <th style={{ textAlign: 'right' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {visibleAdmins.length === 0 ? (
-                            <tr>
-                                <td colSpan="5">
-                                    <div className="empty-state">
-                                        <div className="empty-state-icon"></div>
-                                        <h3>No accounts in this directory</h3>
-                                        <p>Provision an account above to give someone access to this division.</p>
+                        {role === 'fitpass_partner' && (
+                            <>
+                                <div className="input-group">
+                                    <label>Partner gym</label>
+                                    <select className="input" value={gymId} onChange={e => { setGymId(e.target.value); setBranchId(''); }} required>
+                                        <option value="">Select a FitPass gym</option>
+                                        {scopeData.fitpassGyms.map(gym => <option key={gym.id || gym._id} value={gym.id || gym._id}>{gym.name}</option>)}
+                                    </select>
+                                </div>
+                                {gymId && fitpassBranches.length > 0 && (
+                                    <div className="input-group">
+                                        <label>Partner branch</label>
+                                        <select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required>
+                                            <option value="">Select a branch</option>
+                                            {fitpassBranches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}
+                                        </select>
                                     </div>
-                                </td>
-                            </tr>
-                        ) : (
-                            visibleAdmins.map(admin => (
-                                <tr key={admin._id}>
-                                    <td style={{ fontWeight: '600' }}>{admin.name}</td>
-                                    <td>{admin.email}</td>
-                                    <td>
-                                        <span className={`badge ${admin.role === 'fitpass_admin' ? 'badge-active' : 'badge-completed'}`} style={{ textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                                            {roleNames[admin.roleScope] || admin.role}
-                                            {admin.roleScope === 'h4_branch_admin' && admin.branchName ? ` · ${admin.branchName}` : ''}
-                                            {admin.roleScope === 'fitpass_partner' && admin.gymName ? ` · ${admin.gymName}` : ''}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`badge ${admin.status === 'Inactive' ? 'badge-expired' : 'badge-active'}`}>
-                                            {admin.status || 'Active'}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            {canManageAdmin(admin) && <button
-                                                className="btn btn-secondary"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                onClick={() => handleEditClick(admin)}
-                                            >
-                                                <Edit2 size={12} />
-                                                <span>Edit</span>
-                                            </button>}
-                                            {canManageAdmin(admin) && <button
-                                                className="btn btn-danger"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                                                onClick={() => handleDeleteAdmin(admin._id)}
-                                            >
-                                                <Trash2 size={12} />
-                                                <span>Revoke</span>
-                                            </button>}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                                )}
+                            </>
                         )}
-                    </tbody>
-                </table>
+
+                        {role === 'h4_branch_admin' && (
+                            <div className="input-group">
+                                <label>H4 branch</label>
+                                <select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required>
+                                    <option value="">Select an H4 branch</option>
+                                    {h4Branches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}
+                                </select>
+                            </div>
+                        )}
+
+                        <p className="admin-dir-scope-note">
+                            {role === 'h4_branch_admin'
+                                ? 'Branch access is locked to the selected H4 location.'
+                                : role === 'h4_admin'
+                                    ? 'H4-wide access across all H4 branches.'
+                                    : role === 'fitpass_partner'
+                                        ? 'Partner access is limited to the selected branch.'
+                                        : 'FitPass network-wide administration.'}
+                        </p>
+
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%', minHeight: 42 }}>
+                            <Plus size={16} /> {provisionButtonLabel}
+                        </button>
+                    </form>
+                </section>
+
+                {/* Directory Table Card */}
+                <section className="card admin-dir-card" style={{ padding: 0 }}>
+                    <div className="admin-dir-card__header">
+                        <div>
+                            <h3>Directory ({filteredAdmins.length})</h3>
+                            <small>Active and inactive accounts in this division.</small>
+                        </div>
+                        <div className="admin-dir-search">
+                            <input
+                                className="input"
+                                type="search"
+                                placeholder="Search name, email, branch..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="admin-dir-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Administrator</th>
+                                    <th>Role Scope</th>
+                                    <th>Status</th>
+                                    <th style={{ textAlign: 'right' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredAdmins.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="4">
+                                            <div className="empty-state" style={{ padding: '2.5rem 1rem' }}>
+                                                <h3 style={{ marginBottom: '0.35rem' }}>No accounts in this directory</h3>
+                                                <p style={{ margin: 0 }}>{search ? 'No accounts match your search.' : 'Provision an account on the left to grant access.'}</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredAdmins.map(admin => {
+                                        const initials = String(admin.name || 'A').trim().slice(0, 2).toUpperCase();
+                                        return (
+                                            <tr key={admin._id}>
+                                                <td>
+                                                    <div className="admin-dir-user-cell">
+                                                        <div className="admin-dir-avatar">{initials}</div>
+                                                        <div>
+                                                            <div className="admin-dir-user-name">{admin.name}</div>
+                                                            <div className="admin-dir-user-email">{admin.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${admin.role === 'fitpass_admin' ? 'badge-active' : 'badge-completed'}`} style={{ textTransform: 'uppercase', fontSize: '0.72rem' }}>
+                                                        {roleNames[admin.roleScope] || admin.role}
+                                                        {admin.roleScope === 'h4_branch_admin' && admin.branchName ? ` · ${admin.branchName}` : ''}
+                                                        {admin.roleScope === 'fitpass_partner' && admin.gymName ? ` · ${admin.gymName}` : ''}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${admin.status === 'Inactive' ? 'badge-expired' : 'badge-active'}`}>
+                                                        {admin.status || 'Active'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className="admin-dir-actions">
+                                                        {canManageAdmin(admin) && (
+                                                            <button
+                                                                className="btn btn-secondary"
+                                                                onClick={() => handleEditClick(admin)}
+                                                            >
+                                                                <Edit2 size={12} />
+                                                                <span>Edit</span>
+                                                            </button>
+                                                        )}
+                                                        {canManageAdmin(admin) && (
+                                                            <button
+                                                                className="btn btn-danger"
+                                                                onClick={() => handleDeleteAdmin(admin._id)}
+                                                            >
+                                                                <Trash2 size={12} />
+                                                                <span>Revoke</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
 
             {editingAdmin && (
                 <div className="modal-overlay" onClick={() => setEditingAdmin(null)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '460px' }}>
+                        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                             <Edit2 size={20} style={{ color: 'var(--primary)' }} />
                             <span>Modify Administrator Settings</span>
                         </h3>
-                        <form onSubmit={handleUpdateAdmin} style={{ marginTop: '1.5rem' }}>
-                            <div className="input-group">
+                        <form onSubmit={handleUpdateAdmin} style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
+                            <div className="input-group" style={{ marginBottom: 0 }}>
                                 <label>Name</label>
-                                <input 
+                                <input
                                     className="input"
-                                    type="text" 
-                                    value={editName} 
-                                    onChange={(e) => setEditName(e.target.value)} 
-                                    required 
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    required
                                 />
                             </div>
-                            <div className="input-group">
+                            <div className="input-group" style={{ marginBottom: 0 }}>
                                 <label>Password Reset (leave empty to keep current)</label>
-                                <input 
+                                <input
                                     className="input"
-                                    type="password" 
+                                    type="password"
                                     placeholder="Enter new password"
-                                    value={editPassword} 
-                                    onChange={(e) => setEditPassword(e.target.value)} 
+                                    value={editPassword}
+                                    onChange={(e) => setEditPassword(e.target.value)}
                                     minLength={6}
                                 />
                             </div>
-                            <div className="input-group">
+                            <div className="input-group" style={{ marginBottom: 0 }}>
                                 <label>Status</label>
-                                <select 
-                                    className="input" 
-                                    value={editStatus} 
+                                <select
+                                    className="input"
+                                    value={editStatus}
                                     onChange={(e) => setEditStatus(e.target.value)}
                                     required
                                 >
@@ -376,14 +461,24 @@ function AdminManagement({ scope = 'all' }) {
                                     <option value="Inactive">Inactive</option>
                                 </select>
                             </div>
-                            {user?.role === 'superadmin' && editingAdmin.role === 'fitpass_admin' && <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, border: '1px solid var(--border-color)', borderRadius: 10 }}>
-                                <input type="checkbox" checked={editFitPassPayoutAccess} onChange={event => setEditFitPassPayoutAccess(event.target.checked)} style={{ marginTop: 3 }} />
-                                <span><strong>Allow FitPass branch payouts</strong><br /><small style={{ color: 'var(--text-secondary)' }}>Grants this FitPass admin access to the branch payout ledger and settlement tools.</small></span>
-                            </label>}
-                            {editingAdmin.roleScope === 'fitpass_partner' && <div className="input-group"><label>Partner branch</label><select className="input" value={editBranchId} onChange={event => setEditBranchId(event.target.value)} required={scopeData.branches.some(branch => String(branch.gymId) === String(editingAdmin.gymId))}><option value="">{scopeData.branches.some(branch => String(branch.gymId) === String(editingAdmin.gymId)) ? 'Select a branch' : 'No branches available'}</option>{scopeData.branches.filter(branch => String(branch.gymId) === String(editingAdmin.gymId)).map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
+                            {user?.role === 'superadmin' && editingAdmin.role === 'fitpass_admin' && (
+                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, border: '1px solid var(--border)', borderRadius: 10, background: 'var(--bg-secondary, #faf9f4)', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={editFitPassPayoutAccess} onChange={event => setEditFitPassPayoutAccess(event.target.checked)} style={{ marginTop: 3 }} />
+                                    <span><strong>Allow FitPass branch payouts</strong><br /><small style={{ color: 'var(--text-secondary)' }}>Grants this FitPass admin access to the branch payout ledger and settlement tools.</small></span>
+                                </label>
+                            )}
+                            {editingAdmin.roleScope === 'fitpass_partner' && (
+                                <div className="input-group" style={{ marginBottom: 0 }}>
+                                    <label>Partner branch</label>
+                                    <select className="input" value={editBranchId} onChange={event => setEditBranchId(event.target.value)} required={scopeData.branches.some(branch => String(branch.gymId) === String(editingAdmin.gymId))}>
+                                        <option value="">{scopeData.branches.some(branch => String(branch.gymId) === String(editingAdmin.gymId)) ? 'Select a branch' : 'No branches available'}</option>
+                                        {scopeData.branches.filter(branch => String(branch.gymId) === String(editingAdmin.gymId)).map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}
+                                    </select>
+                                </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                                 <button type="button" className="btn btn-secondary" onClick={() => setEditingAdmin(null)} style={{ flex: 1 }}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
                             </div>
                         </form>
                     </div>

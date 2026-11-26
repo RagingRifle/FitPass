@@ -221,12 +221,46 @@ const getMemberAttendance = catchAsync(async (req, res, next) => {
 // @route   GET /api/attendance/branch-duty-qr
 // @access  Private/Admin/Staff
 const getBranchDutyQR = catchAsync(async (req, res, next) => {
-    const gymId = req.user.gymId;
-    const branchId = req.user.branchId || 'main';
+    let gymId = String(req.tenantFilter?.gymId || (req.user.gymId && req.user.gymId !== 'SYSTEM' ? req.user.gymId : '') || '');
+    let branchId = req.user.branchId ? String(req.user.branchId) : '';
+    let branchName = '';
+
+    if (branchId) {
+        const branch = await prisma.branch.findUnique({ where: { id: branchId }, select: { name: true, gymId: true } });
+        if (branch) {
+            branchName = branch.name;
+            gymId = branch.gymId;
+        }
+    } else {
+        const requestedBranchId = String(req.query.branchId || req.headers['x-branch-id'] || '').trim();
+        if (requestedBranchId) {
+            const branch = await prisma.branch.findUnique({ where: { id: requestedBranchId }, select: { id: true, name: true, gymId: true } });
+            if (!branch) {
+                return res.status(404).json({ success: false, message: 'Branch not found.' });
+            }
+            if (gymId && String(branch.gymId) !== gymId) {
+                return res.status(403).json({ success: false, message: 'Branch does not belong to the selected gym.' });
+            }
+            branchId = branch.id;
+            gymId = branch.gymId;
+            branchName = branch.name;
+        } else {
+            const hasBranches = await prisma.branch.findFirst({
+                where: gymId ? { gymId } : {},
+                select: { id: true }
+            });
+            if (hasBranches) {
+                return res.status(400).json({ success: false, message: 'Please select a branch to generate its duty QR.' });
+            }
+            branchId = 'main';
+            branchName = 'Main Branch';
+        }
+    }
 
     const dutyQR = generateDailyBranchDutyQR(branchId, gymId);
     res.json({
         success: true,
+        branchName,
         ...dutyQR
     });
 });
