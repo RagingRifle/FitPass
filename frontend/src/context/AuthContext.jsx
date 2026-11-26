@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
                         }).catch(() => {});
                     }
                 }
-                else if (window.location.pathname.startsWith('/superadmin/')) {
+                else if (window.location.pathname.startsWith('/superadmin/') && window.location.pathname !== '/superadmin/admins') {
                     division = 'fitpass';
                     sessionStorage.removeItem('selectedGymId');
                     sessionStorage.removeItem('selectedBranchId');

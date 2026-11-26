@@ -5,10 +5,12 @@ import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 
 function AdminManagement({ scope = 'all' }) {
-    const { user } = useContext(AuthContext);
+    const { user, activeDivision } = useContext(AuthContext);
     const divisionRole = user?.role === 'h4_admin' ? 'h4' : user?.role === 'fitpass_admin' ? 'fitpass' : 'all';
-    const initialDivision = scope === 'all' ? divisionRole : scope;
-    const initialRole = initialDivision === 'h4'
+    const division = scope === 'all'
+        ? user?.role === 'superadmin' ? activeDivision : divisionRole
+        : scope;
+    const initialRole = division === 'h4'
         ? 'h4_branch_admin'
         : user?.role === 'superadmin' ? 'fitpass_admin' : 'fitpass_partner';
     const [admins, setAdmins] = useState([]);
@@ -21,7 +23,6 @@ function AdminManagement({ scope = 'all' }) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState(initialRole);
-    const [division, setDivision] = useState(initialDivision);
     const [scopeData, setScopeData] = useState({ fitpassGyms: [], branches: [], h4Gym: null });
     const [gymId, setGymId] = useState('');
     const [branchId, setBranchId] = useState('');
@@ -53,7 +54,9 @@ function AdminManagement({ scope = 'all' }) {
 
     const h4Branches = scopeData.branches.filter(branch => String(branch.gymId) === String(scopeData.h4Gym?.id || scopeData.h4Gym?._id));
     const fitpassBranches = scopeData.branches.filter(branch => String(branch.gymId) === String(gymId));
-    const visibleAdmins = admins.filter(admin => division === 'all' || (division === 'h4' ? ['h4_admin', 'h4_branch_admin'].includes(admin.roleScope) : ['fitpass_admin', 'fitpass_partner'].includes(admin.roleScope)));
+    const visibleAdmins = admins.filter(admin => division === 'h4'
+        ? ['h4_admin', 'h4_branch_admin'].includes(admin.roleScope)
+        : ['fitpass_admin', 'fitpass_partner'].includes(admin.roleScope));
     const roleNames = { fitpass_admin: 'FitPass Admin', h4_admin: 'H4 Admin', h4_branch_admin: 'H4 Branch Admin', fitpass_partner: 'FitPass Partner' };
     const canManageAdmin = (admin) => user?.role === 'superadmin'
         || (user?.role === 'h4_admin' && !user?.branchId && admin.roleScope === 'h4_branch_admin')
@@ -136,19 +139,26 @@ function AdminManagement({ scope = 'all' }) {
 
     const pageTitle = scope === 'h4'
         ? 'H4 Branch Admins'
-        : scope === 'fitpass' ? 'FitPass Admins & Partner Accounts' : 'Admins Directory';
+        : scope === 'fitpass'
+            ? 'FitPass Admins & Partner Accounts'
+            : division === 'h4' ? 'H4 Admin Directory' : 'FitPass Admin Directory';
     const pageDescription = scope === 'h4'
         ? 'Create and manage administrator access for individual H4 branches.'
         : scope === 'fitpass'
             ? 'Manage FitPass administrator and partner-gym accounts.'
-            : 'Manage FitPass and H4 administrator accounts. Division-specific access is managed in each division.';
+            : division === 'h4'
+                ? 'Manage H4-wide and branch administrator accounts.'
+                : 'Manage FitPass network administrators and partner-gym accounts.';
     const provisionTitle = scope === 'h4'
         ? 'Add H4 Branch Admin'
-        : scope === 'fitpass' ? 'Add FitPass Admin or Partner Account' : 'Provision Admin Account';
+        : scope === 'fitpass'
+            ? 'Add FitPass Admin or Partner Account'
+            : division === 'h4' ? 'Add H4 Admin' : 'Add FitPass Admin or Partner Account';
     const provisionButtonLabel = scope === 'h4'
         ? 'Create H4 Branch Admin'
-        : scope === 'fitpass' ? 'Create FitPass Account' : 'Provision Admin Account';
-    const showDivisionTabs = user?.role === 'superadmin' && scope === 'all';
+        : scope === 'fitpass'
+            ? 'Create FitPass Account'
+            : division === 'h4' ? 'Create H4 Admin' : 'Create FitPass Account';
 
     if (loading && admins.length === 0) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
@@ -166,10 +176,6 @@ function AdminManagement({ scope = 'all' }) {
             </header>
 
             <p style={{ color: 'var(--text-secondary)', margin: '-1rem 0 1.2rem' }}>{pageDescription}</p>
-            {showDivisionTabs && <div style={{ display: 'flex', gap: 8, marginBottom: 18 }} role="tablist" aria-label="Admin directory division">
-                {[['all', `All admin logins · ${admins.length}`], ['fitpass', `FitPass · ${admins.filter(admin => ['fitpass_admin', 'fitpass_partner'].includes(admin.roleScope)).length}`], ['h4', `H4 · ${admins.filter(admin => ['h4_admin', 'h4_branch_admin'].includes(admin.roleScope)).length}`]].map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={division === key} onClick={() => { setDivision(key); setRole(key === 'h4' ? 'h4_admin' : 'fitpass_admin'); }} className={`btn ${division === key ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.55rem 1rem' }}>{label}</button>)}
-            </div>}
-
             {error && (
                 <div className="error-message" style={{ color: 'var(--danger)', marginBottom: '1.5rem', padding: '0.75rem 1rem', background: 'rgba(255,0,68,0.1)', border: '1px solid rgba(255,0,68,0.2)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ShieldAlert size={18} />
@@ -240,8 +246,12 @@ function AdminManagement({ scope = 'all' }) {
                                 onChange={(e) => { setRole(e.target.value); setBranchId(''); setGymId(''); }} 
                                 required
                             >
-                                {(division === 'all' || division === 'fitpass') && (user?.role === 'superadmin' ? <><option value="fitpass_admin">FitPass Admin (Global network operations)</option><option value="fitpass_partner">FitPass Partner (One partner gym)</option></> : <option value="fitpass_partner">FitPass Partner (One partner gym)</option>)}
-                                {(division === 'all' || division === 'h4') && (user?.role === 'superadmin' ? <><option value="h4_admin">H4 Admin (All H4 branches)</option><option value="h4_branch_admin">H4 Branch Admin (One H4 branch)</option></> : <option value="h4_branch_admin">H4 Branch Admin (One H4 branch)</option>)}
+                                {division === 'fitpass' && (user?.role === 'superadmin'
+                                    ? <><option value="fitpass_admin">FitPass Admin (Global network operations)</option><option value="fitpass_partner">FitPass Partner (One partner gym)</option></>
+                                    : <option value="fitpass_partner">FitPass Partner (One partner gym)</option>)}
+                                {division === 'h4' && (user?.role === 'superadmin'
+                                    ? <><option value="h4_admin">H4 Admin (All H4 branches)</option><option value="h4_branch_admin">H4 Branch Admin (One H4 branch)</option></>
+                                    : <option value="h4_branch_admin">H4 Branch Admin (One H4 branch)</option>)}
                             </select>
                         </div>
                     </div>

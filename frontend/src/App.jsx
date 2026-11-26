@@ -62,7 +62,7 @@ const PageLoader = () => (
 );
 
 function App() {
-  const { user, loading } = useContext(AuthContext);
+  const { user, loading, activeDivision } = useContext(AuthContext);
 
   if (loading) return <PageLoader />;
 
@@ -118,7 +118,7 @@ function App() {
         <Route path="/superadmin/admins" element={
           <ProtectedRoute roles={['superadmin']}>
             <Layout>
-              <AdminManagement scope="all" />
+              <AdminManagement key={activeDivision} scope="all" />
             </Layout>
           </ProtectedRoute>
         } />
