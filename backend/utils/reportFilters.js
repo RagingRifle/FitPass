@@ -12,6 +12,7 @@ const localDateBoundary = (value, endOfDay = false) => {
 };
 
 const resolveBranchScope = async (req) => {
+    if (req.user?.role === 'h4_branch_admin') return req.user.branchId || null;
     if (req.user?.role !== 'h4_admin') return req.user?.branchId || null;
     if (req.user.userBranchId) return req.user.userBranchId;
     if (!Object.prototype.hasOwnProperty.call(req.query || {}, 'branchId')) return req.user.branchId || null;

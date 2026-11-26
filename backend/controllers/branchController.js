@@ -7,6 +7,9 @@ const User = require('../models/User');
 const { logAudit } = require('../utils/auditLogger');
 const { z } = require('zod');
 
+const isH4BranchAdmin = (user) => user.role === 'h4_branch_admin'
+    || (user.role === 'h4_admin' && Boolean(user.userBranchId));
+
 const branchDetailsSchema = z.object({
     name: z.string().min(1).max(160).optional(),
     shortDescription: z.string().max(300).optional(),
@@ -44,8 +47,8 @@ const getPublicBranches = catchAsync(async (req, res, next) => {
 const getBranches = catchAsync(async (req, res, next) => {
     try {
         const query = {};
-        const isH4BranchAdmin = req.user.role === 'h4_admin' && req.user.userBranchId;
-        if (!isH4BranchAdmin && req.user.gymId && req.user.gymId !== 'SYSTEM') {
+        const branchScopedAdmin = isH4BranchAdmin(req.user);
+        if (!branchScopedAdmin && req.user.gymId && req.user.gymId !== 'SYSTEM') {
             query.gymId = req.user.gymId;
         }
 
@@ -58,6 +61,7 @@ const getBranches = catchAsync(async (req, res, next) => {
         if (!isHQAdmin && req.user.userBranchId) {
             query._id = req.user.userBranchId;
         }
+        if (branchScopedAdmin && req.user.branchId) query._id = req.user.branchId;
 
         const branches = await Branch.find(query).lean();
 
@@ -117,7 +121,7 @@ const createBranch = catchAsync(async (req, res, next) => {
                     email: userEmail,
                     password: initialPassword,
                     phone: phone || '',
-                    role: req.user.role === 'h4_admin' ? 'h4_admin' : 'admin',
+                    role: req.user.role === 'h4_admin' ? 'h4_branch_admin' : 'admin',
                     gymId: req.user.gymId,
                     branchId: branch._id || branch.id,
                     isVerified: true
@@ -134,13 +138,13 @@ const createBranch = catchAsync(async (req, res, next) => {
 // @route   PUT /api/branches/:id
 const updateBranch = catchAsync(async (req, res, next) => {
     try {
-        const isH4BranchAdmin = req.user.role === 'h4_admin' && req.user.userBranchId;
-        if (isH4BranchAdmin && String(req.params.id) !== String(req.user.userBranchId)) {
+        const branchScopedAdmin = isH4BranchAdmin(req.user);
+        if (branchScopedAdmin && String(req.params.id) !== String(req.user.branchId)) {
             return res.status(403).json({ message: 'Branch admins can only edit their assigned branch.' });
         }
         const filter = { _id: req.params.id };
-        if (isH4BranchAdmin) filter._id = req.user.userBranchId;
-        if (!isH4BranchAdmin && req.user.gymId && req.user.gymId !== 'SYSTEM') {
+        if (branchScopedAdmin) filter._id = req.user.branchId;
+        if (!branchScopedAdmin && req.user.gymId && req.user.gymId !== 'SYSTEM') {
             filter.gymId = req.user.gymId;
         }
         const parsed = branchDetailsSchema.safeParse(req.body);
@@ -182,7 +186,7 @@ const getBranchMembers = catchAsync(async (req, res, next) => {
     try {
         const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
             || (req.user.role === 'h4_admin' && !req.user.userBranchId);
-        if (!isHQAdmin && req.user.userBranchId && req.user.userBranchId !== req.params.id) {
+        if (!isHQAdmin && isH4BranchAdmin(req.user) && String(req.user.branchId) !== String(req.params.id)) {
             return res.status(403).json({ message: 'Access denied to this branch\'s members' });
         }
         const filter = { branchId: req.params.id };

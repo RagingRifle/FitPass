@@ -20,7 +20,14 @@ router.post('/images', protect, authorize('admin'), upload.array('images', 4), u
 router.put('/images', protect, authorize('admin'), updateGymImages);
 
 // Protected routes for gym settings
-router.get('/settings', protect, authorize('admin', 'superadmin', 'h4_admin'), getGymSettings);
-router.put('/settings', protect, authorize('admin', 'superadmin', 'h4_admin'), updateGymSettings);
+const denyH4BranchAdmin = (req, res, next) => {
+    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && req.user.branchId) {
+        res.status(403);
+        return next(new Error('Gym-wide settings are available to overall administrators only.'));
+    }
+    return next();
+};
+router.get('/settings', protect, authorize('admin', 'superadmin', 'h4_admin'), denyH4BranchAdmin, getGymSettings);
+router.put('/settings', protect, authorize('admin', 'superadmin', 'h4_admin'), denyH4BranchAdmin, updateGymSettings);
 
 module.exports = router;

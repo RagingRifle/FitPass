@@ -53,7 +53,7 @@ const DietPlans = () => {
     const [consumedMeals, setConsumedMeals] = useState({}); // { 'index': boolean }
     const [waterIntake, setWaterIntake] = useState(0); // in cups (250ml)
 
-    const isTrainerOrAdmin = ['admin', 'h4_admin', 'trainer', 'superadmin'].includes(user?.role);
+    const isTrainerOrAdmin = ['admin', 'h4_admin', 'h4_branch_admin', 'trainer', 'superadmin'].includes(user?.role);
     const isMember = user?.role === 'member';
 
     const fetchNutritionLogs = useCallback(async (filters = {}) => {

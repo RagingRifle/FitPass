@@ -49,7 +49,7 @@ const Dashboard = () => {
     const { user, activeDivision, selectedGymId, changeSelectedGym, selectedBranchId, changeSelectedBranch } = useContext(AuthContext);
     const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
     const userGymId = user?.gymId?._id || user?.gymId || '';
-    const isH4User = user?.role === 'h4_admin' || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
+    const isH4User = ['h4_admin', 'h4_branch_admin'].includes(user?.role) || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
     const [stats, setStats] = useState(null);
     const [expiringMembers, setExpiringMembers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -83,7 +83,7 @@ const Dashboard = () => {
                         const { data } = await API.get('/superadmin/gyms');
                         setGymList(Array.isArray(data) ? data : []);
                     }
-                } else if (['partner', 'h4_admin', 'admin'].includes(user?.role)) {
+                } else if (['partner', 'h4_admin', 'h4_branch_admin', 'admin'].includes(user?.role)) {
                     const { data: branches } = await API.get('/branches');
                     setGymList(Array.isArray(branches) ? branches : []);
                 }
@@ -177,7 +177,7 @@ const Dashboard = () => {
                 <div className="page-header-left">
                     <div className="dashboard-heading-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <h2 style={{ margin: 0 }}>{activeDivision === 'h4' ? 'Gym CRM Dashboard' : 'Partner Dashboard'}</h2>
-                        {['superadmin', 'fitpass_admin', 'h4_admin'].includes(user?.role) && isH4User && (
+                        {['superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(user?.role) && isH4User && (
                             <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                 {user?.branchId ? (
                                     <div style={{

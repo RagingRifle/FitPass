@@ -10,7 +10,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'superadmin' | 'admin' | 'receptionist' | 'trainer' | 'member' | 'partner' | 'fitpass_admin' | 'h4_admin';
+  role: 'superadmin' | 'admin' | 'receptionist' | 'trainer' | 'member' | 'partner' | 'fitpass_admin' | 'h4_admin' | 'h4_branch_admin';
   gymId?: string;
   gymName?: string;
   branchId?: string;
@@ -140,7 +140,7 @@ export const useAuth = create<AuthState>((set, get) => {
         const userGymName = data.gymName || '';
         const userGymId = data.gymId || '';
 
-        const isAdministrative = ['superadmin', 'admin', 'trainer', 'receptionist', 'partner', 'fitpass_admin', 'h4_admin'].includes(userRole);
+        const isAdministrative = ['superadmin', 'admin', 'trainer', 'receptionist', 'partner', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(userRole);
 
         // Portal-specific role and gym routing validation (if portal specified)
         if (portal) {

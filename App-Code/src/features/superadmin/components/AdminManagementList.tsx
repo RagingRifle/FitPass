@@ -165,7 +165,7 @@ export const AdminManagementList: React.FC = () => {
               </View>
               <View style={styles.badgeContainer}>
                 <Badge 
-                  label={admin.role === 'fitpass_admin' ? 'FitPass Admin' : 'H4 Gym Admin'} 
+                  label={admin.role === 'fitpass_admin' ? 'FitPass Admin' : admin.role === 'h4_branch_admin' ? 'H4 Branch Admin' : 'Overall H4 Admin'}
                   variant={admin.role === 'fitpass_admin' ? 'active' : 'info'} 
                   style={styles.badge}
                 />

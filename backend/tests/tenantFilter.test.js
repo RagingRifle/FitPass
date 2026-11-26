@@ -47,4 +47,51 @@ describe('tenantFilter trainer scope', () => {
         expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Trainer gym scope is required' });
         expect(next).not.toHaveBeenCalled();
     });
+
+    it('locks H4 branch administrators to their assigned H4 branch', () => {
+        const req = {
+            user: { role: 'h4_branch_admin', gymId: 'h4-gym', branchId: 'assigned-branch' },
+            query: { gymId: 'other-gym', branchId: 'other-branch' },
+            headers: { 'x-gym-id': 'header-gym', 'x-branch-id': 'header-branch' }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        const next = jest.fn();
+
+        tenantFilter(req, res, next);
+
+        expect(req.tenantFilter).toEqual({ gymId: 'h4-gym', branchId: 'assigned-branch' });
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('requires an assigned branch for H4 branch administrators', () => {
+        const req = {
+            user: { role: 'h4_branch_admin', gymId: 'h4-gym' },
+            query: { branchId: 'client-branch' },
+            headers: {}
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        const next = jest.fn();
+
+        tenantFilter(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith({ success: false, message: 'H4 branch scope is required' });
+        expect(next).not.toHaveBeenCalled();
+    });
+
+    it('does not allow overall H4 admins to override their gym scope', () => {
+        const req = {
+            user: { role: 'h4_admin', gymId: 'h4-gym', branchId: null },
+            query: { gymId: 'other-gym' },
+            headers: { 'x-gym-id': 'header-gym' }
+        };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        const next = jest.fn();
+
+        tenantFilter(req, res, next);
+
+        expect(req.tenantFilter).toEqual({ gymId: 'h4-gym' });
+        expect(next).toHaveBeenCalledTimes(1);
+    });
 });

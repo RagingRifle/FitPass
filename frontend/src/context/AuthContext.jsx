@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
                     setSelectedGymId('');
                     setSelectedBranchId('');
                 }
-            } else if (parsedUser.role === 'h4_admin' || (parsedUser.gymName && parsedUser.gymName.toUpperCase() === 'H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(parsedUser.gymId?._id || parsedUser.gymId || ''))) {
+            } else if (['h4_admin', 'h4_branch_admin'].includes(parsedUser.role) || (parsedUser.gymName && parsedUser.gymName.toUpperCase() === 'H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(parsedUser.gymId?._id || parsedUser.gymId || ''))) {
                 division = 'h4';
             } else if (parsedUser.role === 'fitpass_admin') {
                 division = 'fitpass';
@@ -73,14 +73,18 @@ export const AuthProvider = ({ children }) => {
             const portalType = selectedRole;
             const { data } = await API.post('/auth/login', { email, password, portalType });
 
-            const roleMatches = (selRole, userRole, gymName, gymId) => {
+            const roleMatches = (selRole, userRole, gymName, gymId, branchId) => {
                 if (!selRole) return true;
                 const normalizedGym = (gymName || '').toUpperCase();
                 const isH4Gym = normalizedGym === 'H4' || gymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd';
 
                 if (selRole === 'superadmin') return userRole === 'superadmin';
                 if (selRole === 'fitpass_admin') return userRole === 'fitpass_admin';
-                if (selRole === 'h4_admin') return userRole === 'h4_admin';
+                if (selRole === 'h4_admin') return userRole === 'h4_admin' && !branchId;
+                if (selRole === 'h4_branch_admin') {
+                    return userRole === 'h4_branch_admin' && Boolean(branchId)
+                        || userRole === 'h4_admin' && Boolean(branchId);
+                }
                 if (selRole === 'h4_gym_admin') {
                     return userRole === 'h4_admin' || (['admin', 'partner'].includes(userRole) && isH4Gym);
                 }
@@ -98,11 +102,12 @@ export const AuthProvider = ({ children }) => {
                 return false;
             };
 
-            if (selectedRole && !roleMatches(selectedRole, data.role, data.gymName, data.gymId)) {
+            if (selectedRole && !roleMatches(selectedRole, data.role, data.gymName, data.gymId, data.branchId)) {
                 const readableRoleName = 
                     selectedRole === 'superadmin' ? 'Super Admin' :
                     selectedRole === 'fitpass_admin' ? 'FitPass Admin' :
-                    selectedRole === 'h4_admin' ? 'H4 Admin' :
+                    selectedRole === 'h4_admin' ? 'Overall H4 Admin' :
+                    selectedRole === 'h4_branch_admin' ? 'H4 Branch Admin' :
                     selectedRole === 'h4_gym_admin' ? 'H4 Gym Admin' :
                     selectedRole === 'fitpass_partner_admin' ? 'Fitpass Partner Admin' :
                     selectedRole === 'staff' ? 'Gym Staff / Trainer' :
@@ -120,7 +125,7 @@ export const AuthProvider = ({ children }) => {
             sessionStorage.setItem('token', data.token);
             
             let division = 'fitpass';
-            if (data.role === 'h4_admin' || (data.gymName && data.gymName.toUpperCase() === 'H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(data.gymId?._id || data.gymId || ''))) {
+            if (['h4_admin', 'h4_branch_admin'].includes(data.role) || (data.gymName && data.gymName.toUpperCase() === 'H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(data.gymId?._id || data.gymId || ''))) {
                 division = 'h4';
             } else if (data.role === 'fitpass_admin') {
                 division = 'fitpass';

@@ -60,8 +60,8 @@ const Analytics = () => {
     const [branchId, setBranchId] = useState(selectedBranchId || '');
     const [branches, setBranches] = useState([]);
     const [refreshKey, setRefreshKey] = useState(0);
-    const isH4 = activeDivision === 'h4' || user?.role === 'h4_admin';
-    const lockedBranch = user?.role === 'h4_admin' && user?.userBranchId;
+    const isH4 = activeDivision === 'h4' || ['h4_admin', 'h4_branch_admin'].includes(user?.role);
+    const lockedBranch = ['h4_admin', 'h4_branch_admin'].includes(user?.role) && (user?.userBranchId || user?.branchId);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');

@@ -55,7 +55,7 @@ const WorkoutPlans = () => {
     const [progressLoading, setProgressLoading] = useState(false);
     const [savingWorkout, setSavingWorkout] = useState(false);
 
-    const isTrainerOrAdmin = ['admin', 'h4_admin', 'trainer', 'superadmin'].includes(user?.role);
+    const isTrainerOrAdmin = ['admin', 'h4_admin', 'h4_branch_admin', 'trainer', 'superadmin'].includes(user?.role);
     const isMember = user?.role === 'member';
 
     const fetchWorkoutProgress = useCallback(async (filters = {}) => {

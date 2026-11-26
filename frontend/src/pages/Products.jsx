@@ -10,7 +10,7 @@ export default function Products() {
   const { activeDivision } = useContext(AuthContext);
   const user = JSON.parse(sessionStorage.getItem('user') || 'null');
   const isFitPassAdmin = user?.role === 'fitpass_admin';
-  const isH4Admin = user?.role === 'h4_admin';
+  const isH4Admin = ['h4_admin', 'h4_branch_admin'].includes(user?.role);
   const isH4GymAdmin = user?.role === 'admin' && (String(user?.gymName || '').toUpperCase() === 'H4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(user?.gymId?._id || user?.gymId || '')));
   const fixedDivision = isFitPassAdmin ? 'fitpass' : (isH4Admin || isH4GymAdmin) ? 'h4' : null;
   const toast = useToast();

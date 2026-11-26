@@ -9,6 +9,7 @@
     "dev:server": "nodemon server.js",
     "db:sync": "prisma db push",
     "seed:showcase": "node scripts/dev/seed-showcase.js",
+    "promote:h4-overall-admin": "node scripts/ops/promote-h4-overall-admin.js",
     "build": "prisma generate && prisma db push",
     "postinstall": "prisma generate",
     "test": "jest"

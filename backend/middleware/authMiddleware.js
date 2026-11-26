@@ -61,13 +61,26 @@ const protect = async (req, res, next) => {
                         req.user.gymId = targetGymId;
                     }
                 }
-            } else if (req.user.role === 'h4_admin') {
-                // H4 admin is locked to the H4 gymId
+            } else if (['h4_admin', 'h4_branch_admin'].includes(req.user.role)) {
+                // H4 administrators are locked to H4; branch admins cannot switch branches.
                 const h4Gym = await Gym.findOne({ name: 'H4' });
                 req.user.gymId = h4Gym ? h4Gym._id.toString() : H4_GYM_IDS[0];
-                
-                if (req.user.userBranchId) {
-                    // Branch-level admin created for a specific location
+
+                const isBranchAdmin = req.user.role === 'h4_branch_admin' || Boolean(req.user.userBranchId);
+                if (req.user.role === 'h4_branch_admin' && !req.user.userBranchId) {
+                    res.status(403);
+                    throw new Error('H4 branch administrators must be assigned to a branch.');
+                }
+
+                if (isBranchAdmin) {
+                    const assignedBranch = await Branch.findOne({
+                        _id: req.user.userBranchId,
+                        gymId: req.user.gymId
+                    });
+                    if (!assignedBranch) {
+                        res.status(403);
+                        throw new Error('H4 branch administrator is not assigned to a valid H4 branch.');
+                    }
                     req.user.branchId = req.user.userBranchId;
                 } else if (req.headers['x-branch-id']) {
                     const targetBranch = await Branch.findOne({ 
@@ -129,7 +142,8 @@ const authorize = (...roles) => {
             res.status(401);
             return next(new Error('Not authorized, missing user data'));
         }
-        if (req.user.role === 'superadmin' || roles.includes(req.user.role)) {
+        const isH4BranchAdmin = req.user.role === 'h4_branch_admin' && roles.includes('h4_admin');
+        if (req.user.role === 'superadmin' || roles.includes(req.user.role) || isH4BranchAdmin) {
             return next();
         }
         res.status(403);

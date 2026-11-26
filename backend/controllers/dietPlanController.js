@@ -8,7 +8,7 @@ const { trainerCanManage } = require('../utils/trainerAccess');
 
 const getGymScope = (req) => {
     const gymId = String(req.user?.gymId || '');
-    const isH4Scope = req.user?.role === 'h4_admin' || H4_GYM_IDS.includes(gymId);
+    const isH4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user?.role) || H4_GYM_IDS.includes(gymId);
     const gymIds = isH4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId];
     return { gymId, gymIds, isH4Scope };
 };

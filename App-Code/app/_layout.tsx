@@ -40,7 +40,7 @@ function NavigationGuard() {
 
     // Authenticated — resolve correct destination
     const role = user?.role;
-    const isStaff = role && ['superadmin', 'partner', 'admin', 'trainer', 'receptionist', 'fitpass_admin', 'h4_admin'].includes(role);
+    const isStaff = role && ['superadmin', 'partner', 'admin', 'trainer', 'receptionist', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(role);
     const isMember = role === 'member';
 
     if (isStaff) {

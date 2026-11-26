@@ -16,8 +16,8 @@ import { Loader,  Pencil, Trash2, TrendingUp, ShieldAlert, Award, Activity, Scal
 
 const BodyAssessments = () => {
     const { user, activeDivision, selectedGymId } = useContext(AuthContext);
-    const isStaff = ['admin', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'].includes(user?.role);
-    const isH4Assessment = user?.role === 'h4_admin' || activeDivision === 'h4' || String(user?.gymName || '').toUpperCase().includes('H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || user?.gymId || ''));
+    const isStaff = ['admin', 'trainer', 'superadmin', 'h4_admin', 'h4_branch_admin', 'fitpass_admin'].includes(user?.role);
+    const isH4Assessment = ['h4_admin', 'h4_branch_admin'].includes(user?.role) || activeDivision === 'h4' || String(user?.gymName || '').toUpperCase().includes('H4') || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || user?.gymId || ''));
     const graphGymId = String(selectedGymId || user?.gymId?._id || user?.gymId?.id || user?.gymId || 'h4');
     const assessmentMetrics = [
         { key: 'Weight', label: 'Weight', unit: 'kg', color: '#0F766E' },

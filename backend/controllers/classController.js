@@ -19,7 +19,10 @@ const classStartsAt = (gymClass) => {
 const trainerMay = (req, permission) => req.user?.role !== 'trainer' || req.user?.trainerPermissions?.[permission] !== false;
 const canManageClass = (req, gymClass) => {
     if (req.user?.role === 'superadmin') return true;
-    if (req.user?.role === 'h4_admin') return isH4GymId(gymClass.gymId) && (!req.user.branchId || String(gymClass.branchId || '') === String(req.user.branchId));
+    if (['h4_admin', 'h4_branch_admin'].includes(req.user?.role)) {
+        return String(gymClass.gymId) === String(req.user.gymId)
+            && (!req.user.branchId || String(gymClass.branchId || '') === String(req.user.branchId));
+    }
     if (req.user?.role === 'fitpass_admin') return !isH4GymId(gymClass.gymId) && (req.user.gymId === 'SYSTEM' || String(gymClass.gymId) === String(req.user.gymId)) && (!req.user.branchId || String(gymClass.branchId || '') === String(req.user.branchId));
     return String(gymClass.gymId) === String(req.user?.gymId) && (!req.user.branchId || String(gymClass.branchId || '') === String(req.user.branchId));
 };
@@ -201,6 +204,13 @@ const createClass = catchAsync(async (req, res, next) => {
             if (targetBranchIds.some((id) => id && String(id) !== String(req.user.branchId))) return res.status(403).json({ message: 'Trainers can only schedule classes at their assigned branch.' });
             targetBranchIds = [req.user.branchId];
         }
+        const isBranchScopedH4Admin = userRole === 'h4_branch_admin' || userRole === 'h4_admin' && Boolean(req.user.branchId);
+        if (isBranchScopedH4Admin) {
+            if (!req.user.branchId || targetBranchIds.some((id) => String(id || '') !== String(req.user.branchId))) {
+                return res.status(403).json({ message: 'H4 branch administrators can only schedule classes at their assigned branch.' });
+            }
+            targetBranchIds = [req.user.branchId];
+        }
         if (userRole !== 'superadmin' && req.user.branchId && targetBranchIds.some((id) => id && String(id) !== String(req.user.branchId))) {
             return res.status(403).json({ message: 'You can only schedule classes at your assigned branch.' });
         }
@@ -233,7 +243,7 @@ const createClass = catchAsync(async (req, res, next) => {
             if (bId && branchMap.has(bId)) {
                 const bInfo = branchMap.get(bId);
                 // Permission checks
-                if (userRole === 'h4_admin' || (userRole === 'admin' && H4_GYM_IDS.includes(callerGymId))) {
+                if (['h4_admin', 'h4_branch_admin'].includes(userRole) || (userRole === 'admin' && H4_GYM_IDS.includes(callerGymId))) {
                     effectiveGymId = bInfo.gymId || callerGymId;
                 } else if (userRole === 'superadmin' || userRole === 'fitpass_admin') {
                     effectiveGymId = bInfo.gymId || reqGymId || callerGymId;

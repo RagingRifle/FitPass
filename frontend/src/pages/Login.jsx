@@ -43,7 +43,8 @@ const Login = ({ portal, restrictedAdmin = false }) => {
     const leafPortals = {
         superadmin:           { title: 'Super Admin Portal',       icon: Shield   },
         fitpass_admin:        { title: 'FitPass Admin Portal',     icon: Award    },
-        h4_admin:             { title: 'H4 Admin Portal',          icon: Dumbbell },
+        h4_admin:             { title: 'Overall H4 Admin Portal',  icon: Dumbbell },
+        h4_branch_admin:      { title: 'H4 Branch Admin Portal',   icon: Building },
         h4_gym_admin:         { title: 'H4 Gym Admin Portal',      icon: Dumbbell },
         fitpass_partner_admin:{ title: 'Fitpass Partner Admin',    icon: Building },
         staff:                { title: 'Gym Staff / Trainer',      icon: Users    },
@@ -78,7 +79,7 @@ const Login = ({ portal, restrictedAdmin = false }) => {
     const handleBack = () => {
         setError('');
         if (currentView === 'login_form') {
-            if (['superadmin', 'fitpass_admin', 'h4_admin'].includes(selectedRole)) {
+            if (['superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(selectedRole)) {
                 setCurrentView('admin_sub');
             } else if (['h4_gym_admin', 'fitpass_partner_admin'].includes(selectedRole)) {
                 setCurrentView('gym_admin_branch_sub');
@@ -188,9 +189,15 @@ const Login = ({ portal, restrictedAdmin = false }) => {
                         />
                         <PortalCard
                             icon={Dumbbell}
-                            label="H4 Admin"
-                            desc="H4 Gym operations, plans, and branch controls"
+                            label="Overall H4 Admin"
+                            desc="Manage all H4 branches and H4-wide operations"
                             onClick={() => { setSelectedRole('h4_admin'); setCurrentView('login_form'); }}
+                        />
+                        <PortalCard
+                            icon={Building}
+                            label="H4 Branch Admin"
+                            desc="Manage operations for your assigned H4 branch only"
+                            onClick={() => { setSelectedRole('h4_branch_admin'); setCurrentView('login_form'); }}
                         />
                         <PortalCard
                             icon={Building}

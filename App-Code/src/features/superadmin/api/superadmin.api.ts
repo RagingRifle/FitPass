@@ -342,7 +342,7 @@ export interface DedicatedAdmin {
   _id: string;
   name: string;
   email: string;
-  role: 'fitpass_admin' | 'h4_admin';
+  role: 'fitpass_admin' | 'h4_admin' | 'h4_branch_admin';
   status?: string;
 }
 

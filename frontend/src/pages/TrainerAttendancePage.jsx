@@ -18,7 +18,7 @@ const formatTime = value => value ? new Date(value).toLocaleTimeString(undefined
 
 const TrainerAttendancePage = () => {
     const { user } = useContext(AuthContext);
-    const isAdmin = ['admin', 'superadmin', 'h4_admin'].includes(user?.role);
+    const isAdmin = ['admin', 'superadmin', 'h4_admin', 'h4_branch_admin'].includes(user?.role);
     const isTrainer = user?.role === 'trainer';
     const now = new Date();
     const [logs, setLogs] = useState([]);

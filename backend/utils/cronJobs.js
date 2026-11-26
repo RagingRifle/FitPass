@@ -90,7 +90,7 @@ const startCronJobs = () => {
                     }) : Promise.resolve([])
                 ]);
                 const adminUsers = [
-                    ...users.filter(user => ['admin', 'h4_admin'].includes(user.role)),
+                    ...users.filter(user => ['admin', 'h4_admin', 'h4_branch_admin'].includes(user.role)),
                     ...superAdmins
                 ];
 
@@ -151,7 +151,7 @@ const startCronJobs = () => {
                     if (daysSince < inactivityDays) continue;
 
                     const recipients = [
-                        ...users.filter(user => ['admin', 'h4_admin', 'receptionist'].includes(user.role)),
+                        ...users.filter(user => ['admin', 'h4_admin', 'h4_branch_admin', 'receptionist'].includes(user.role)),
                         ...superAdmins,
                         ...memberUsers.filter(user => user.memberId === member.id)
                     ];

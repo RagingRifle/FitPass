@@ -7,8 +7,8 @@ import { Loader,  Pencil, Trash2 } from 'lucide-react';
 
 const Plans = () => {
     const { user, activeDivision, selectedGymId, changeSelectedGym, selectedBranchId } = useContext(AuthContext);
-    const isAdmin = ['admin', 'h4_admin', 'superadmin'].includes(user?.role);
-    const isH4Plans = user?.role === 'h4_admin' || activeDivision === 'h4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || '')) || String(user?.gymName || '').toLowerCase().includes('h4');
+    const isAdmin = ['admin', 'h4_admin', 'h4_branch_admin', 'superadmin'].includes(user?.role);
+    const isH4Plans = ['h4_admin', 'h4_branch_admin'].includes(user?.role) || activeDivision === 'h4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(selectedGymId || '')) || String(user?.gymName || '').toLowerCase().includes('h4');
     const canCreateAllBranchPlan = user?.role === 'superadmin' || (user?.role === 'h4_admin' && !user?.userBranchId && !user?.branchId);
     const [plans, setPlans] = useState([]);
     const [h4Branches, setH4Branches] = useState([]);

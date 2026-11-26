@@ -509,6 +509,9 @@ const getFitPrimePlans = catchAsync(async (req, res, next) => {
 });
 
 // --- dedicated admin management ---
+const isH4BranchAdmin = (user) => user.role === 'h4_branch_admin'
+    || (user.role === 'h4_admin' && Boolean(user.branchId));
+
 const createAdminSchema = z.object({
     name: z.string().min(1, 'Name is required').max(120),
     email: z.string().email('A valid email is required'),
@@ -529,22 +532,22 @@ const updateAdminSchema = z.object({
 // @route   GET /api/superadmin/admins
 // @access  Private (Super Admin)
 const getDedicatedAdmins = catchAsync(async (req, res, next) => {
-    if (req.user.role === 'h4_admin' && req.user.branchId) return res.status(403).json({ message: 'Branch administrators cannot manage administrator accounts.' });
+    if (isH4BranchAdmin(req.user)) return res.status(403).json({ message: 'Branch administrators cannot manage administrator accounts.' });
     const [accounts, gyms, branches] = await Promise.all([
-        User.find({ role: { $in: ['fitpass_admin', 'h4_admin', 'partner', 'admin'] } }).select('-password').lean(),
+        User.find({ role: { $in: ['fitpass_admin', 'h4_admin', 'h4_branch_admin', 'partner', 'admin'] } }).select('-password').lean(),
         Gym.find({}).select('id name').lean(),
         Branch.find({}).select('id name gymId').lean(),
     ]);
     const gymById = new Map(gyms.map(gym => [String(gym.id || gym._id), gym]));
     const branchById = new Map(branches.map(branch => [String(branch.id || branch._id), branch]));
     const result = accounts.filter(account => {
-        if (['fitpass_admin', 'h4_admin', 'partner'].includes(account.role)) return true;
+        if (['fitpass_admin', 'h4_admin', 'h4_branch_admin', 'partner'].includes(account.role)) return true;
         return account.role === 'admin' && gymById.has(String(account.gymId));
     }).map(account => {
         const gym = gymById.get(String(account.gymId));
         const branch = branchById.get(String(account.branchId));
         const roleScope = account.role === 'fitpass_admin' ? 'fitpass_admin'
-            : gym?.name.toLowerCase().includes('h4') && account.branchId ? 'h4_branch_admin'
+            : account.role === 'h4_branch_admin' || gym?.name.toLowerCase().includes('h4') && account.branchId ? 'h4_branch_admin'
                 : gym?.name.toLowerCase().includes('h4') || account.role === 'h4_admin' ? 'h4_admin' : 'fitpass_partner';
         return { ...account, roleScope, gymName: gym?.name || (account.role === 'h4_admin' ? 'H4' : ''), branchName: branch?.name || '' };
     });
@@ -557,7 +560,7 @@ const getDedicatedAdmins = catchAsync(async (req, res, next) => {
 });
 
 const getAdminAccountScopes = catchAsync(async (req, res) => {
-    if (req.user.role === 'h4_admin' && req.user.branchId) return res.status(403).json({ message: 'Branch administrators cannot manage administrator accounts.' });
+    if (isH4BranchAdmin(req.user)) return res.status(403).json({ message: 'Branch administrators cannot manage administrator accounts.' });
     const [gyms, branches] = await Promise.all([
         Gym.find({}).select('id name').lean(),
         Branch.find({}).select('id name gymId').lean(),
@@ -580,7 +583,7 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
     }
     const { name, email, password, role, gymId: requestedGymId, branchId } = parsed.data;
 
-    if (req.user.role === 'h4_admin' && (role !== 'h4_branch_admin' || req.user.branchId)) {
+    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && (role !== 'h4_branch_admin' || req.user.branchId)) {
         return res.status(403).json({ message: 'Only H4 administrators can create H4 administrator accounts.' });
     }
     if (req.user.role === 'fitpass_admin' && role !== 'fitpass_partner') {
@@ -606,7 +609,7 @@ const createDedicatedAdmin = catchAsync(async (req, res, next) => {
                 res.status(400);
                 throw new Error('Select a valid H4 branch for this account.');
             }
-            actualRole = 'h4_admin';
+            actualRole = 'h4_branch_admin';
             actualBranchId = branch._id || branch.id;
         }
     } else if (role === 'fitpass_partner') {
@@ -661,14 +664,14 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
         throw new Error(parsed.error.issues[0].message);
     }
 
-    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin', 'partner', 'admin'] } });
+    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin', 'h4_branch_admin', 'partner', 'admin'] } });
     if (!admin) {
         res.status(404);
         throw new Error('Admin not found');
     }
 
     const sameDivision = req.user.role === 'superadmin'
-        || (req.user.role === 'h4_admin' && !req.user.branchId && admin.role === 'h4_admin' && admin.branchId && String(admin.gymId) === String(req.user.gymId))
+        || (req.user.role === 'h4_admin' && !req.user.branchId && ['h4_admin', 'h4_branch_admin'].includes(admin.role) && (admin.role === 'h4_branch_admin' || admin.branchId) && String(admin.gymId) === String(req.user.gymId))
         || (req.user.role === 'fitpass_admin' && admin.role === 'partner');
     if (!sameDivision || String(admin._id || admin.id) === String(req.user._id || req.user.id)) return res.status(403).json({ message: 'You cannot update this account.' });
 
@@ -701,13 +704,13 @@ const updateDedicatedAdmin = catchAsync(async (req, res, next) => {
 // @route   DELETE /api/superadmin/admins/:id
 // @access  Private (Super Admin)
 const deleteDedicatedAdmin = catchAsync(async (req, res, next) => {
-    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin', 'partner', 'admin'] } });
+    const admin = await User.findOne({ _id: req.params.id, role: { $in: ['fitpass_admin', 'h4_admin', 'h4_branch_admin', 'partner', 'admin'] } });
     if (!admin) {
         res.status(404);
         throw new Error('Admin not found');
     }
     const sameDivision = req.user.role === 'superadmin'
-        || (req.user.role === 'h4_admin' && !req.user.branchId && admin.role === 'h4_admin' && admin.branchId && String(admin.gymId) === String(req.user.gymId))
+        || (req.user.role === 'h4_admin' && !req.user.branchId && ['h4_admin', 'h4_branch_admin'].includes(admin.role) && (admin.role === 'h4_branch_admin' || admin.branchId) && String(admin.gymId) === String(req.user.gymId))
         || (req.user.role === 'fitpass_admin' && admin.role === 'partner');
     if (!sameDivision || String(admin._id || admin.id) === String(req.user._id || req.user.id)) return res.status(403).json({ message: 'You cannot revoke this account.' });
     await admin.deleteOne();

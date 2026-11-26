@@ -190,8 +190,8 @@ const Reports = () => {
   const [endDate, setEndDate] = useState(`${currentYear}-12-31`);
   const [branchId, setBranchId] = useState(selectedBranchId || '');
   const [branches, setBranches] = useState([]);
-  const isH4 = activeDivision === 'h4' || user?.role === 'h4_admin';
-  const lockedBranch = user?.role === 'h4_admin' && user?.userBranchId;
+  const isH4 = activeDivision === 'h4' || ['h4_admin', 'h4_branch_admin'].includes(user?.role);
+  const lockedBranch = ['h4_admin', 'h4_branch_admin'].includes(user?.role) && (user?.userBranchId || user?.branchId);
 
   useEffect(() => {
     if (isH4) API.get('/branches').then(({ data }) => setBranches(data || [])).catch(() => setBranches([]));

@@ -246,7 +246,7 @@ const buildMemberQuery = async (req, memberId) => {
     }
 
     const currentGymId = String(req.user.gymId || '');
-    const isH4Scope = req.user.role === 'h4_admin' || H4_GYM_IDS.includes(currentGymId);
+    const isH4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user.role) || H4_GYM_IDS.includes(currentGymId);
     if (isH4Scope) {
         query.gymId = { $in: [...new Set([...H4_GYM_IDS, currentGymId].filter(Boolean))] };
         if (req.user.branchId) query.branchId = req.user.branchId;
@@ -274,7 +274,7 @@ const createMember = catchAsync(async (req, res, next) => {
         const { name, phone, email, planId, joinDate, branchId, gymId } = req.body;
 
         const selectedGymId = String(req.tenantFilter?.gymId || '');
-        const isH4Registration = req.user.role === 'h4_admin'
+        const isH4Registration = ['h4_admin', 'h4_branch_admin'].includes(req.user.role)
             || H4_GYM_IDS.includes(String(req.user.gymId || ''))
             || (req.user.role === 'superadmin' && H4_GYM_IDS.includes(selectedGymId));
         if (!name || !phone || (!planId && !isH4Registration)) {
@@ -375,7 +375,7 @@ const createMember = catchAsync(async (req, res, next) => {
 
         const { allocateMemberCode } = require('../utils/idGenerator');
         const memberCode = await allocateMemberCode();
-        const isH4Member = H4_GYM_IDS.includes(String(targetGymId));
+        const isH4Member = ['h4_admin', 'h4_branch_admin'].includes(req.user.role) || H4_GYM_IDS.includes(String(targetGymId));
         const assignedSessions = Number(plan?.sessions) || 0;
         const coinConfig = assignedSessions > 0 && !isH4Member ? await prisma.coinSettings.findUnique({ where: { division: 'fitpass' } }).catch(() => null) : null;
         const member = await Member.create({
@@ -398,7 +398,7 @@ const createMember = catchAsync(async (req, res, next) => {
             branchId: targetBranchId
         });
 
-        if (member && req.user.role === 'h4_admin' && targetBranchId) {
+        if (member && ['h4_admin', 'h4_branch_admin'].includes(req.user.role) && targetBranchId) {
             const trainers = await User.find({ gymId: targetGymId, branchId: targetBranchId, role: 'trainer', isActive: true }).lean();
             const loads = await Promise.all(trainers.map(async (trainer) => ({
                 trainer,

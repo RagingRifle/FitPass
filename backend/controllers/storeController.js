@@ -33,7 +33,7 @@ const resolveStoreMember = async (req) => {
 };
 
 const adminDivision = (req, requested = 'fitpass') => {
-  if (req.user.role === 'h4_admin') return 'h4';
+  if (['h4_admin', 'h4_branch_admin'].includes(req.user.role)) return 'h4';
   if (req.user.role === 'fitpass_admin') return 'fitpass';
   if (req.user.role === 'admin') return H4_GYM_IDS.includes(String(req.user.gymId)) ? 'h4' : 'fitpass';
   return requested === 'h4' ? 'h4' : 'fitpass';
@@ -41,7 +41,7 @@ const adminDivision = (req, requested = 'fitpass') => {
 
 const getProducts = catchAsync(async (req, res) => {
   const division = adminDivision(req, req.query.division === 'h4' ? 'h4' : 'fitpass');
-  const isAdmin = ['admin', 'h4_admin', 'fitpass_admin', 'superadmin'].includes(req.user.role);
+  const isAdmin = ['admin', 'h4_admin', 'h4_branch_admin', 'fitpass_admin', 'superadmin'].includes(req.user.role);
   const products = await prisma.storeProduct.findMany({
     where: { division, ...(isAdmin ? {} : { isActive: true }) },
     orderBy: { createdAt: 'desc' },

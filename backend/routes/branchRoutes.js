@@ -6,7 +6,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.get('/public', getPublicBranches);
 router.use(protect);
 const denyBranchScopedManagement = (req, res, next) => {
-    if (req.user.role === 'h4_admin' && req.user.userBranchId) {
+    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && req.user.userBranchId) {
         res.status(403);
         return next(new Error('Branch admins cannot manage the H4 branch directory.'));
     }

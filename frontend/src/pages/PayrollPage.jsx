@@ -17,7 +17,7 @@ const SALE_POINT_LABELS = { NEW_MEMBER: 'New member', RENEWAL: 'Renewal', UPGRAD
 
 const PayrollPage = () => {
     const { user } = useContext(AuthContext);
-    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin' || user?.role === 'h4_admin';
+    const isAdmin = ['admin', 'superadmin', 'h4_admin', 'h4_branch_admin'].includes(user?.role);
 
     const [payrolls, setPayrolls] = useState([]);
     const [trainers, setTrainers] = useState([]);

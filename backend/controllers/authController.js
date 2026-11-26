@@ -424,9 +424,16 @@ const authUser = catchAsync(async (req, res, next) => {
                 throw new Error('Access Denied: This portal is restricted to FitPass Admins.');
             }
         } else if (portalType === 'h4_admin') {
-            if (userRole !== 'h4_admin') {
+            if (userRole !== 'h4_admin' || user.branchId) {
                 res.status(403);
                 throw new Error('Access Denied: This portal is restricted to H4 Admins.');
+            }
+        } else if (portalType === 'h4_branch_admin') {
+            const isH4BranchAdmin = userRole === 'h4_branch_admin' && Boolean(user.branchId)
+                || userRole === 'h4_admin' && Boolean(user.branchId);
+            if (!isH4BranchAdmin) {
+                res.status(403);
+                throw new Error('Access Denied: This portal is restricted to H4 Branch Admins.');
             }
         } else if (portalType === 'h4_gym_admin') {
             const isH4GymAdmin = userRole === 'h4_admin' || (['admin', 'partner'].includes(userRole) && isH4Gym);

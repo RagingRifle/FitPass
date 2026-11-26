@@ -815,7 +815,7 @@ const Members = () => {
                                         <button className="btn" style={{ padding: '0.4rem', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }} onClick={() => handleOpenModal(member)}>
                                             <Pencil size={16} />
                                         </button>
-                                        {['superadmin', 'admin', 'fitpass_admin', 'h4_admin'].includes(user?.role) && (
+                                        {['superadmin', 'admin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(user?.role) && (
                                             <button className="btn btn-danger" style={{ padding: '0.4rem' }} onClick={() => handleDelete(member._id)}>
                                                 <Trash2 size={16} />
                                             </button>

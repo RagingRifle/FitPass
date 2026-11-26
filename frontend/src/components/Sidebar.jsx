@@ -295,7 +295,7 @@ const Sidebar = () => {
                 ]
             }
         ];
-    } else if (role === 'h4_admin') {
+    } else if (['h4_admin', 'h4_branch_admin'].includes(role)) {
         const suffix = '';
         const gymMgmtItems = [
             { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
@@ -368,8 +368,8 @@ const Sidebar = () => {
             ...group,
             items: group.items.filter(item => {
                 if (item.path === '/branches') return false;
-                if (item.path === '/fitpass-classes' && role === 'h4_admin') return false;
-                if (role === 'h4_admin' && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans', '/reminders'].includes(item.path)) return false;
+                if (item.path === '/fitpass-classes' && ['h4_admin', 'h4_branch_admin'].includes(role)) return false;
+                if (['h4_admin', 'h4_branch_admin'].includes(role) && !['/dashboard', '/members', '/leads', '/plans', '/classes', '/h4/trial-codes', '/body-assessments', '/staff', '/payments', '/sales', '/expenses', '/dues', '/attendance', '/trainer-attendance', '/payroll', '/reports', '/freeze', '/analytics', '/workout-plans', '/diet-plans'].includes(item.path)) return false;
                 return true;
             })
         }));

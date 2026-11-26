@@ -86,7 +86,7 @@ const createStaff = catchAsync(async (req, res, next) => {
 
         // H4 floor trainers start with the active roster at their branch. Managers
         // can rebalance that roster later through the trainer assignment screen.
-        if (role === 'trainer' && (req.user.role === 'h4_admin' || req.user.role === 'superadmin')) {
+        if (role === 'trainer' && (['h4_admin', 'h4_branch_admin'].includes(req.user.role) || req.user.role === 'superadmin')) {
             const trainerBranchId = assignedBranchId || req.user.branchId || null;
             const roster = await Member.find({ gymId, branchId: trainerBranchId, status: 'Active' }).select('id').lean();
             const staffId = staff._id || staff.id;

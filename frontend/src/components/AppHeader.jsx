@@ -67,7 +67,7 @@ const AppHeader = () => {
                 } catch (err) {
                     console.error('Failed to fetch gyms for selector:', err);
                 }
-            } else if (['partner', 'h4_admin', 'admin'].includes(user?.role)) {
+            } else if (['partner', 'h4_admin', 'h4_branch_admin', 'admin'].includes(user?.role)) {
                 try {
                     const { data: branches } = await API.get('/branches');
                     setGyms(Array.isArray(branches) ? branches : []);
@@ -81,7 +81,7 @@ const AppHeader = () => {
 
     const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
     const userGymId = user?.gymId?._id || user?.gymId || '';
-    const isH4User = user?.role === 'h4_admin' || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
+    const isH4User = ['h4_admin', 'h4_branch_admin'].includes(user?.role) || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -194,7 +194,7 @@ const AppHeader = () => {
                     <h1 className="page-title">{getPageTitle()}</h1>
                 </div>
 
-                {['superadmin', 'fitpass_admin', 'h4_admin'].includes(user?.role) && isH4User && (
+                {['superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(user?.role) && isH4User && (
                     <div className="header-context-select">
                         {user?.branchId ? (
                             <div className="header-context-static" style={{

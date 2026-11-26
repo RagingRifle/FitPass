@@ -32,13 +32,21 @@ const {
 } = require('../controllers/fitPassPayoutController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
+const denyH4BranchAdmin = (req, res, next) => {
+    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && req.user.branchId) {
+        res.status(403);
+        return next(new Error('This action is available to overall H4 administrators only.'));
+    }
+    return next();
+};
+
 // Super admin routes
 router.route('/gyms')
     .post(protect, authorize('superadmin', 'fitpass_admin'), createPartnerGym)
     .get(protect, authorize('superadmin', 'fitpass_admin'), getPartnerGyms);
 
 router.route('/h4-gym')
-    .get(protect, authorize('superadmin', 'h4_admin'), getOrCreateH4Gym);
+    .get(protect, authorize('superadmin', 'h4_admin'), denyH4BranchAdmin, getOrCreateH4Gym);
 
 // Update or delete gym (incl. default session duration for FitPrime check-ins).
 router.route('/gyms/:id')

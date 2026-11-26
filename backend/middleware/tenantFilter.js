@@ -20,6 +20,19 @@ const tenantFilter = (req, res, next) => {
         }
         filter.gymId = req.user.gymId;
         if (req.user.branchId) filter.branchId = req.user.branchId;
+    } else if (['h4_admin', 'h4_branch_admin'].includes(req.user?.role)) {
+        filter.gymId = req.user.gymId;
+        const isBranchAdmin = req.user.role === 'h4_branch_admin' || Boolean(req.user.branchId);
+        if (isBranchAdmin) {
+            if (!req.user.branchId) {
+                return res.status(403).json({ success: false, message: 'H4 branch scope is required' });
+            }
+            filter.branchId = req.user.branchId;
+        } else if (req.query.branchId) {
+            filter.branchId = req.query.branchId;
+        } else if (headerBranchId && headerBranchId !== 'null' && headerBranchId !== 'undefined') {
+            filter.branchId = headerBranchId;
+        }
     } else if (req.query.gymId) {
         filter.gymId = req.query.gymId;
     } else if (headerGymId && headerGymId !== 'SYSTEM' && headerGymId !== 'null' && headerGymId !== 'undefined') {
@@ -28,7 +41,7 @@ const tenantFilter = (req, res, next) => {
         filter.gymId = req.user.gymId;
     }
 
-    if (req.user?.role !== 'trainer') {
+    if (req.user?.role !== 'trainer' && !['h4_admin', 'h4_branch_admin'].includes(req.user?.role)) {
         if (req.query.branchId) {
             filter.branchId = req.query.branchId;
         } else if (headerBranchId && headerBranchId !== 'null' && headerBranchId !== 'undefined') {
