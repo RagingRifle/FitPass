@@ -39,6 +39,7 @@ const Login = ({ portal, restrictedAdmin = false }) => {
     const [loading, setLoading] = useState(false);
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
+    const [loginBackView, setLoginBackView] = useState(null);
 
     const leafPortals = {
         superadmin:           { title: 'Super Admin Portal',       icon: Shield   },
@@ -76,9 +77,19 @@ const Login = ({ portal, restrictedAdmin = false }) => {
         }
     };
 
+    const startLogin = (role, backView) => {
+        setSelectedRole(role);
+        setLoginBackView(backView);
+        setCurrentView('login_form');
+    };
+
     const handleBack = () => {
         setError('');
         if (currentView === 'login_form') {
+            if (loginBackView) {
+                setCurrentView(loginBackView);
+                return;
+            }
             if (['superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(selectedRole)) {
                 setCurrentView('admin_sub');
             } else if (['h4_gym_admin', 'fitpass_partner_admin'].includes(selectedRole)) {
@@ -93,6 +104,8 @@ const Login = ({ portal, restrictedAdmin = false }) => {
             }
         } else if (currentView === 'gym_admin_branch_sub') {
             setCurrentView('gym_sub');
+        } else if (currentView === 'h4_admin_sub' || currentView === 'fitpass_admin_sub') {
+            setCurrentView('admin_sub');
         } else if (currentView === 'member_sub') {
             setCurrentView('main');
         } else {
@@ -172,38 +185,80 @@ const Login = ({ portal, restrictedAdmin = false }) => {
                     )}
 
                     <div className="login-title">Admin Portals</div>
-                    <div className="login-subtitle">Choose your admin classification</div>
+                    <div className="login-subtitle">Choose Superadmin, H4, or FitPass.</div>
 
                     <div className="login-portal-list">
                         <PortalCard
                             icon={Shield}
                             label="Super Admin"
                             desc="Overall platform administration and system controls"
-                            onClick={() => { setSelectedRole('superadmin'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('superadmin', 'admin_sub')}
+                        />
+                        <PortalCard
+                            icon={Dumbbell}
+                            label="H4"
+                            desc="H4 overall administration and branch access"
+                            onClick={() => setCurrentView('h4_admin_sub')}
                         />
                         <PortalCard
                             icon={Award}
-                            label="FitPass Admin"
-                            desc="Manage FitPass memberships, plans, and partnerships"
-                            onClick={() => { setSelectedRole('fitpass_admin'); setCurrentView('login_form'); }}
+                            label="FitPass"
+                            desc="FitPass network administration and partner gyms"
+                            onClick={() => setCurrentView('fitpass_admin_sub')}
                         />
+                    </div>
+                </div>
+            )}
+
+            {/* ─── H4 ADMIN SUB ─── */}
+            {currentView === 'h4_admin_sub' && (
+                <div className="login-card login-fade">
+                    <button type="button" className="login-back-btn" onClick={handleBack}>
+                        <ArrowLeft size={14} /> Back
+                    </button>
+
+                    <div className="login-title">H4 Admin</div>
+                    <div className="login-subtitle">Choose your H4 admin access level</div>
+
+                    <div className="login-portal-list">
                         <PortalCard
                             icon={Dumbbell}
                             label="Overall H4 Admin"
                             desc="Manage all H4 branches and H4-wide operations"
-                            onClick={() => { setSelectedRole('h4_admin'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('h4_admin', 'h4_admin_sub')}
                         />
                         <PortalCard
                             icon={Building}
                             label="H4 Branch Admin"
                             desc="Manage operations for your assigned H4 branch only"
-                            onClick={() => { setSelectedRole('h4_branch_admin'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('h4_branch_admin', 'h4_admin_sub')}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* ─── FITPASS ADMIN SUB ─── */}
+            {currentView === 'fitpass_admin_sub' && (
+                <div className="login-card login-fade">
+                    <button type="button" className="login-back-btn" onClick={handleBack}>
+                        <ArrowLeft size={14} /> Back
+                    </button>
+
+                    <div className="login-title">FitPass</div>
+                    <div className="login-subtitle">Choose your FitPass admin access level</div>
+
+                    <div className="login-portal-list">
+                        <PortalCard
+                            icon={Award}
+                            label="FitPass Admin"
+                            desc="Manage FitPass memberships, plans, and partnerships"
+                            onClick={() => startLogin('fitpass_admin', 'fitpass_admin_sub')}
                         />
                         <PortalCard
                             icon={Building}
-                            label="Branch Admin"
-                            desc="Sign in to a partner or H4 branch workspace"
-                            onClick={() => setCurrentView('gym_sub')}
+                            label="Partner Gym Admin"
+                            desc="View FitPass member check-ins and visits at your gym"
+                            onClick={() => startLogin('fitpass_partner_admin', 'fitpass_admin_sub')}
                         />
                     </div>
                 </div>
@@ -233,7 +288,7 @@ const Login = ({ portal, restrictedAdmin = false }) => {
                                 icon={Users}
                                 label="Gym Staff / Trainer"
                                 desc="Coaches, trainers, receptionists, and staff members"
-                                onClick={() => { setSelectedRole('staff'); setCurrentView('login_form'); }}
+                                onClick={() => startLogin('staff', 'gym_sub')}
                             />
                         )}
                     </div>
@@ -257,13 +312,13 @@ const Login = ({ portal, restrictedAdmin = false }) => {
                             icon={Dumbbell}
                             label="H4 Gym Admin"
                             desc="Manage H4 physical branches and operational staff"
-                            onClick={() => { setSelectedRole('h4_gym_admin'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('h4_gym_admin', 'gym_admin_branch_sub')}
                         />
                         <PortalCard
                             icon={Building}
                             label="Fitpass Partner Admin"
                             desc="View FitPass member check-ins and leads at your gym"
-                            onClick={() => { setSelectedRole('fitpass_partner_admin'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('fitpass_partner_admin', 'gym_admin_branch_sub')}
                         />
                     </div>
                 </div>
@@ -286,13 +341,13 @@ const Login = ({ portal, restrictedAdmin = false }) => {
                             icon={Dumbbell}
                             label="H4 Member"
                             desc="Access H4 branches, physical classes, and schedule logs"
-                            onClick={() => { setSelectedRole('h4_member'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('h4_member', 'member_sub')}
                         />
                         <PortalCard
                             icon={User}
                             label="Fitpass Member"
                             desc="Universal passes, partner gym logs, and QR scan tokens"
-                            onClick={() => { setSelectedRole('fitpass_member'); setCurrentView('login_form'); }}
+                            onClick={() => startLogin('fitpass_member', 'member_sub')}
                         />
                     </div>
                 </div>
