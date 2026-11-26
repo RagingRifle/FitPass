@@ -196,11 +196,12 @@ const Classes = () => {
     );
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div className="plans-page fade-in">
+            <div className="plans-page-header">
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}>{isAddonPage ? 'FitPass class add-ons' : 'Studio Class Scheduling'}</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{isAddonPage ? 'Schedule coach-led sessions members can book with FitCoins.' : `${classes.length} class session(s) scheduled across branches`}</p>
+                    <span className="plans-page-kicker">{isAddonPage ? 'FitPass studio add-ons' : 'Studio schedule'}</span>
+                    <h2>{isAddonPage ? 'FitPass class add-ons' : 'Studio Class Scheduling'}</h2>
+                    <p>{isAddonPage ? 'Schedule coach-led sessions members can book with FitCoins.' : `${classes.length} class session(s) scheduled across branches`}</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => { setIsModalOpen(true); setError(''); }}>
                     + {isAddonPage ? 'Schedule add-on' : 'Schedule New Class'}

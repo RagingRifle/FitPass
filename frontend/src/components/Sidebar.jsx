@@ -51,7 +51,7 @@ const NAV_GROUPS = {
                 { name: 'Classes', path: '/classes', icon: Dumbbell },
                 { name: 'FitPass Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
                 { name: 'Assessments', path: '/body-assessments', icon: LineChart },
-                { name: 'Staff', path: '/staff', icon: ShieldCheck },
+                { name: 'Staff & Access', path: '/staff', icon: ShieldCheck },
                 { name: 'Branches', path: '/branches', icon: Building2 },
             ]
         },
@@ -230,7 +230,7 @@ const Sidebar = () => {
                 { name: 'Products & Coins', path: '/products', icon: Banknote },
                 { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
                 { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
-                { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
+                { name: `Staff & Access${suffix}`, path: '/staff', icon: ShieldCheck },
                 { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },
                 { name: 'Branches', path: '/branches', icon: Building2 },
             ];
@@ -309,7 +309,7 @@ const Sidebar = () => {
             { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
             { name: 'Trial referral codes', path: '/h4/trial-codes', icon: Ticket },
             { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
-            { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
+            { name: `Staff & Access${suffix}`, path: '/staff', icon: ShieldCheck },
             ...(!user?.branchId ? [{ name: 'Branches', path: '/branches', icon: Building2 }] : []),
         ];
 

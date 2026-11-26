@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
-import { Pencil, Trash2, QrCode, Loader } from 'lucide-react';
+import { Pencil, Trash2, QrCode, Loader, Eye, MapPin, Phone, Mail, Clock, Globe, User } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const BRANCH_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -31,6 +31,7 @@ const Branches = () => {
     const [membersModal, setMembersModal] = useState(null);
     const [branchMembers, setBranchMembers] = useState([]);
     const [qrBranch, setQrBranch] = useState(null);
+    const [detailsBranch, setDetailsBranch] = useState(null);
 
     const fetchBranches = async () => {
         try {
@@ -151,13 +152,12 @@ const Branches = () => {
     const totalRevenue = branches.reduce((s, b) => s + (b.totalRevenue || 0), 0);
 
     return (
-        <div className="fade-in">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div className="plans-page fade-in">
+            <div className="plans-page-header">
                 <div>
-                    <h2 style={{ marginBottom: '0.25rem' }}> Branch Management</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                        {branches.length} branch(es) · {totalMembers} members · ₹{totalRevenue.toLocaleString()} total revenue
-                    </p>
+                    <span className="plans-page-kicker">{isH4Division ? 'H4 branch operations' : 'Gym locations'}</span>
+                    <h2>Branch Management</h2>
+                    <p>{branches.length} branch(es) · {totalMembers} members · ₹{totalRevenue.toLocaleString()} total revenue</p>
                 </div>
                 {canCreateBranches && <button className="btn btn-primary" onClick={openCreate}>+ Add Branch</button>}
             </div>
@@ -172,63 +172,78 @@ const Branches = () => {
                     </div>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
                     {branches.map(branch => (
-                        <div key={branch._id} className="card" style={{ borderRadius: 'var(--radius-card)', padding: '1.5rem', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                                <div>
-                                    <h3 style={{ margin: '0 0 0.3rem', fontSize: '1.1rem', fontWeight: '800' }}> {branch.name}</h3>
-                                    {branch.managerName && <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}> {branch.managerName}</p>}
+                        <div key={branch._id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', borderRadius: '16px', padding: '1.35rem 1.4rem', border: '1px solid var(--border)', background: '#FFFFFF', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.9rem' }}>
+                                    <div style={{ minWidth: 0 }}>
+                                        <h3 style={{ margin: '0 0 0.25rem', fontSize: '1.12rem', fontWeight: 800, color: 'var(--text-primary)' }}>{branch.name}</h3>
+                                        {branch.managerName && (
+                                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                <User size={13} /> {branch.managerName}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end', flexShrink: 0 }}>
+                                        <span style={{ background: 'rgba(30, 142, 62, 0.08)', color: '#1E8E3E', border: '1px solid rgba(30, 142, 62, 0.2)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '700' }}>
+                                            Active
+                                        </span>
+                                        {!isH4Division && <span style={{
+                                            background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '600'
+                                        }}>
+                                            {branch.fitPassEnabled ? 'FitPass' : 'No FitPass'}
+                                        </span>}
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
-                                    <span style={{ background: 'rgba(30, 142, 62, 0.08)', color: '#1E8E3E', border: '1px solid rgba(30, 142, 62, 0.2)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '700' }}>
-                                        Active
-                                    </span>
-                                    {!isH4Division && <span style={{
-                                        background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', border: '1px solid var(--border)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '600'
-                                    }}>
-                                        {branch.fitPassEnabled ? ' FitPass' : ' No FitPass'}
-                                    </span>}
+
+                                {branch.shortDescription && (
+                                    <p style={{ margin: '0 0 0.85rem', fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                                        {branch.shortDescription}
+                                    </p>
+                                )}
+
+                                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.38rem' }}>
+                                    {branch.address && <span style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}><MapPin size={14} style={{ marginTop: 2, flexShrink: 0, color: '#92700A' }} /> <span>{branch.address}</span></span>}
+                                    {branch.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={14} style={{ flexShrink: 0, color: '#92700A' }} /> <span>{branch.phone}</span></span>}
+                                    {branch.email && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Mail size={14} style={{ flexShrink: 0, color: '#92700A' }} /> <span>{branch.email}</span></span>}
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Clock size={14} style={{ flexShrink: 0, color: '#92700A' }} /> <span>{branch.openingTime || '06:00 AM'} – {branch.closingTime || '10:00 PM'}</span></span>
                                 </div>
                             </div>
 
-                            <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                {branch.address && <span> {branch.address}</span>}
-                                {branch.phone && <span> {branch.phone}</span>}
-                                {branch.email && <span> {branch.email}</span>}
-                                <span>Hours: {branch.openingTime || '06:00 AM'} – {branch.closingTime || '10:00 PM'}</span>
-                                {branch.workingDays?.length > 0 && <span>Open {branch.workingDays.join(', ')}</span>}
-                            </div>
-
-                            {/* Stats */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                                <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '1.25rem', color: 'var(--text-primary)' }}>{branch.memberCount || 0}</div>
-                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Members</div>
+                            <div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem', textAlign: 'center' }}>
+                                        <div style={{ fontWeight: '800', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{branch.memberCount || 0}</div>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Members</div>
+                                    </div>
+                                    <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.7rem', textAlign: 'center' }}>
+                                        <div style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-primary)' }}>₹{(branch.totalRevenue || 0).toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Revenue</div>
+                                    </div>
                                 </div>
-                                <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem', textAlign: 'center' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '1.1rem', color: 'var(--text-primary)' }}>₹{(branch.totalRevenue || 0).toLocaleString()}</div>
-                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Revenue</div>
-                                </div>
-                            </div>
 
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <button onClick={() => viewMembers(branch)} className="btn btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: 'var(--text-primary)' }}>
-                                     Members
-                                </button>
-                                {!isH4Division && branch.fitPassEnabled && (
-                                    <button onClick={() => setQrBranch(branch)} className="btn btn-secondary" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', borderRadius: '8px' }} title="Print Branch QR Code">
-                                        <QrCode size={16} />
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <button onClick={() => viewMembers(branch)} className="btn btn-secondary" style={{ flex: 1, fontSize: '0.8rem', padding: '0.5rem', color: 'var(--text-primary)' }}>
+                                        Members
                                     </button>
-                                )}
-                                {canEditBranches && (
-                                    <>
-                                        <button onClick={() => openEdit(branch)} className="btn" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-secondary)', background: 'transparent' }}>
-                                            <Pencil size={16} />
+                                    <button onClick={() => setDetailsBranch(branch)} className="btn btn-secondary" style={{ padding: '0.5rem 0.7rem', borderRadius: '8px' }} title="View all branch details" aria-label={`View details for ${branch.name}`}>
+                                        <Eye size={16} />
+                                    </button>
+                                    {!isH4Division && branch.fitPassEnabled && (
+                                        <button onClick={() => setQrBranch(branch)} className="btn btn-secondary" style={{ padding: '0.5rem 0.7rem', borderRadius: '8px' }} title="Print Branch QR Code">
+                                            <QrCode size={16} />
                                         </button>
-                                        {!isH4BranchAdmin && <button onClick={() => handleDelete(branch)} className="btn btn-danger" style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem', borderRadius: '8px' }}><Trash2 size={16} /></button>}
-                                    </>
-                                )}
+                                    )}
+                                    {canEditBranches && (
+                                        <>
+                                            <button onClick={() => openEdit(branch)} className="btn btn-secondary" style={{ padding: '0.5rem 0.7rem', borderRadius: '8px' }} title="Edit branch">
+                                                <Pencil size={16} />
+                                            </button>
+                                            {!isH4BranchAdmin && <button onClick={() => handleDelete(branch)} className="btn btn-danger" style={{ padding: '0.5rem 0.7rem', borderRadius: '8px' }} title="Delete branch"><Trash2 size={16} /></button>}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -319,6 +334,90 @@ const Branches = () => {
                         {submitting ? 'Saving...' : editBranch ? ' Update Branch' : ' Create Branch'}
                     </button>
                 </form>
+            </Modal>
+
+            {/* Branch Details Modal (Eye icon) */}
+            <Modal isOpen={!!detailsBranch} onClose={() => setDetailsBranch(null)} title={detailsBranch ? `${detailsBranch.name} — Branch Details` : 'Branch Details'}>
+                {detailsBranch && (
+                    <div style={{ display: 'grid', gap: '1rem', fontSize: '0.88rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', padding: '0.9rem', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                            <div><span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Branch Name</span><strong>{detailsBranch.name}</strong></div>
+                            <div><span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Manager</span><strong>{detailsBranch.managerName || '—'}</strong></div>
+                            <div><span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Phone</span><strong>{detailsBranch.phone || '—'}</strong></div>
+                            <div><span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Email</span><strong>{detailsBranch.email || '—'}</strong></div>
+                            <div><span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Website</span><strong>{detailsBranch.website ? <a href={detailsBranch.website} target="_blank" rel="noreferrer" style={{ color: '#92700A' }}>{detailsBranch.website}</a> : '—'}</strong></div>
+                            <div><span style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Members / Revenue</span><strong>{detailsBranch.memberCount || 0} · ₹{(detailsBranch.totalRevenue || 0).toLocaleString()}</strong></div>
+                        </div>
+
+                        <div>
+                            <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Address</span>
+                            <p style={{ margin: 0 }}>{detailsBranch.address || 'No address provided.'}</p>
+                        </div>
+
+                        {detailsBranch.shortDescription && (
+                            <div>
+                                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Short Description</span>
+                                <p style={{ margin: 0 }}>{detailsBranch.shortDescription}</p>
+                            </div>
+                        )}
+
+                        {detailsBranch.description && (
+                            <div>
+                                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Branch Details</span>
+                                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{detailsBranch.description}</p>
+                            </div>
+                        )}
+
+                        <div>
+                            <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Opening Hours</span>
+                            <div style={{ display: 'grid', gap: '0.35rem', padding: '0.75rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+                                {BRANCH_DAYS.map(day => {
+                                    const entry = detailsBranch.weeklySchedule?.[day];
+                                    const isClosed = entry ? Boolean(entry.closed) : !(detailsBranch.workingDays || []).includes(day);
+                                    const open = entry?.open || detailsBranch.openingTime || '06:00 AM';
+                                    const close = entry?.close || detailsBranch.closingTime || '10:00 PM';
+                                    return (
+                                        <div key={day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                                            <strong>{day}</strong>
+                                            <span style={{ color: isClosed ? '#C62828' : 'var(--text-secondary)' }}>{isClosed ? 'Closed' : `${open} – ${close}`}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {Array.isArray(detailsBranch.scheduleExceptions) && detailsBranch.scheduleExceptions.length > 0 && (
+                            <div>
+                                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Holidays & Special Hours</span>
+                                <div style={{ display: 'grid', gap: '0.35rem' }}>
+                                    {detailsBranch.scheduleExceptions.map((ex, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                            <span><strong>{ex.date || '—'}</strong>{ex.reason ? ` · ${ex.reason}` : ''}</span>
+                                            <span>{ex.closed ? 'Closed' : `${ex.open || '—'} – ${ex.close || '—'}`}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <div>
+                                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Amenities</span>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{detailsBranch.amenities?.length ? detailsBranch.amenities.join(', ') : '—'}</p>
+                            </div>
+                            <div>
+                                <span style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Equipment</span>
+                                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{detailsBranch.equipments?.length ? detailsBranch.equipments.join(', ') : '—'}</p>
+                            </div>
+                        </div>
+
+                        {!isH4Division && (
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                FitPass Check-Ins: <strong>{detailsBranch.fitPassEnabled ? 'Enabled' : 'Disabled'}</strong>
+                            </div>
+                        )}
+                    </div>
+                )}
             </Modal>
 
             {/* Branch Members Modal */}

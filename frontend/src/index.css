@@ -3272,15 +3272,6 @@ body {
     box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
-.page-header::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    inset: 0 auto 0 0;
-    width: 4px;
-    background: linear-gradient(180deg, #F6BA54, #D87924);
-}
-
 .page-header::after {
     content: '';
     position: absolute;
@@ -3875,15 +3866,6 @@ tbody tr:hover {
     border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
     border-radius: 16px;
     background: linear-gradient(112deg, color-mix(in srgb, var(--primary) 10%, var(--bg)), var(--bg) 62%);
-}
-
-.plans-page-header::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    inset: 0 auto 0 0;
-    width: 4px;
-    background: linear-gradient(180deg, #F6BA54, #D87924);
 }
 
 .plans-page-kicker {
