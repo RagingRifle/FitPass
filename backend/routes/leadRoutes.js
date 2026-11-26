@@ -43,19 +43,19 @@ const createLeadSchema = z.object({
 const updateLeadSchema = createLeadSchema.partial();
 
 // Summary — CRM admins only (partners have no pipeline stats)
-router.get('/summary', protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, getLeadSummary);
+router.get('/summary', protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, getLeadSummary);
 
 // GET leads — admins + partner (read-only, scoped by gymId in controller)
 // POST leads — admins only (partners cannot create leads)
 router.route('/')
-  .get(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, getLeads)
-  .post(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, validate({ body: createLeadSchema }), createLead);
+  .get(protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, getLeads)
+  .post(protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, validate({ body: createLeadSchema }), createLead);
 
 // PUT / DELETE — admins only
 router.route('/:id')
-  .put(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, validate({ body: updateLeadSchema }), updateLead)
-  .delete(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, deleteLead);
+  .put(protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, validate({ body: updateLeadSchema }), updateLead)
+  .delete(protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, deleteLead);
 
-router.post('/:id/comments', protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, addLeadComment);
+router.post('/:id/comments', protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin'), tenantFilter, ensureH4SuperadminScope, addLeadComment);
 
 module.exports = router;

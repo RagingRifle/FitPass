@@ -26,12 +26,12 @@ const createPlanSchema = z.object({
 const updatePlanSchema = createPlanSchema.partial();
 
 router.route('/')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'), tenantFilter, getPlans)
-    .post(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, validate({ body: createPlanSchema }), createPlan);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'h4_branch_admin', 'fitpass_admin'), tenantFilter, getPlans)
+    .post(protect, authorize('admin', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), tenantFilter, validate({ body: createPlanSchema }), createPlan);
 
 router.route('/:id')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'fitpass_admin'), tenantFilter, getPlanById)
-    .put(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, validate({ body: updatePlanSchema }), updatePlan)
-    .delete(protect, authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, deletePlan);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'h4_admin', 'h4_branch_admin', 'fitpass_admin'), tenantFilter, getPlanById)
+    .put(protect, authorize('admin', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), tenantFilter, validate({ body: updatePlanSchema }), updatePlan)
+    .delete(protect, authorize('admin', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), tenantFilter, deletePlan);
 
 module.exports = router;

@@ -28,6 +28,10 @@ const getSharedSettingsGymId = (gymIds) => (
     H4_GYM_IDS.find(id => gymIds.includes(id)) || gymIds[0]
 );
 
+const isAssignedBranchAdmin = (user) => user?.role === 'h4_branch_admin'
+    || Boolean(user?.userBranchId)
+    || user?.isH4BranchAdmin === true;
+
 const reminderSettingsSelect = {
     inactivityReminderDays: true,
     inactivityReminderRepeatDaily: true,
@@ -36,7 +40,8 @@ const reminderSettingsSelect = {
 };
 
 const getH4GymId = async (req) => {
-    if (!['h4_admin', 'superadmin'].includes(req.user?.role)) return null;
+    if (!['h4_admin', 'h4_branch_admin', 'superadmin'].includes(req.user?.role)
+        && !isAssignedBranchAdmin(req.user)) return null;
     const gymId = String(
         req.user.role === 'superadmin'
             ? req.tenantFilter?.gymId || req.user.gymId || ''
@@ -48,9 +53,38 @@ const getH4GymId = async (req) => {
     return gym?.name?.toLowerCase().includes('h4') ? gym.id : null;
 };
 
+const getBranchReminderSettings = async (req, gymId) => {
+    const branchId = String(req.user?.userBranchId || req.user?.branchId || '');
+    if (!branchId) return null;
+    const branch = await prisma.branch.findFirst({
+        where: { id: branchId, gymId },
+        select: { id: true, gymId: true, ...reminderSettingsSelect },
+    });
+    if (!branch) return null;
+    const base = await prisma.gymSettings.upsert({
+        where: { gymId },
+        update: {},
+        create: { gymId },
+        select: { gymId: true, ...reminderSettingsSelect },
+    });
+    return {
+        gymId,
+        branchId: branch.id,
+        ...Object.fromEntries(Object.keys(reminderSettingsSelect).map((field) => [
+            field,
+            branch[field] ?? base[field],
+        ])),
+    };
+};
+
 const getReminderSettings = catchAsync(async (req, res) => {
     const gymId = await getH4GymId(req);
     if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to manage reminders.' });
+    if (isAssignedBranchAdmin(req.user)) {
+        const settings = await getBranchReminderSettings(req, gymId);
+        if (!settings) return res.status(403).json({ message: 'Your assigned H4 branch could not be found.' });
+        return res.json(settings);
+    }
     const gymIds = await getH4GymIds();
     if (!gymIds.includes(gymId)) return res.status(403).json({ message: 'The selected H4 gym was not found.' });
 
@@ -68,8 +102,6 @@ const getReminderSettings = catchAsync(async (req, res) => {
 const updateReminderSettings = catchAsync(async (req, res) => {
     const gymId = await getH4GymId(req);
     if (!gymId) return res.status(403).json({ message: 'Select an H4 gym to manage reminders.' });
-    const gymIds = await getH4GymIds();
-    if (!gymIds.includes(gymId)) return res.status(403).json({ message: 'The selected H4 gym was not found.' });
 
     const updates = {};
     for (const field of ['inactivityReminderDays', 'leadReminderDaysBefore']) {
@@ -94,6 +126,20 @@ const updateReminderSettings = catchAsync(async (req, res) => {
         return res.status(400).json({ message: 'At least one reminder setting is required.' });
     }
 
+    if (isAssignedBranchAdmin(req.user)) {
+        const branchId = String(req.user.userBranchId || req.user.branchId || '');
+        if (!branchId) return res.status(403).json({ message: 'An assigned H4 branch is required to manage reminders.' });
+        const saved = await prisma.branch.updateMany({
+            where: { id: branchId, gymId },
+            data: updates,
+        });
+        if (!saved.count) return res.status(403).json({ message: 'Your assigned H4 branch could not be found.' });
+        const settings = await getBranchReminderSettings(req, gymId);
+        return res.json({ message: 'Branch reminder settings saved.', settings });
+    }
+
+    const gymIds = await getH4GymIds();
+    if (!gymIds.includes(gymId)) return res.status(403).json({ message: 'The selected H4 gym was not found.' });
     const sharedGymId = getSharedSettingsGymId(gymIds);
     const settingsRows = await prisma.$transaction(gymIds.map(id => prisma.gymSettings.upsert({
         where: { gymId: id },
@@ -176,16 +222,19 @@ const generateAutomatedAlerts = async (user) => {
         // For simplicity, we'll check members for local gym
 
         // 1. Check for Expiries
+        const memberScope = { gymId: user.gymId, ...(user.branchId && { branchId: user.branchId }) };
         const expiringMembers = await Member.find({
-            gymId: user.gymId,
+            ...memberScope,
             expiryDate: { $lte: threeDaysFromNow, $gt: today },
             status: 'Active'
         });
+        const canReceiveMemberAlerts = ['admin', 'receptionist', 'h4_admin', 'h4_branch_admin'].includes(user.role)
+            || isAssignedBranchAdmin(user);
 
         // Each notification is an independent dedupe-then-create against a
         // different message, so these can run concurrently instead of
         // serially awaiting one member at a time.
-        if (user.role === 'admin' || user.role === 'receptionist') {
+        if (canReceiveMemberAlerts) {
             await Promise.all(expiringMembers.map(member => {
                 const msg = `Member ${member.name}'s plan is expiring on ${member.expiryDate.toLocaleDateString()}`;
                 return createUniqueNotification(user._id, user.gymId, 'expiry', msg);
@@ -193,8 +242,8 @@ const generateAutomatedAlerts = async (user) => {
         }
 
         // 2. Check for Dues (only for staff)
-        if (user.role === 'admin' || user.role === 'receptionist') {
-            const allMembers = await Member.find({ gymId: user.gymId });
+        if (canReceiveMemberAlerts) {
+            const allMembers = await Member.find(memberScope);
             const membersWithDues = allMembers.filter(member => member.planPrice > member.paidAmount);
 
             await Promise.all(membersWithDues.map(member => {

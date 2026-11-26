@@ -50,24 +50,24 @@ const transferMemberSchema = z.object({
 });
 
 router.route('/')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, getMembers)
-    .post(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, validate({ body: createMemberSchema }), createMember);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), tenantFilter, getMembers)
+    .post(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), tenantFilter, validate({ body: createMemberSchema }), createMember);
 
-router.get('/export/csv', protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, exportMembersCSV);
-router.get('/expiring-soon', protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), tenantFilter, getExpiringSoonMembers);
+router.get('/export/csv', protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), tenantFilter, exportMembersCSV);
+router.get('/expiring-soon', protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), tenantFilter, getExpiringSoonMembers);
 
 router.get('/status', protect, tenantFilter, getMembers); // Optional: redundant with query params but good for clarity
 
 router.get('/:id/audit', protect, authorize('superadmin'), getMemberAuditTrail);
 router.get('/:id/division-conversion', protect, authorize('superadmin'), getMemberDivisionConversionOptions);
 router.post('/:id/division-conversion', protect, authorize('superadmin'), convertMemberDivision);
-router.post('/:id/renew', protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: renewMemberSchema }), renewMember);
+router.post('/:id/renew', protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), validate({ body: renewMemberSchema }), renewMember);
 router.put('/:id/transfer', protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: transferMemberSchema }), transferMember);
 
 router.route('/:id')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), getMemberById)
-    .put(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin'), validate({ body: updateMemberSchema }), updateMember)
-    .delete(protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin'), deleteMember);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), getMemberById)
+    .put(protect, authorize('admin', 'receptionist', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), validate({ body: updateMemberSchema }), updateMember)
+    .delete(protect, authorize('admin', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), deleteMember);
 
 module.exports = router;
 

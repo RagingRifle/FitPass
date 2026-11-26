@@ -34,6 +34,22 @@ describe('authorize scoped administrators', () => {
         expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'User role h4_admin is not authorized to access this route' }));
     });
 
+    it('keeps legacy branch-scoped H4 admins limited to explicitly enabled branch routes', () => {
+        const req = { user: { role: 'admin', isH4BranchAdmin: true, branchId: 'branch-1' } };
+        const res = { status: jest.fn().mockReturnThis() };
+        const next = jest.fn();
+
+        authorize('admin')(req, res, next);
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'User role admin is not authorized to access this route' }));
+
+        res.status.mockClear();
+        next.mockClear();
+        authorize('h4_branch_admin')(req, res, next);
+        expect(next).toHaveBeenCalledWith();
+        expect(res.status).not.toHaveBeenCalled();
+    });
+
     it('restricts FitPass partner admins to routes explicitly granted to partners', () => {
         const req = { user: { role: 'partner' } };
         const res = { status: jest.fn().mockReturnThis() };

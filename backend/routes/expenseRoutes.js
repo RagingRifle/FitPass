@@ -26,15 +26,24 @@ const createExpenseSchema = z.object({
 const categorySchema = z.object({ name: z.string().trim().min(1).max(50) });
 
 router.use(protect);
-router.use(authorize('admin', 'h4_admin'));
+router.use(authorize('admin', 'h4_admin', 'h4_branch_admin'));
+
+const denyBranchCategoryChanges = (req, res, next) => {
+    if (req.user.role === 'h4_branch_admin'
+        || req.user.role === 'h4_admin' && req.user.userBranchId
+        || req.user.isH4BranchAdmin) {
+        return res.status(403).json({ message: 'Expense categories are managed at the H4 level.' });
+    }
+    return next();
+};
 
 router.route('/categories')
     .get(tenantFilter, getExpenseCategories)
-    .post(validate({ body: categorySchema }), tenantFilter, createExpenseCategory);
+    .post(denyBranchCategoryChanges, validate({ body: categorySchema }), tenantFilter, createExpenseCategory);
 
 router.route('/categories/:id')
-    .put(validate({ body: categorySchema }), tenantFilter, updateExpenseCategory)
-    .delete(tenantFilter, deleteExpenseCategory);
+    .put(denyBranchCategoryChanges, validate({ body: categorySchema }), tenantFilter, updateExpenseCategory)
+    .delete(denyBranchCategoryChanges, tenantFilter, deleteExpenseCategory);
 
 router.route('/')
     .post(validate({ body: createExpenseSchema }), createExpense)

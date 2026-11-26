@@ -428,6 +428,10 @@ model Branch {
   managerName    String   @default("")
   isActive       Boolean  @default(true)
   fitPassEnabled Boolean  @default(true)
+  inactivityReminderDays Int?
+  inactivityReminderRepeatDaily Boolean?
+  leadReminderDaysBefore Int?
+  leadReminderRepeatDaily Boolean?
   latitude       Float?
   longitude      Float?
   createdAt      DateTime @default(now())

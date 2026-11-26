@@ -8,7 +8,8 @@ const { logAudit } = require('../utils/auditLogger');
 const { z } = require('zod');
 
 const isH4BranchAdmin = (user) => user.role === 'h4_branch_admin'
-    || (user.role === 'h4_admin' && Boolean(user.userBranchId));
+    || (user.role === 'h4_admin' && Boolean(user.userBranchId))
+    || (user.role === 'admin' && Boolean(user.isH4BranchAdmin));
 
 const branchDetailsSchema = z.object({
     name: z.string().min(1).max(160).optional(),
@@ -184,12 +185,11 @@ const deleteBranch = catchAsync(async (req, res, next) => {
 // @route   GET /api/branches/:id/members
 const getBranchMembers = catchAsync(async (req, res, next) => {
     try {
-        const isHQAdmin = ['superadmin', 'fitpass_admin', 'partner', 'admin'].includes(req.user.role)
-            || (req.user.role === 'h4_admin' && !req.user.userBranchId);
-        if (!isHQAdmin && isH4BranchAdmin(req.user) && String(req.user.branchId) !== String(req.params.id)) {
+        const branchScopedAdmin = isH4BranchAdmin(req.user);
+        if (branchScopedAdmin && String(req.user.branchId) !== String(req.params.id)) {
             return res.status(403).json({ message: 'Access denied to this branch\'s members' });
         }
-        const filter = { branchId: req.params.id };
+        const filter = { branchId: branchScopedAdmin ? req.user.branchId : req.params.id };
         if (req.user.gymId && req.user.gymId !== 'SYSTEM') {
             filter.gymId = req.user.gymId;
         }

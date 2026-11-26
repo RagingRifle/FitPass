@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Bell, CalendarClock, Check, Clock3, Save, UsersRound } from 'lucide-react';
 import API from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 const INITIAL_SETTINGS = {
     leadReminderDaysBefore: 1,
@@ -69,6 +70,10 @@ const NumberSetting = ({ label, value, onChange, min = 1 }) => (
 );
 
 export default function Reminders() {
+    const { user } = useContext(AuthContext);
+    const isBranchAdmin = user?.role === 'h4_branch_admin'
+        || user?.role === 'h4_admin' && Boolean(user?.branchId)
+        || user?.role === 'admin' && user?.isH4BranchAdmin === true;
     const [settings, setSettings] = useState(INITIAL_SETTINGS);
     const [loading, setLoading] = useState(true);
     const [loaded, setLoaded] = useState(false);
@@ -123,7 +128,7 @@ export default function Reminders() {
                     <p style={{ margin: '0 0 5px', color: '#92700A', fontSize: 11, fontWeight: 900, letterSpacing: '0.14em' }}>H4 · DAILY RHYTHM</p>
                     <h2 style={{ margin: 0 }}>Reminders</h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '7px 0 0', maxWidth: 620 }}>
-                        Keep follow-ups moving and check in when a member’s routine goes quiet. These settings apply across H4 branches.
+                        Keep follow-ups moving and check in when a member’s routine goes quiet. {isBranchAdmin ? 'These settings apply only to your assigned branch.' : 'Branch-specific settings take precedence over these H4 defaults.'}
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 11px', borderRadius: 99, background: '#171713', color: '#FEDF1E', fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>
@@ -140,7 +145,7 @@ export default function Reminders() {
                         icon={<CalendarClock size={20} />}
                         eyebrow="LEAD FOLLOW-UP"
                         title="Bring the next conversation forward"
-                        description="Alert the H4 super admin and assigned staff before a lead’s follow-up date."
+                        description="Alert the H4 administrators and assigned branch staff before a lead’s follow-up date."
                     >
                         <NumberSetting
                             label="Days before follow-up"
@@ -159,7 +164,7 @@ export default function Reminders() {
                         icon={<UsersRound size={20} />}
                         eyebrow="MEMBER RE-ENGAGEMENT"
                         title="Notice when visits pause"
-                        description="Alert H4 admins and the member in their mobile app inbox after a stretch without a gym check-in."
+                        description="Alert the relevant branch admins and the member after a stretch without a gym check-in."
                     >
                         <NumberSetting
                             label="No-visit threshold"

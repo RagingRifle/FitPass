@@ -30,8 +30,29 @@ const ProtectedRoute = ({ children, roles }) => {
 
     const isH4BranchAdmin = user.role === 'h4_branch_admin'
         || user.role === 'h4_admin' && user.branchId
-        || user.role === 'admin' && isH4Gym && user.branchId;
-    const h4BranchPaths = ['/staff', '/reports'];
+        || user.role === 'admin' && (isH4Gym || user.isH4BranchAdmin === true) && user.branchId;
+    const h4BranchPaths = [
+        '/dashboard',
+        '/members',
+        '/leads',
+        '/plans',
+        '/classes',
+        '/payments',
+        '/sales',
+        '/expenses',
+        '/dues',
+        '/attendance',
+        '/reports',
+        '/freeze',
+        '/analytics',
+        '/body-assessments',
+        '/trainer-attendance',
+        '/payroll',
+        '/workout-plans',
+        '/diet-plans',
+        '/reminders',
+        '/staff',
+    ];
     if (isH4BranchAdmin && !h4BranchPaths.includes(window.location.pathname)) {
         return <Navigate to="/staff" replace />;
     }
@@ -45,7 +66,8 @@ const ProtectedRoute = ({ children, roles }) => {
     }
 
     const roleAllowed = roles?.includes(user.role)
-        || (user.role === 'h4_branch_admin' && roles?.includes('h4_admin'));
+        || (user.role === 'h4_branch_admin' && roles?.includes('h4_admin'))
+        || (isH4BranchAdmin && roles?.includes('h4_admin'));
     if (roles && user.role !== 'superadmin' && !roleAllowed && !isPartnerAdmin) {
         const defaultPath = user.role === 'fitpass_admin' ? '/superadmin/dashboard' :
             isH4BranchAdmin ? '/staff' :

@@ -6,20 +6,22 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.get('/public', getPublicBranches);
 router.use(protect);
 const denyBranchScopedManagement = (req, res, next) => {
-    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && req.user.userBranchId) {
+    if (req.user.role === 'h4_branch_admin'
+        || req.user.role === 'h4_admin' && req.user.userBranchId
+        || req.user.role === 'admin' && req.user.isH4BranchAdmin) {
         res.status(403);
         return next(new Error('Branch admins cannot manage the H4 branch directory.'));
     }
     return next();
 };
 router.route('/')
-    .get(authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), getBranches)
+    .get(authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), getBranches)
     .post(authorize('admin', 'fitpass_admin', 'h4_admin', 'superadmin'), denyBranchScopedManagement, createBranch);
 
 router.route('/:id')
     .put(authorize('admin', 'fitpass_admin', 'h4_admin', 'superadmin'), denyBranchScopedManagement, updateBranch)
     .delete(authorize('admin', 'fitpass_admin', 'h4_admin', 'superadmin'), denyBranchScopedManagement, deleteBranch);
 
-router.get('/:id/members', authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin'), getBranchMembers);
+router.get('/:id/members', authorize('admin', 'receptionist', 'trainer', 'superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'), getBranchMembers);
 
 module.exports = router;

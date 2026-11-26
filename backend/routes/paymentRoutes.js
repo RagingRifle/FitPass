@@ -25,14 +25,14 @@ const addPaymentSchema = z.object({
 });
 
 router.route('/')
-    .get(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getPayments)
-    .post(protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin'), validate({ body: addPaymentSchema }), addPayment);
+    .get(protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getPayments)
+    .post(protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), validate({ body: addPaymentSchema }), addPayment);
 
 router.post('/razorpay/order', protect, createRazorpayOrder);
 router.post('/razorpay/verify', protect, verifyRazorpayPayment);
-router.get('/sales-report', protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getSalesReport);
+router.get('/sales-report', protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getSalesReport);
 
-router.get('/member/:memberId', protect, authorize('admin', 'receptionist', 'h4_admin', 'superadmin', 'fitpass_admin'), getMemberPayments);
+router.get('/member/:memberId', protect, authorize('admin', 'receptionist', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), getMemberPayments);
 
 module.exports = router;
 

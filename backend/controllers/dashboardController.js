@@ -157,6 +157,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
 
         const [
             membersForStats,
+            attendanceInRange,
             todayAttendanceCount,
             todaySessionsCount,
             revenueData,
@@ -168,7 +169,8 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
             traditionalCheckins,
             sessionCheckins
         ] = await Promise.all([
-            Member.find(queryFilter).select('name email phone status expiryDate createdAt updatedAt').lean(),
+            Member.find(queryFilter).select('name email phone status expiryDate joinDate createdAt updatedAt').lean(),
+            Attendance.countDocuments({ ...queryFilter, date: rangeMongo }),
             Attendance.countDocuments({
                 ...queryFilter,
                 date: {
@@ -245,6 +247,18 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
         const monthlyRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
         const monthlyExpenses = expenseData.length > 0 ? expenseData[0].total : 0;
         const monthlyProfit = monthlyRevenue - monthlyExpenses;
+        const newMembersInRange = membersForStats.filter(member => {
+            const joined = member.joinDate ? new Date(member.joinDate) : null;
+            return joined && joined >= rangeStart && (!rangeEnd || joined <= rangeEnd);
+        }).length;
+        const periodSummary = {
+            totalRevenue: monthlyRevenue,
+            totalExpenses: monthlyExpenses,
+            netProfit: monthlyProfit,
+            totalMembers: membersForStats.length,
+            attendanceInRange,
+            newMembersInRange
+        };
 
         const inactiveMembersCount = await Member.countDocuments({
             ...queryFilter,
@@ -296,7 +310,7 @@ const getDashboardStats = catchAsync(async (req, res, next) => {
             totalMembers, activeMembers, expiredMembers, expiringSoonCount,
             newMembersThisMonth, todayAttendanceCount, todaySessionsCount, monthlyRevenue, monthlyExpenses,
             monthlyProfit, revenueTrend, planBreakdown, methodBreakdown, inactiveMembersCount,
-            recentCheckins
+            recentCheckins, periodSummary
         });
 });
 

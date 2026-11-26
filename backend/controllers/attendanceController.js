@@ -11,6 +11,9 @@ const {
     verifyDailyBranchDutyQR 
 } = require('../utils/totpHelper');
 const { H4_GYM_IDS } = require('../config/constants');
+const isAssignedH4BranchAdmin = (user) => user?.role === 'h4_branch_admin'
+    || user?.role === 'h4_admin' && Boolean(user?.userBranchId)
+    || user?.isH4BranchAdmin;
 
 // @desc    Mark attendance for a member (by staff scanning member QR or PIN entry)
 // @route   POST /api/attendance
@@ -56,6 +59,11 @@ const markAttendance = catchAsync(async (req, res, next) => {
     if (!member) {
         res.status(404);
         throw new Error('Member profile not found. Please verify member ID or phone.');
+    }
+    if (isAssignedH4BranchAdmin(req.user)
+        && (String(member.gymId || '') !== String(req.user.gymId || '')
+            || String(member.branchId || '') !== String(req.user.branchId || ''))) {
+        return res.status(404).json({ success: false, message: 'Member not found in your branch.' });
     }
 
     // 2. Resolve Plan to check if session-based or unlimited
@@ -231,8 +239,13 @@ const staffClockIn = catchAsync(async (req, res, next) => {
     const staffId = req.user._id || req.user.id;
     const staffName = req.user.name || 'Staff Member';
 
-    const targetGymId = scannedGymId || req.user.gymId;
-    const targetBranchId = scannedBranchId || req.user.branchId || 'main';
+    if (isAssignedH4BranchAdmin(req.user)
+        && ((scannedGymId && String(scannedGymId) !== String(req.user.gymId))
+            || (scannedBranchId && String(scannedBranchId) !== String(req.user.branchId)))) {
+        return res.status(403).json({ success: false, message: 'You can only clock in for your assigned branch.' });
+    }
+    const targetGymId = isAssignedH4BranchAdmin(req.user) ? req.user.gymId : scannedGymId || req.user.gymId;
+    const targetBranchId = isAssignedH4BranchAdmin(req.user) ? req.user.branchId : scannedBranchId || req.user.branchId || 'main';
 
     // Verify token
     if (dutyToken) {
@@ -313,8 +326,10 @@ const getStaffTodayAttendance = catchAsync(async (req, res, next) => {
 
     // Populate trainer names
     const trainerIds = records.map(r => r.trainerId);
+    const userQuery = { id: { in: trainerIds } };
+    if (isAssignedH4BranchAdmin(req.user)) Object.assign(userQuery, { gymId: req.user.gymId, branchId: req.user.branchId });
     const users = await prisma.user.findMany({
-        where: { id: { in: trainerIds } },
+        where: userQuery,
         select: { id: true, name: true, role: true, email: true, phone: true }
     });
     const userMap = new Map(users.map(u => [u.id, u]));

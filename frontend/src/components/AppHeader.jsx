@@ -34,6 +34,13 @@ const AppHeader = () => {
     const { toggleMobile } = useSidebar();
     const location = useLocation();
     const navigate = useNavigate();
+    const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
+    const userGymId = user?.gymId?._id || user?.gymId || '';
+    const isH4Gym = normalizedGym === 'H4'
+        || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(userGymId));
+    const isH4BranchAdmin = user?.role === 'h4_branch_admin'
+        || user?.role === 'h4_admin' && Boolean(user?.branchId)
+        || user?.role === 'admin' && (isH4Gym || user?.isH4BranchAdmin === true) && Boolean(user?.branchId);
 
     // Gym/Branch list for context selectors
     const [gyms, setGyms] = useState([]);
@@ -66,7 +73,7 @@ const AppHeader = () => {
                 } catch (err) {
                     console.error('Failed to fetch gyms for selector:', err);
                 }
-            } else if (['h4_admin', 'h4_branch_admin'].includes(user?.role)) {
+            } else if (['h4_admin', 'h4_branch_admin'].includes(user?.role) || isH4BranchAdmin) {
                 try {
                     const { data: branches } = await API.get('/branches');
                     setGyms(Array.isArray(branches) ? branches : []);
@@ -76,10 +83,8 @@ const AppHeader = () => {
             }
         };
         fetchGyms();
-    }, [user, activeDivision, selectedGymId]);
+    }, [user, activeDivision, selectedGymId, changeSelectedGym, isH4BranchAdmin]);
 
-    const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
-    const userGymId = user?.gymId?._id || user?.gymId || '';
     const isH4User = ['h4_admin', 'h4_branch_admin'].includes(user?.role) || normalizedGym === 'H4' || userGymId === '05a08fdf-7427-48a5-8b25-e18d5a5668cd' || (activeDivision === 'h4' && !['partner'].includes(user?.role));
 
     // Search state
@@ -145,7 +150,9 @@ const AppHeader = () => {
                 const { data } = await API.get('/notifications');
                 setNotifications(data.slice(0, 8));
                 setUnreadCount(data.filter(n => !n.read).length);
-            } catch { }
+            } catch (error) {
+                console.error('Failed to fetch notifications:', error);
+            }
         };
         fetchNotifs();
     }, []);
@@ -175,7 +182,9 @@ const AppHeader = () => {
             await API.put(`/notifications/${id}`);
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch { }
+        } catch (error) {
+            console.error('Failed to mark notification as read:', error);
+        }
     };
 
     return (
@@ -208,7 +217,7 @@ const AppHeader = () => {
                                 fontSize: '0.875rem',
                                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
                             }}>
-                                {gyms.find(b => (b._id || b.id) === user.branchId)?.name || 'H4 Branch'}
+                                {gyms.find(b => String(b._id || b.id) === String(user.branchId))?.name || user.branchName || 'Assigned branch'}
                             </div>
                         ) : (
                             <div className="header-context-picker header-context-picker--division" style={{

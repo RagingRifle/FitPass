@@ -172,9 +172,15 @@ const getAssessments = catchAsync(async (req, res, next) => {
         const memberIds = [...new Set(assessments.map(a => a.memberId).filter(Boolean))];
         const trainerIds = [...new Set(assessments.map(a => a.trainerId).filter(Boolean))];
 
+        const memberQuery = { _id: { $in: memberIds } };
+        const trainerQuery = { _id: { $in: trainerIds } };
+        if (req.user.branchId) {
+            Object.assign(memberQuery, { gymId: req.user.gymId, branchId: req.user.branchId });
+            Object.assign(trainerQuery, { gymId: req.user.gymId, branchId: req.user.branchId });
+        }
         const [members, trainers] = await Promise.all([
-            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id registrationNumber name phone email').lean() : [],
-            trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
+            memberIds.length > 0 ? Member.find(memberQuery).select('id registrationNumber name phone email').lean() : [],
+            trainerIds.length > 0 ? User.find(trainerQuery).select('id name email role phone').lean() : []
         ]);
 
         const memberMap = new Map((members || []).map(m => [m._id ? m._id.toString() : m.id, m]));
@@ -219,7 +225,10 @@ const getAssessmentById = catchAsync(async (req, res, next) => {
                 memberQuery.branchId = req.user.branchId;
             }
             const memberObj = await Member.findOne(memberQuery);
-            const trainerObj = assessment.trainerId ? await User.findOne({ _id: assessment.trainerId }).select('-password') : null;
+            const trainerObj = assessment.trainerId ? await User.findOne({
+                _id: assessment.trainerId,
+                ...(req.user.branchId ? { gymId: req.user.gymId, branchId: req.user.branchId } : {})
+            }).select('-password') : null;
 
             res.json({
                 ...assessment,
@@ -264,7 +273,11 @@ const updateAssessment = catchAsync(async (req, res, next) => {
                 if (heightCm !== undefined) {
                     const nextHeight = Number(heightCm);
                     if (!Number.isFinite(nextHeight) || nextHeight < 80 || nextHeight > 250) return res.status(400).json({ success: false, message: 'Height must be between 80 and 250 centimeters.' });
-                    const member = await Member.findOne({ _id: assessment.memberId, gymId: assessment.gymId });
+                    const member = await Member.findOne({
+                        _id: assessment.memberId,
+                        gymId: assessment.gymId,
+                        ...(req.user.branchId ? { branchId: req.user.branchId } : {})
+                    });
                     if (!member) return res.status(404).json({ success: false, message: 'Member not found.' });
                     member.heightCm = nextHeight;
                     await member.save();

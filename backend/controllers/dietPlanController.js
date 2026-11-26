@@ -6,14 +6,37 @@ const User = require('../models/User');
 const { H4_GYM_IDS } = require('../config/constants');
 const { trainerCanManage } = require('../utils/trainerAccess');
 
+const isAssignedBranchAdmin = (req) => req.user?.role === 'h4_branch_admin'
+    || req.user?.role === 'h4_admin' && Boolean(req.user?.userBranchId)
+    || req.user?.isH4BranchAdmin;
 const getGymScope = (req) => {
     const gymId = String(req.user?.gymId || '');
     const isH4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user?.role) || H4_GYM_IDS.includes(gymId);
-    const gymIds = isH4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId];
+    const gymIds = isAssignedBranchAdmin(req)
+        ? [gymId].filter(Boolean)
+        : isH4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId];
     return { gymId, gymIds, isH4Scope };
 };
+const isBranchTrainer = async (req, trainerId, gymId) => {
+    if (!isAssignedBranchAdmin(req) || !trainerId) return true;
+    const trainer = await User.findOne({
+        _id: trainerId,
+        gymId,
+        branchId: req.user.branchId,
+        role: 'trainer'
+    }).select('_id').lean();
+    return Boolean(trainer);
+};
+const parseMemberIds = (plan) => {
+    try {
+        const ids = plan.memberIds ? JSON.parse(plan.memberIds) : [];
+        return [...new Set([plan.memberId, ...(Array.isArray(ids) ? ids : [])].filter(Boolean).map(String))];
+    } catch {
+        return plan.memberId ? [String(plan.memberId)] : [];
+    }
+};
 
-const loadMembersForAssignment = async (memberIds, gymIds, branchId, existingIds = []) => {
+const loadMembersForAssignment = async (memberIds, gymIds, branchId, existingIds = [], requireBranch = false) => {
     // Use findById for each member here. Apart from avoiding adapter edge cases
     // with Mongo-style `$in`, this lets us distinguish a legacy assignment
     // from a newly added member and validate each one against the active scope.
@@ -22,8 +45,8 @@ const loadMembersForAssignment = async (memberIds, gymIds, branchId, existingIds
     const found = records.filter(Boolean);
     const valid = found.filter((member) => {
         const gymMatches = gymIds.includes(String(member.gymId || ''));
-        const branchMatches = !branchId || !member.branchId || String(member.branchId) === String(branchId);
-        return (gymMatches && branchMatches) || existing.has(String(member.id || member._id));
+        const branchMatches = !branchId || (requireBranch ? String(member.branchId || '') === String(branchId) : !member.branchId || String(member.branchId) === String(branchId));
+        return (gymMatches && branchMatches) || (!requireBranch && existing.has(String(member.id || member._id)));
     });
     return { found, valid };
 };
@@ -44,7 +67,11 @@ const createPlan = catchAsync(async (req, res, next) => {
         }
 
         const { gymId, gymIds } = getGymScope(req);
-        const { found: assignedMembers, valid } = await loadMembersForAssignment(memberIds, gymIds, req.user.branchId);
+        const trainerId = req.user.role === 'trainer' ? req.user.id : (req.body.trainerId || null);
+        if (!(await isBranchTrainer(req, trainerId, gymId))) {
+            return res.status(404).json({ success: false, message: 'Trainer not found in your branch.' });
+        }
+        const { found: assignedMembers, valid } = await loadMembersForAssignment(memberIds, gymIds, req.user.branchId, [], isAssignedBranchAdmin(req));
         if (valid.length !== memberIds.length) {
             return res.status(404).json({ success: false, message: 'One or more members were not found in this gym' });
         }
@@ -53,7 +80,7 @@ const createPlan = catchAsync(async (req, res, next) => {
         const plan = await DietPlan.create({
             memberId: memberIds[0],
             memberIds: JSON.stringify(memberIds),
-            trainerId: req.user.role === 'trainer' ? req.user.id : (req.body.trainerId || null),
+            trainerId,
             name,
             startDate: startDate ? new Date(startDate) : null,
             endDate: endDate ? new Date(endDate) : null,
@@ -79,7 +106,9 @@ const getPlans = catchAsync(async (req, res, next) => {
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
         let query = { gymId: isH4Scope ? { $in: gymIds } : gymId };
 
-        if (req.query.branchId) {
+        if (isAssignedBranchAdmin(req)) {
+            query.branchId = req.user.branchId;
+        } else if (req.query.branchId) {
             query.branchId = req.query.branchId;
         }
 
@@ -108,15 +137,16 @@ const getPlans = catchAsync(async (req, res, next) => {
             .lean();
 
         // Batched multi-entity lookup (Trainer + Member)
-        const memberIds = [...new Set(plans.flatMap((p) => {
-            try { return [...(p.memberIds ? JSON.parse(p.memberIds) : []), p.memberId].filter(Boolean).map(String); }
-            catch (error) { return [p.memberId].filter(Boolean).map(String); }
-        }))];
+        const memberIds = [...new Set(plans.flatMap(parseMemberIds))];
         const trainerIds = [...new Set(plans.map(p => p.trainerId).filter(Boolean))];
 
+        const memberQuery = { _id: { $in: memberIds } };
+        if (isAssignedBranchAdmin(req)) Object.assign(memberQuery, { gymId: { $in: gymIds }, branchId: req.user.branchId });
+        const trainerQuery = { _id: { $in: trainerIds } };
+        if (isAssignedBranchAdmin(req)) Object.assign(trainerQuery, { gymId: { $in: gymIds }, branchId: req.user.branchId, role: 'trainer' });
         const [members, trainers] = await Promise.all([
-            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id name phone email').lean() : [],
-            trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
+            memberIds.length > 0 ? Member.find(memberQuery).select('id name phone email').lean() : [],
+            trainerIds.length > 0 ? User.find(trainerQuery).select('id name email role phone').lean() : []
         ]);
 
         const memberMap = new Map();
@@ -125,7 +155,10 @@ const getPlans = catchAsync(async (req, res, next) => {
         });
         const trainerMap = new Map((trainers || []).map(t => [t._id ? t._id.toString() : t.id, t]));
 
-        const formatted = plans.map(p => {
+        const visiblePlans = isAssignedBranchAdmin(req)
+            ? plans.filter((plan) => parseMemberIds(plan).every((id) => memberMap.has(id)))
+            : plans;
+        const formatted = visiblePlans.map(p => {
             let parsedMeals = p.meals;
             if (p.meals && typeof p.meals === 'string') {
                 try {
@@ -176,13 +209,27 @@ const getPlans = catchAsync(async (req, res, next) => {
 const getPlanById = catchAsync(async (req, res, next) => {
     try {
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId, ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
+        const plan = await DietPlan.findOne({
+            _id: req.params.id,
+            gymId: isH4Scope ? { $in: gymIds } : gymId,
+            ...(isAssignedBranchAdmin(req) ? { branchId: req.user.branchId } : {}),
+            ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {})
+        });
 
         if (plan) {
-            let assignedMemberIds = [plan.memberId].filter(Boolean).map(String);
-            try { if (plan.memberIds) assignedMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
+            const assignedMemberIds = parseMemberIds(plan);
             if (req.user.role === 'member' && !assignedMemberIds.includes(String(req.user.memberId))) {
                 return res.status(403).json({ success: false, message: 'Not authorized to view this plan' });
+            }
+            if (isAssignedBranchAdmin(req)) {
+                const scopedMembers = await Member.find({
+                    _id: { $in: assignedMemberIds },
+                    gymId: { $in: gymIds },
+                    branchId: req.user.branchId
+                }).select('_id').lean();
+                if (scopedMembers.length !== assignedMemberIds.length) {
+                    return res.status(404).json({ success: false, message: 'Diet plan not found in your branch' });
+                }
             }
 
             if (plan.meals && typeof plan.meals === 'string') {
@@ -191,8 +238,14 @@ const getPlanById = catchAsync(async (req, res, next) => {
                 } catch (e) {}
             }
 
-            const memberObj = await Member.findOne({ _id: plan.memberId });
-            const trainerObj = plan.trainerId ? await User.findOne({ _id: plan.trainerId }).select('-password') : null;
+            const memberObj = await Member.findOne({
+                _id: plan.memberId,
+                ...(isAssignedBranchAdmin(req) ? { gymId: { $in: gymIds }, branchId: req.user.branchId } : {})
+            });
+            const trainerObj = plan.trainerId ? await User.findOne({
+                _id: plan.trainerId,
+                ...(isAssignedBranchAdmin(req) ? { gymId: { $in: gymIds }, branchId: req.user.branchId, role: 'trainer' } : {})
+            }).select('-password') : null;
 
             res.json({
                 ...plan,
@@ -213,19 +266,22 @@ const updatePlan = catchAsync(async (req, res, next) => {
         const { memberId, name, startDate, endDate, meals, trainerId } = req.body;
 
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId, ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
+        const plan = await DietPlan.findOne({
+            _id: req.params.id,
+            gymId: isH4Scope ? { $in: gymIds } : gymId,
+            ...(isAssignedBranchAdmin(req) ? { branchId: req.user.branchId } : {}),
+            ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {})
+        });
 
         if (plan) {
-            let priorMemberIds = [plan.memberId].filter(Boolean).map(String);
-            try { if (plan.memberIds) priorMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
+            const priorMemberIds = parseMemberIds(plan);
             if (memberId !== undefined || req.body.memberIds !== undefined) {
                 const nextMemberIds = [...new Set((Array.isArray(req.body.memberIds) ? req.body.memberIds : [memberId]).filter(Boolean).map(String))];
                 if (!nextMemberIds.length) return res.status(400).json({ success: false, message: 'At least one member must be assigned' });
                 if (!(await trainerCanManage(req, nextMemberIds, 'assignDiet'))) return res.status(403).json({ success: false, message: 'You need diet access and an active assignment to every selected member.' });
-                let currentMemberIds = [plan.memberId].filter(Boolean).map(String);
-                try { if (plan.memberIds) currentMemberIds = JSON.parse(plan.memberIds).map(String); } catch (error) {}
+                const currentMemberIds = parseMemberIds(plan);
                 const { found: assignedMembers, valid } = await loadMembersForAssignment(
-                    nextMemberIds, gymIds, req.user.branchId, currentMemberIds
+                    nextMemberIds, gymIds, req.user.branchId, currentMemberIds, isAssignedBranchAdmin(req)
                 );
                 if (valid.length !== nextMemberIds.length) return res.status(404).json({ success: false, message: 'One or more newly added members are outside this gym or branch' });
                 plan.memberId = nextMemberIds[0];
@@ -240,6 +296,9 @@ const updatePlan = catchAsync(async (req, res, next) => {
                 plan.meals = typeof meals === 'string' ? meals : JSON.stringify(meals);
             }
             if (trainerId !== undefined) plan.trainerId = trainerId || null;
+            if (trainerId !== undefined && !(await isBranchTrainer(req, trainerId, String(req.user.gymId || '')))) {
+                return res.status(404).json({ success: false, message: 'Trainer not found in your branch.' });
+            }
 
             const updatedPlan = await plan.save();
             let assignedIds = [...new Set([...priorMemberIds, plan.memberId].filter(Boolean))];
@@ -264,11 +323,25 @@ const updatePlan = catchAsync(async (req, res, next) => {
 const deletePlan = catchAsync(async (req, res, next) => {
     try {
         const { gymId, gymIds, isH4Scope } = getGymScope(req);
-        const plan = await DietPlan.findOne({ _id: req.params.id, gymId: isH4Scope ? { $in: gymIds } : gymId, ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
+        const plan = await DietPlan.findOne({
+            _id: req.params.id,
+            gymId: isH4Scope ? { $in: gymIds } : gymId,
+            ...(isAssignedBranchAdmin(req) ? { branchId: req.user.branchId } : {}),
+            ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {})
+        });
 
         if (plan) {
-            let assignedIds = [plan.memberId];
-            try { if (plan.memberIds) assignedIds = JSON.parse(plan.memberIds); } catch (error) {}
+            const assignedIds = parseMemberIds(plan);
+            if (isAssignedBranchAdmin(req)) {
+                const scopedMembers = await Member.find({
+                    _id: { $in: assignedIds },
+                    gymId: { $in: gymIds },
+                    branchId: req.user.branchId
+                }).select('_id').lean();
+                if (scopedMembers.length !== assignedIds.length) {
+                    return res.status(404).json({ success: false, message: 'Diet plan not found in your branch' });
+                }
+            }
             const planName = plan.name;
             const gymId = plan.gymId;
             await plan.deleteOne();

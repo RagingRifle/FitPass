@@ -6,7 +6,9 @@ const { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteP
 
 router.use(protect);
 const denyH4BranchAdmin = (req, res, next) => {
-    if (req.user.role === 'h4_branch_admin' || req.user.role === 'h4_admin' && req.user.branchId) {
+    if (req.user.role === 'h4_branch_admin'
+        || req.user.role === 'h4_admin' && req.user.branchId
+        || req.user.isH4BranchAdmin) {
         res.status(403);
         return next(new Error('H4-wide products and coin settings are available to overall administrators only.'));
     }

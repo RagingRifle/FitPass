@@ -142,7 +142,11 @@ const getTrainerAttendance = catchAsync(async (req, res, next) => {
             query.trainerId = req.query.trainerId;
         }
 
-        if (req.query.branchId) query.branchId = req.query.branchId;
+        if ((req.user.role === 'h4_branch_admin' || req.user.userBranchId || req.user.isH4BranchAdmin) && req.user.branchId) {
+            query.branchId = req.user.branchId;
+        } else if (req.query.branchId) {
+            query.branchId = req.query.branchId;
+        }
         if (req.query.from || req.query.to) {
             const timezoneOffset = Number(req.query.timezoneOffset) || 0;
             const localDayStart = value => {
@@ -168,8 +172,10 @@ const getTrainerAttendance = catchAsync(async (req, res, next) => {
 
         // Batched Trainer lookup ONLY
         const trainerIds = [...new Set(logs.map(l => l.trainerId).filter(Boolean))];
+        const trainerQuery = { _id: { $in: trainerIds } };
+        if (req.user.branchId) Object.assign(trainerQuery, { gymId: req.user.gymId, branchId: req.user.branchId });
         const trainers = trainerIds.length > 0
-            ? await User.find({ _id: { $in: trainerIds } }).select('id name email role phone shiftsPerDay').lean()
+            ? await User.find(trainerQuery).select('id name email role phone shiftsPerDay').lean()
             : [];
 
         const trainerMap = new Map((trainers || []).map(t => [t._id ? t._id.toString() : t.id, t]));
@@ -228,7 +234,9 @@ const getTrainerLeaveRequests = catchAsync(async (req, res) => {
     if (req.query.status && ['Pending', 'Approved', 'Rejected'].includes(req.query.status)) where.status = req.query.status;
     const requests = await prisma.trainerLeaveRequest.findMany({ where, orderBy: { createdAt: 'desc' }, take: 200 });
     const trainerIds = [...new Set(requests.map(request => request.trainerId))];
-    const trainers = trainerIds.length ? await User.find({ _id: { $in: trainerIds } }).select('id name email').lean() : [];
+    const trainerQuery = { _id: { $in: trainerIds } };
+    if (req.user.branchId) Object.assign(trainerQuery, { gymId: req.user.gymId, branchId: req.user.branchId });
+    const trainers = trainerIds.length ? await User.find(trainerQuery).select('id name email').lean() : [];
     const trainerMap = new Map(trainers.map(trainer => [String(trainer._id || trainer.id), trainer]));
     res.json(requests.map(request => ({ ...request, trainer: trainerMap.get(String(request.trainerId)) || null })));
 });

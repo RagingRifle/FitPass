@@ -7,6 +7,22 @@ const { verifyMemberPass, verifyBackupPIN } = require('../utils/totpHelper');
 const { H4_GYM_IDS } = require('../config/constants');
 
 const isH4GymId = (gymId) => H4_GYM_IDS.includes(String(gymId || ''));
+const isAssignedH4BranchAdmin = (user) => user?.role === 'h4_branch_admin'
+    || user?.role === 'h4_admin' && Boolean(user?.userBranchId)
+    || user?.isH4BranchAdmin;
+const filterBookingsToAssignedBranch = async (bookings, req) => {
+    if (!isAssignedH4BranchAdmin(req.user)) return bookings;
+    const ids = bookings.map((booking) => String(booking?.memberId?._id || booking?.memberId?.id || booking?.memberId || ''))
+        .filter(Boolean);
+    if (!ids.length) return [];
+    const members = await Member.find({
+        _id: { $in: ids },
+        gymId: req.user.gymId,
+        branchId: req.user.branchId
+    }).select('_id').lean();
+    const allowedIds = new Set(members.map((member) => String(member._id || member.id)));
+    return bookings.filter((booking) => allowedIds.has(String(booking?.memberId?._id || booking?.memberId?.id || booking?.memberId || '')));
+};
 const parseClassBookings = (value) => {
     if (Array.isArray(value)) return value;
     if (!value) return [];
@@ -204,7 +220,7 @@ const createClass = catchAsync(async (req, res, next) => {
             if (targetBranchIds.some((id) => id && String(id) !== String(req.user.branchId))) return res.status(403).json({ message: 'Trainers can only schedule classes at their assigned branch.' });
             targetBranchIds = [req.user.branchId];
         }
-        const isBranchScopedH4Admin = userRole === 'h4_branch_admin' || userRole === 'h4_admin' && Boolean(req.user.branchId);
+        const isBranchScopedH4Admin = isAssignedH4BranchAdmin(req.user);
         if (isBranchScopedH4Admin) {
             if (!req.user.branchId || targetBranchIds.some((id) => String(id || '') !== String(req.user.branchId))) {
                 return res.status(403).json({ message: 'H4 branch administrators can only schedule classes at their assigned branch.' });
@@ -296,6 +312,13 @@ const deleteClass = catchAsync(async (req, res, next) => {
         const snapshot = await GymClass.findOne(query).lean();
         if (!snapshot) return res.status(404).json({ message: 'Class not found or unauthorized' });
         if (!canManageClass(req, snapshot)) return res.status(403).json({ message: 'This class is outside your gym or branch.' });
+        if (isAssignedH4BranchAdmin(req.user)) {
+            const bookings = parseClassBookings(snapshot.bookings);
+            const visibleBookings = await filterBookingsToAssignedBranch(bookings, req);
+            if (visibleBookings.length !== bookings.length) {
+                return res.status(403).json({ message: 'This class roster includes members outside your branch.' });
+            }
+        }
         await prisma.$transaction(async (tx) => {
             const current = await tx.gymClass.findUnique({ where: { id: String(snapshot.id || snapshot._id) } });
             if (!current) throw new AppError('Class not found.', 404);
@@ -330,13 +353,14 @@ const getClassBookings = catchAsync(async (req, res, next) => {
         }
 
         const gymClass = await GymClass.findOne(query)
-            .populate('bookings.memberId', 'name phone email');
+            .populate('bookings.memberId', 'name phone email branchId');
         if (!gymClass) return res.status(404).json({ message: 'Class not found' });
         if (!canManageClass(req, gymClass)) return res.status(403).json({ message: 'This class is outside your gym or branch.' });
         if (req.user.role === 'trainer' && String(gymClass.branchId || '') !== String(req.user.branchId || '')) return res.status(403).json({ message: 'This class is outside your assigned branch.' });
 
         // Normalise bookings with status
-        const bookings = (gymClass.bookings || []).map(b => {
+        const visibleBookings = await filterBookingsToAssignedBranch(gymClass.bookings || [], req);
+        const bookings = visibleBookings.map(b => {
             const memberObj = typeof b.memberId === 'object' && b.memberId !== null ? b.memberId : null;
             return {
                 memberId: memberObj ? (memberObj._id || memberObj.id) : (b.memberId || ''),
@@ -531,6 +555,7 @@ const verifyClassAttendee = catchAsync(async (req, res, next) => {
     // Resolve member details
     const member = await prisma.member.findFirst({
         where: {
+            ...(isAssignedH4BranchAdmin(req.user) ? { gymId: req.user.gymId, branchId: req.user.branchId } : {}),
             OR: [
                 { id: identifier },
                 { phone: identifier }
@@ -600,6 +625,10 @@ const toggleAttendeeStatus = catchAsync(async (req, res, next) => {
     if (req.user.role === 'trainer' && String(gymClass.branchId || '') !== String(req.user.branchId || '')) return res.status(403).json({ message: 'This class is outside your assigned branch.' });
 
     const bookings = gymClass.bookings || [];
+    if (isAssignedH4BranchAdmin(req.user)) {
+        const member = await Member.findOne({ _id: memberId, gymId: req.user.gymId, branchId: req.user.branchId }).select('_id').lean();
+        if (!member) return res.status(404).json({ message: 'Member not found in your branch.' });
+    }
     const index = bookings.findIndex(b => b && (b.memberId || b).toString() === memberId.toString());
     if (index === -1) return res.status(404).json({ message: 'Member booking not found' });
 
@@ -618,7 +647,7 @@ const toggleAttendeeStatus = catchAsync(async (req, res, next) => {
     res.json({
         success: true,
         message: `Attendee status updated to ${newStatus}`,
-        bookings
+        bookings: await filterBookingsToAssignedBranch(bookings, req)
     });
 });
 
@@ -634,14 +663,20 @@ const adminBookClass = catchAsync(async (req, res, next) => {
         if (!classScope) return res.status(404).json({ message: 'Class not found' });
         if (!canManageClass(req, classScope)) return res.status(403).json({ message: 'This class is outside your gym or branch.' });
         if (req.user.role === 'trainer' && (!req.user.branchId || String(classScope.branchId || '') !== String(req.user.branchId))) return res.status(403).json({ message: 'Trainers can only manage rosters at their assigned branch.' });
-        const member = await prisma.member.findUnique({ where: { id: String(memberId) }, select: { name: true } });
+        const member = await prisma.member.findFirst({
+            where: {
+                id: String(memberId),
+                ...(isAssignedH4BranchAdmin(req.user) ? { gymId: req.user.gymId, branchId: req.user.branchId } : {})
+            },
+            select: { name: true }
+        });
         if (!member) return res.status(404).json({ message: 'Member not found' });
         const reservation = await reserveClassSeat({ classId: req.params.id, memberId: String(memberId), memberName: member.name, bookedBy: req.user.role });
 
         res.json({
             message: 'Class booked successfully by admin',
             ...reservation,
-            bookings: (await GymClass.findById(req.params.id).lean())?.bookings || []
+            bookings: await filterBookingsToAssignedBranch((await GymClass.findById(req.params.id).lean())?.bookings || [], req)
         });
     } catch (error) { next(error); }
 });
@@ -657,12 +692,19 @@ const adminCancelBooking = catchAsync(async (req, res, next) => {
         if (!classScope) return res.status(404).json({ message: 'Class not found' });
         if (!canManageClass(req, classScope)) return res.status(403).json({ message: 'This class is outside your gym or branch.' });
         if (req.user.role === 'trainer' && String(classScope.branchId || '') !== String(req.user.branchId || '')) return res.status(403).json({ message: 'This class is outside your assigned branch.' });
+        if (isAssignedH4BranchAdmin(req.user)) {
+            const member = await prisma.member.findFirst({
+                where: { id: String(memberId), gymId: req.user.gymId, branchId: req.user.branchId },
+                select: { id: true }
+            });
+            if (!member) return res.status(404).json({ message: 'Member not found in your branch.' });
+        }
         const cancellation = await cancelClassSeat({ classId: req.params.id, memberId: String(memberId) });
 
         res.json({
             message: 'Booking cancelled by admin',
             ...cancellation,
-            bookings: (await GymClass.findById(req.params.id).lean())?.bookings || []
+            bookings: await filterBookingsToAssignedBranch((await GymClass.findById(req.params.id).lean())?.bookings || [], req)
         });
     } catch (error) { next(error); }
 });

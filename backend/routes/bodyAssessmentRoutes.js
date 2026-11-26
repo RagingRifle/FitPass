@@ -11,12 +11,12 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const tenantFilter = require('../middleware/tenantFilter');
 
 router.route('/')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'member', 'h4_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getAssessments)
-    .post(protect, authorize('admin', 'trainer', 'h4_admin', 'superadmin', 'fitpass_admin'), createAssessment);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'member', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), tenantFilter, getAssessments)
+    .post(protect, authorize('admin', 'trainer', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), createAssessment);
 
 router.route('/:id')
-    .get(protect, authorize('admin', 'receptionist', 'trainer', 'member', 'h4_admin', 'superadmin', 'fitpass_admin'), getAssessmentById)
-    .put(protect, authorize('admin', 'trainer', 'h4_admin', 'superadmin', 'fitpass_admin'), updateAssessment)
-    .delete(protect, authorize('admin', 'trainer', 'h4_admin', 'superadmin', 'fitpass_admin'), deleteAssessment);
+    .get(protect, authorize('admin', 'receptionist', 'trainer', 'member', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), getAssessmentById)
+    .put(protect, authorize('admin', 'trainer', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), updateAssessment)
+    .delete(protect, authorize('admin', 'trainer', 'h4_admin', 'h4_branch_admin', 'superadmin', 'fitpass_admin'), deleteAssessment);
 
 module.exports = router;

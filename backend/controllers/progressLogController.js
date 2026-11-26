@@ -45,7 +45,13 @@ async function resolveMember(req, requestedMemberId) {
 async function resolvePlan(kind, planId, member, req) {
     if (!planId) return null;
     const model = kind === 'nutrition' ? prisma.dietPlan : prisma.workoutPlan;
-    const plan = await model.findFirst({ where: { id: String(planId), gymId: member.gymId } });
+    const plan = await model.findFirst({
+        where: {
+            id: String(planId),
+            gymId: member.gymId,
+            ...(req.user.branchId ? { branchId: req.user.branchId } : {})
+        }
+    });
     if (!plan) return null;
     if (kind === 'workout') {
         let assignedMemberIds = [plan.memberId].filter(Boolean).map(String);

@@ -14,6 +14,8 @@ const blankExpense = () => ({ title: '', amount: '', category: '', description: 
 const Expenses = () => {
     const navigate = useNavigate();
     const { user, selectedBranchId } = useContext(AuthContext);
+    const isBranchScopedAdmin = user?.role === 'h4_branch_admin'
+        || user?.role === 'h4_admin' && Boolean(user?.branchId);
     const [expenses, setExpenses] = useState([]);
     const [categories, setCategories] = useState([]);
     const [branches, setBranches] = useState([]);
@@ -145,7 +147,7 @@ const Expenses = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
             <div><h1 style={{ fontSize: '1.875rem', fontWeight: 750, color: 'var(--text-primary)', marginBottom: 4 }}>Expenses</h1><p style={{ color: 'var(--text-secondary)' }}>See operating costs by time, category, and branch.</p></div>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={() => { setNotice(''); setShowCategoryModal(true); }} className="btn btn-secondary"><Pencil size={16} /> Manage categories</button>
+                {!isBranchScopedAdmin && <button onClick={() => { setNotice(''); setShowCategoryModal(true); }} className="btn btn-secondary"><Pencil size={16} /> Manage categories</button>}
                 <button onClick={() => navigate('/reports')} className="btn btn-secondary">Export</button>
                 <button onClick={openExpenseForm} className="btn btn-primary"><Plus size={17} /> Add expense</button>
             </div>
@@ -194,14 +196,14 @@ const Expenses = () => {
             </form>
         </Modal>
 
-        <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title="Expense categories">
+        {!isBranchScopedAdmin && <Modal isOpen={showCategoryModal} onClose={() => setShowCategoryModal(false)} title="Expense categories">
             <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>Category names are saved for this gym. Renaming also updates the category on existing expenses.</p>
             <form onSubmit={addCategory} style={{ display: 'flex', gap: 8, marginBottom: 16 }}><input className="input" value={categoryName} maxLength="50" onChange={e => setCategoryName(e.target.value)} placeholder="New category name" required /><button className="btn btn-primary" type="submit"><Plus size={16} /> Add</button></form>
             {notice && <p role="alert" style={{ color: '#fb7185' }}>{notice}</p>}
             <div style={{ display: 'grid', gap: 8, maxHeight: 340, overflow: 'auto' }}>{categories.map(category => <div key={category.id} style={{ display: 'flex', gap: 8, alignItems: 'center', borderBottom: '1px solid var(--border-color)', padding: '8px 0' }}>
                 {editingCategory?.id === category.id ? <><input className="input" value={editingCategory.draft} maxLength="50" onChange={e => setEditingCategory({ ...editingCategory, draft: e.target.value })} /><button className="btn btn-primary" onClick={() => saveCategory(editingCategory)}>Save</button><button className="btn btn-secondary" onClick={() => setEditingCategory(null)}>Cancel</button></> : <><span style={{ flex: 1, color: 'var(--text-primary)', fontWeight: 600 }}>{category.name}</span><button className="btn btn-secondary" aria-label={`Rename ${category.name}`} onClick={() => { setNotice(''); setEditingCategory({ ...category, draft: category.name }); }}><Pencil size={15} /></button><button className="btn btn-danger" aria-label={`Remove ${category.name}`} onClick={() => removeCategory(category)}><Trash2 size={15} /></button></>}
             </div>)}</div>
-        </Modal>
+        </Modal>}
     </div>;
 };
 

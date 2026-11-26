@@ -144,6 +144,12 @@ const Sidebar = () => {
     const navigate = useNavigate();
 
     const role = user?.role || 'member';
+    const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
+    const userGymId = user?.gymId?._id || user?.gymId || '';
+    const isH4Gym = normalizedGym === 'H4' || ['05a08fdf-7427-48a5-8b25-e18d5a5668cd', '327d37e7-f978-43a9-82ef-e6c4a4dc3c5d'].includes(String(userGymId));
+    const isH4BranchAdmin = role === 'h4_branch_admin'
+        || role === 'h4_admin' && Boolean(user?.branchId)
+        || role === 'admin' && (isH4Gym || user?.isH4BranchAdmin === true) && Boolean(user?.branchId);
 
     const handleDivisionChange = async (division) => {
         changeActiveDivision(division);
@@ -280,7 +286,7 @@ const Sidebar = () => {
                 ]
             }
         ];
-    } else if (['h4_admin', 'h4_branch_admin'].includes(role)) {
+    } else if (['h4_admin', 'h4_branch_admin'].includes(role) || isH4BranchAdmin) {
         const suffix = '';
         const gymMgmtItems = [
             { name: `Gym Dashboard${suffix}`, path: '/dashboard', icon: LayoutDashboard },
@@ -328,14 +334,11 @@ const Sidebar = () => {
                 ]
             }
         ];
-        if (role === 'h4_branch_admin' || user?.branchId) {
-            groups = [{
-                label: 'Branch Operations',
-                items: [
-                    { name: 'Staff & Access', path: '/staff', icon: ShieldCheck },
-                    { name: 'Reports', path: '/reports', icon: FileText },
-                ]
-            }];
+        if (isH4BranchAdmin) {
+            groups = groups.map(group => ({
+                ...group,
+                items: group.items.filter(item => !['/branches', '/h4/admins', '/audit', '/settings', '/products', '/h4/trial-codes'].includes(item.path)),
+            }));
         }
     } else {
         const normalizedGym = (user?.gymName || user?.gymId?.name || '').toUpperCase();
@@ -363,7 +366,6 @@ const Sidebar = () => {
             items: group.items.filter(item => {
                 if (item.path === '/branches') return false;
                 if (item.path === '/fitpass-classes' && ['h4_admin', 'h4_branch_admin'].includes(role)) return false;
-                if (role !== 'superadmin' && activeDivision === 'h4' && !['/staff', '/reports'].includes(item.path)) return false;
                 return true;
             })
         }));

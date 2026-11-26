@@ -618,6 +618,12 @@ const updateMember = catchAsync(async (req, res, next) => {
         const member = await Member.findOne(query);
 
         if (member) {
+            const assignedBranchId = req.user.role === 'h4_branch_admin' || req.user.userBranchId
+                ? String(req.user.branchId || req.user.userBranchId || '')
+                : '';
+            if (assignedBranchId && branchId !== undefined && String(branchId || '') !== assignedBranchId) {
+                return res.status(403).json({ success: false, message: 'Branch admins cannot transfer members to another branch.' });
+            }
             const oldPhone = member.phone;
             const originalGymId = member.gymId ? member.gymId.toString() : '';
 
@@ -689,7 +695,9 @@ const updateMember = catchAsync(async (req, res, next) => {
                 member.branchId = null;
             }
 
-            if (branchId !== undefined) {
+            if (assignedBranchId) {
+                member.branchId = assignedBranchId;
+            } else if (branchId !== undefined) {
                 member.branchId = branchId || null;
             }
 

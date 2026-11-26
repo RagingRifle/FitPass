@@ -3,6 +3,9 @@ const AppError = require('../utils/appError');
 const Payment = require('../models/Payment');
 const Member = require('../models/Member');
 const { logAudit } = require('../utils/auditLogger');
+const isAssignedH4BranchAdmin = (user) => user?.role === 'h4_branch_admin'
+    || user?.role === 'h4_admin' && Boolean(user?.userBranchId)
+    || user?.isH4BranchAdmin;
 
 // @desc    Add a new payment
 // @route   POST /api/payments
@@ -124,6 +127,14 @@ const getMemberPayments = catchAsync(async (req, res, next) => {
 const createRazorpayOrder = catchAsync(async (req, res, next) => {
     try {
         const { amount, currency = 'INR', memberId } = req.body;
+        if (isAssignedH4BranchAdmin(req.user)) {
+            const member = await Member.findOne({
+                _id: memberId,
+                gymId: req.user.gymId,
+                branchId: req.user.branchId
+            }).select('_id').lean();
+            if (!member) return res.status(404).json({ success: false, message: 'Member not found in your branch' });
+        }
         const keyId = process.env.RAZORPAY_KEY_ID;
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
@@ -161,7 +172,9 @@ const verifyRazorpayPayment = catchAsync(async (req, res, next) => {
     try {
         const { memberId, amount, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-        const member = await Member.findById(memberId);
+        const member = isAssignedH4BranchAdmin(req.user)
+            ? await Member.findOne({ _id: memberId, gymId: req.user.gymId, branchId: req.user.branchId })
+            : await Member.findById(memberId);
         if (!member) {
             return res.status(404).json({ success: false, message: 'Member not found' });
         }

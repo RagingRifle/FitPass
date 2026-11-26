@@ -7,10 +7,26 @@ const logger = require('../lib/logger');
 const { H4_GYM_IDS } = require('../config/constants');
 const { trainerCanManage } = require('../utils/trainerAccess');
 
+const isAssignedBranchAdmin = (req) => req.user?.role === 'h4_branch_admin'
+    || req.user?.role === 'h4_admin' && Boolean(req.user?.userBranchId)
+    || req.user?.isH4BranchAdmin;
 const getPlanGymScope = (req) => {
     const gymId = String(req.user?.gymId || '');
     const h4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user?.role) || H4_GYM_IDS.includes(gymId);
-    return { gymId, gymIds: h4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId] };
+    const gymIds = isAssignedBranchAdmin(req)
+        ? [gymId].filter(Boolean)
+        : h4Scope ? [...new Set([...H4_GYM_IDS, gymId].filter(Boolean))] : [gymId];
+    return { gymId, gymIds };
+};
+const isBranchTrainer = async (req, trainerId, gymId) => {
+    if (!isAssignedBranchAdmin(req) || !trainerId) return true;
+    const trainer = await User.findOne({
+        _id: trainerId,
+        gymId,
+        branchId: req.user.branchId,
+        role: 'trainer'
+    }).select('_id').lean();
+    return Boolean(trainer);
 };
 
 const memberTrialBlocksWorkouts = async (user) => {
@@ -92,8 +108,13 @@ const createPlan = catchAsync(async (req, res, next) => {
         }
 
         const { gymId, gymIds } = getPlanGymScope(req);
+        const trainerId = req.user.role === 'trainer' ? req.user.id : (req.body.trainerId || null);
+        if (!(await isBranchTrainer(req, trainerId, gymId))) {
+            return res.status(404).json({ success: false, message: 'Trainer not found in your branch.' });
+        }
         const members = await Promise.all(memberIds.map((id) => Member.findById(id).lean()));
-        const invalidIndex = members.findIndex((member) => !member || !gymIds.includes(String(member.gymId)) || (req.user.role !== 'trainer' && req.user.branchId && String(member.branchId || '') !== String(req.user.branchId)));
+        const invalidIndex = members.findIndex((member) => !member || !gymIds.includes(String(member.gymId))
+            || (req.user.role !== 'trainer' && req.user.branchId && String(member.branchId || '') !== String(req.user.branchId)));
         if (invalidIndex !== -1) {
             return res.status(404).json({ success: false, message: 'One or more selected members are outside your gym or branch.' });
         }
@@ -103,7 +124,7 @@ const createPlan = catchAsync(async (req, res, next) => {
         const plan = await WorkoutPlan.create({
             memberId: memberIds[0],
             memberIds: JSON.stringify(memberIds),
-            trainerId: req.user.role === 'trainer' ? req.user.id : (req.body.trainerId || null),
+            trainerId,
             name,
             startDate: startDate ? new Date(startDate) : null,
             endDate: endDate ? new Date(endDate) : null,
@@ -136,7 +157,9 @@ const getPlans = catchAsync(async (req, res, next) => {
 
         if (await memberTrialBlocksWorkouts(req.user)) return res.json({ success: true, data: [], meta: { page, limit, total: 0 } });
 
-        if (req.query.branchId) {
+        if (isAssignedBranchAdmin(req)) {
+            query.branchId = req.user.branchId;
+        } else if (req.query.branchId) {
             query.branchId = req.query.branchId;
         }
 
@@ -178,15 +201,22 @@ const getPlans = catchAsync(async (req, res, next) => {
         const memberIds = [...new Set(plans.flatMap(parseMemberIds))];
         const trainerIds = [...new Set(plans.map(p => p.trainerId).filter(Boolean))];
 
+        const memberQuery = { _id: { $in: memberIds } };
+        if (isAssignedBranchAdmin(req)) Object.assign(memberQuery, { gymId: { $in: gymIds }, branchId: req.user.branchId });
+        const trainerQuery = { _id: { $in: trainerIds } };
+        if (isAssignedBranchAdmin(req)) Object.assign(trainerQuery, { gymId: { $in: gymIds }, branchId: req.user.branchId, role: 'trainer' });
         const [members, trainers] = await Promise.all([
-            memberIds.length > 0 ? Member.find({ _id: { $in: memberIds } }).select('id registrationNumber name phone email').lean() : [],
-            trainerIds.length > 0 ? User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean() : []
+            memberIds.length > 0 ? Member.find(memberQuery).select('id registrationNumber name phone email').lean() : [],
+            trainerIds.length > 0 ? User.find(trainerQuery).select('id name email role phone').lean() : []
         ]);
 
         const memberMap = new Map((members || []).flatMap(m => [[String(m._id || m.id), m], [String(m.id || m._id), m]]));
         const trainerMap = new Map((trainers || []).map(t => [t._id ? t._id.toString() : t.id, t]));
 
-        const formatted = plans.map(p => {
+        const visiblePlans = isAssignedBranchAdmin(req)
+            ? plans.filter((plan) => parseMemberIds(plan).every((id) => memberMap.has(id)))
+            : plans;
+        const formatted = visiblePlans.map(p => {
             let parsedExercises = p.exercises;
             if (p.exercises && typeof p.exercises === 'string') {
                 try {
@@ -223,11 +253,26 @@ const getPlanById = catchAsync(async (req, res, next) => {
     try {
         if (await memberTrialBlocksWorkouts(req.user)) return res.status(403).json({ success: false, message: 'Workout access is not included in your current trial.' });
         const { gymIds } = getPlanGymScope(req);
-        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
+        const plan = await WorkoutPlan.findOne({
+            _id: req.params.id,
+            gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0],
+            ...(isAssignedBranchAdmin(req) ? { branchId: req.user.branchId } : {}),
+            ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {})
+        });
 
         if (plan) {
             // Check member authorization
             const assignedMemberIds = parseMemberIds(plan);
+            if (isAssignedBranchAdmin(req)) {
+                const scopedMembers = await Member.find({
+                    _id: { $in: assignedMemberIds },
+                    gymId: { $in: gymIds },
+                    branchId: req.user.branchId
+                }).select('_id').lean();
+                if (scopedMembers.length !== assignedMemberIds.length) {
+                    return res.status(404).json({ success: false, message: 'Workout plan not found in your branch' });
+                }
+            }
             if (req.user.role === 'member' && !assignedMemberIds.includes(String(req.user.memberId))) {
                 return res.status(403).json({ success: false, message: 'Not authorized to view this plan' });
             }
@@ -238,8 +283,14 @@ const getPlanById = catchAsync(async (req, res, next) => {
                 } catch (e) {}
             }
 
-            const memberObj = await Member.findOne({ _id: plan.memberId });
-            const trainerObj = plan.trainerId ? await User.findOne({ _id: plan.trainerId }).select('-password') : null;
+            const memberObj = await Member.findOne({
+                _id: plan.memberId,
+                ...(isAssignedBranchAdmin(req) ? { gymId: { $in: gymIds }, branchId: req.user.branchId } : {})
+            });
+            const trainerObj = plan.trainerId ? await User.findOne({
+                _id: plan.trainerId,
+                ...(isAssignedBranchAdmin(req) ? { gymId: { $in: gymIds }, branchId: req.user.branchId, role: 'trainer' } : {})
+            }).select('-password') : null;
 
             res.json({
                 ...plan,
@@ -261,7 +312,12 @@ const updatePlan = catchAsync(async (req, res, next) => {
         const { name, startDate, endDate, exercises, trainerId } = req.body;
         const { gymIds } = getPlanGymScope(req);
 
-        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
+        const plan = await WorkoutPlan.findOne({
+            _id: req.params.id,
+            gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0],
+            ...(isAssignedBranchAdmin(req) ? { branchId: req.user.branchId } : {}),
+            ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {})
+        });
 
         if (plan) {
             const requestedIds = Array.isArray(req.body.memberIds) ? req.body.memberIds : parseMemberIds(plan);
@@ -269,8 +325,12 @@ const updatePlan = catchAsync(async (req, res, next) => {
             if (!memberIds.length) return res.status(400).json({ success: false, message: 'A workout plan must be assigned to at least one member.' });
             if (!(await trainerCanManage(req, memberIds, 'assignWorkout'))) return res.status(403).json({ success: false, message: 'You need workout access and an active assignment to every selected member.' });
             const members = await Promise.all(memberIds.map((id) => Member.findById(id).lean()));
-            const invalidIndex = members.findIndex((member) => !member || !gymIds.includes(String(member.gymId)) || (req.user.role !== 'trainer' && req.user.branchId && String(member.branchId || '') !== String(req.user.branchId)));
+            const invalidIndex = members.findIndex((member) => !member || !gymIds.includes(String(member.gymId))
+                || (req.user.role !== 'trainer' && req.user.branchId && String(member.branchId || '') !== String(req.user.branchId)));
             if (invalidIndex !== -1) return res.status(404).json({ success: false, message: 'One or more selected members are outside your gym or branch.' });
+            if (trainerId !== undefined && !(await isBranchTrainer(req, trainerId, String(req.user.gymId || '')))) {
+                return res.status(404).json({ success: false, message: 'Trainer not found in your branch.' });
+            }
             plan.memberId = memberIds[0];
             plan.memberIds = JSON.stringify(memberIds);
             plan.name = name || plan.name;
@@ -302,10 +362,25 @@ const updatePlan = catchAsync(async (req, res, next) => {
 const deletePlan = catchAsync(async (req, res, next) => {
     try {
         const { gymIds } = getPlanGymScope(req);
-        const plan = await WorkoutPlan.findOne({ _id: req.params.id, gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0], ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {}) });
+        const plan = await WorkoutPlan.findOne({
+            _id: req.params.id,
+            gymId: gymIds.length > 1 ? { $in: gymIds } : gymIds[0],
+            ...(isAssignedBranchAdmin(req) ? { branchId: req.user.branchId } : {}),
+            ...(req.user.role === 'trainer' ? { trainerId: req.user.id } : {})
+        });
 
         if (plan) {
             const memberIds = parseMemberIds(plan);
+            if (isAssignedBranchAdmin(req)) {
+                const scopedMembers = await Member.find({
+                    _id: { $in: memberIds },
+                    gymId: { $in: gymIds },
+                    branchId: req.user.branchId
+                }).select('_id').lean();
+                if (scopedMembers.length !== memberIds.length) {
+                    return res.status(404).json({ success: false, message: 'Workout plan not found in your branch' });
+                }
+            }
             const planName = plan.name;
             const gymId = plan.gymId;
             await plan.deleteOne();

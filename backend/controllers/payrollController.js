@@ -361,8 +361,10 @@ const getPayrolls = catchAsync(async (req, res, next) => {
 
         // Batched Trainer lookup ONLY
         const trainerIds = [...new Set(payrolls.map(p => p.trainerId).filter(Boolean))];
+        const trainerQuery = { _id: { $in: trainerIds } };
+        if (req.user.branchId) Object.assign(trainerQuery, { gymId: req.user.gymId, branchId: req.user.branchId });
         const trainers = trainerIds.length > 0
-            ? await User.find({ _id: { $in: trainerIds } }).select('id name email role phone').lean()
+            ? await User.find(trainerQuery).select('id name email role phone').lean()
             : [];
 
         const trainerMap = new Map((trainers || []).map(t => [t._id ? t._id.toString() : t.id, t]));
