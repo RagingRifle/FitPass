@@ -25,10 +25,13 @@ export const deletePlan = async (id) => {
     return data;
 };
 
-export const getMembers = async (status = '', page = 1, search = '', limit = 10) => {
+export const getMembers = async (status = '', page = 1, search = '', limit = 10, filters = {}) => {
     let url = `/members?page=${page}&limit=${limit}`;
     if (status) url += `&status=${encodeURIComponent(status)}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (filters.planId) url += `&planId=${encodeURIComponent(filters.planId)}`;
+    if (filters.expiryFrom) url += `&expiryFrom=${encodeURIComponent(filters.expiryFrom)}`;
+    if (filters.expiryTo) url += `&expiryTo=${encodeURIComponent(filters.expiryTo)}`;
     const { data } = await API.get(url);
     return data;
 };

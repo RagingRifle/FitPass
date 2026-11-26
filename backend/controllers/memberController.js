@@ -491,13 +491,34 @@ const createMember = catchAsync(async (req, res, next) => {
 // @access  Private/Admin
 const getMembers = catchAsync(async (req, res, next) => {
     try {
-        const { status, search = '' } = req.query;
+        const { status, search = '', planId, expiryFrom, expiryTo } = req.query;
         const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
         const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 10));
 
         const query = await buildMemberQuery(req);
 
         if (status) query.status = status;
+        if (planId) query.planId = planId;
+        const expiryDateRange = {};
+        const parseDateFilter = (value, label, endOfDay = false) => {
+            if (!value) return null;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                throw Object.assign(new Error(`${label} must be a valid date.`), { statusCode: 400 });
+            }
+            const date = new Date(`${value}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}Z`);
+            if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+                throw Object.assign(new Error(`${label} must be a valid date.`), { statusCode: 400 });
+            }
+            return date;
+        };
+        const expiryStart = parseDateFilter(expiryFrom, 'Expiry start');
+        const expiryEnd = parseDateFilter(expiryTo, 'Expiry end', true);
+        if (expiryStart && expiryEnd && expiryStart > expiryEnd) {
+            throw Object.assign(new Error('Expiry start must be on or before expiry end.'), { statusCode: 400 });
+        }
+        if (expiryStart) expiryDateRange.$gte = expiryStart;
+        if (expiryEnd) expiryDateRange.$lte = expiryEnd;
+        if (Object.keys(expiryDateRange).length) query.expiryDate = expiryDateRange;
         if (search) {
             query.$or = [
                 { name: { $regex: search, $options: 'i' } },

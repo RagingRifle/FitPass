@@ -203,10 +203,10 @@ const Leads = () => {
             )}
 
             {/* Filters */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input className="input" style={{ maxWidth: '280px', margin: 0 }} placeholder=" Search name / phone..." value={search} onChange={e => setSearch(e.target.value)} />
-                <label>From <input className="input" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></label>
-                <label>To <input className="input" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></label>
+            <div className="leads-filter-bar">
+                <input className="input leads-search-input" aria-label="Search leads" placeholder="Search name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
+                <label className="leads-date-filter">From <input className="input" type="date" value={dateFrom} max={dateTo || undefined} onChange={e => setDateFrom(e.target.value)} /></label>
+                <label className="leads-date-filter">To <input className="input" type="date" value={dateTo} min={dateFrom || undefined} onChange={e => setDateTo(e.target.value)} /></label>
                 {filterStatus && (
                     <button onClick={() => setFilterStatus('')} className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
                         Clear Filter <X size={14} />

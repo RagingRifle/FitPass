@@ -117,6 +117,109 @@ const permanentlyDeleteProduct = catchAsync(async (req, res) => {
   res.json({ success: true });
 });
 
+const getH4Purchases = catchAsync(async (req, res) => {
+  const division = adminDivision(req, req.query.division === 'h4' ? 'h4' : 'fitpass');
+  if (division !== 'h4') return res.status(403).json({ message: 'Purchase reports are available for H4 merchandise only.' });
+  const where = { division: 'h4' };
+  if (req.user.role === 'admin') {
+    const memberScope = { gymId: String(req.user.gymId || '') };
+    if (req.user.branchId) memberScope.branchId = String(req.user.branchId);
+    const scopedMembers = await prisma.member.findMany({ where: memberScope, select: { id: true } });
+    where.memberId = { in: scopedMembers.map(member => member.id) };
+  }
+  if (req.query.productId) where.productId = String(req.query.productId);
+  if (req.query.dateFrom || req.query.dateTo) {
+    const createdAt = {};
+    const timezoneOffset = Number(req.query.timezoneOffset || 0);
+    if (!Number.isFinite(timezoneOffset) || Math.abs(timezoneOffset) > 840) {
+      return res.status(400).json({ message: 'Timezone offset must be between -840 and 840 minutes.' });
+    }
+    const parseDate = (value, label) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        throw Object.assign(new Error(`${label} must be a valid date.`), { statusCode: 400 });
+      }
+      const [year, month, day] = value.split('-').map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+        throw Object.assign(new Error(`${label} must be a valid date.`), { statusCode: 400 });
+      }
+      return new Date(date.getTime() + timezoneOffset * 60_000);
+    };
+    if (req.query.dateFrom) createdAt.gte = parseDate(String(req.query.dateFrom), 'Start date');
+    if (req.query.dateTo) {
+      const endDate = parseDate(String(req.query.dateTo), 'End date');
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+      createdAt.lt = endDate;
+    }
+    if (createdAt.gte && createdAt.lt && createdAt.gte >= createdAt.lt) {
+      return res.status(400).json({ message: 'Start date must be on or before end date.' });
+    }
+    where.createdAt = createdAt;
+  }
+  const orders = await prisma.storeOrder.findMany({ where, orderBy: { createdAt: 'desc' } });
+  const members = orders.length
+    ? await prisma.member.findMany({
+      where: { id: { in: [...new Set(orders.map(order => order.memberId))] } },
+      select: { id: true, name: true, phone: true, email: true },
+    })
+    : [];
+  const memberById = new Map(members.map(member => [member.id, member]));
+  res.json(orders.map(order => ({ ...order, member: memberById.get(order.memberId) || null })));
+});
+
+const registerH4Purchase = catchAsync(async (req, res) => {
+  const division = adminDivision(req, 'h4');
+  if (division !== 'h4') return res.status(403).json({ message: 'Only H4 merchandise purchases can be registered here.' });
+  const { memberId, productId, paymentMethod = 'Cash' } = req.body;
+  const quantity = Number(req.body.quantity);
+  if (!memberId || !productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
+    return res.status(400).json({ message: 'Choose a member and product, and enter a quantity between 1 and 1000.' });
+  }
+  if (!['Cash', 'UPI', 'Card', 'Other'].includes(paymentMethod)) {
+    return res.status(400).json({ message: 'Choose a valid payment method.' });
+  }
+  const member = await prisma.member.findUnique({ where: { id: String(memberId) } });
+  if (!member) return res.status(404).json({ message: 'Member not found.' });
+  const memberGymId = String(member.gymId || '');
+  const userGymId = String(req.user.gymId || '');
+  const belongsToH4 = H4_GYM_IDS.includes(memberGymId)
+    || (req.user.role !== 'superadmin' && userGymId && memberGymId === userGymId);
+  if (!belongsToH4 || (req.user.branchId && String(member.branchId || '') !== String(req.user.branchId))) {
+    return res.status(404).json({ message: 'Member not found in your H4 branch.' });
+  }
+  const product = await prisma.storeProduct.findUnique({ where: { id: String(productId) } });
+  if (!product || !product.isActive || product.division !== 'h4') {
+    return res.status(404).json({ message: 'Product is unavailable.' });
+  }
+  const result = await prisma.$transaction(async tx => {
+    const current = await tx.storeProduct.findUnique({ where: { id: product.id } });
+    if (!current?.isActive || current.division !== 'h4') {
+      throw Object.assign(new Error('Product is unavailable.'), { statusCode: 404 });
+    }
+    if (current.stock != null) {
+      const stock = await tx.storeProduct.updateMany({
+        where: { id: current.id, isActive: true, stock: { gte: quantity } },
+        data: { stock: { decrement: quantity } },
+      });
+      if (!stock.count) throw Object.assign(new Error('Not enough stock for this purchase.'), { statusCode: 409 });
+    }
+    return tx.storeOrder.create({
+      data: {
+        memberId: member.id,
+        productId: current.id,
+        productName: current.name,
+        division: 'h4',
+        coinsSpent: 0,
+        amountINR: Number(current.priceINR || 0) * quantity,
+        quantity,
+        paymentMethod,
+        status: 'RECEIVED',
+      },
+    });
+  });
+  res.status(201).json({ ...result, member: { id: member.id, name: member.name, phone: member.phone } });
+});
+
 const purchaseProduct = catchAsync(async (req, res) => {
   const member = await resolveStoreMember(req);
   if (!member) return res.status(404).json({ message: 'Member account not found.' });
@@ -148,4 +251,4 @@ const purchaseProduct = catchAsync(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
-module.exports = { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteProduct, purchaseProduct, getCoinSettings, saveCoinSettings };
+module.exports = { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteProduct, getH4Purchases, registerH4Purchase, purchaseProduct, getCoinSettings, saveCoinSettings };

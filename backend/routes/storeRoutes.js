@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
-const { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteProduct, purchaseProduct, getCoinSettings, saveCoinSettings } = require('../controllers/storeController');
+const { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteProduct, getH4Purchases, registerH4Purchase, purchaseProduct, getCoinSettings, saveCoinSettings } = require('../controllers/storeController');
 
 router.use(protect);
 const denyH4BranchAdmin = (req, res, next) => {
@@ -14,6 +14,8 @@ const denyH4BranchAdmin = (req, res, next) => {
 };
 router.get('/products', denyH4BranchAdmin, getProducts);
 router.get('/orders', authorize('member'), getMyOrders);
+router.get('/purchases', authorize('admin', 'h4_admin', 'superadmin', 'fitpass_admin'), denyH4BranchAdmin, getH4Purchases);
+router.post('/purchases', authorize('admin', 'h4_admin', 'superadmin'), denyH4BranchAdmin, registerH4Purchase);
 router.get('/coin-settings', denyH4BranchAdmin, getCoinSettings);
 router.put('/coin-settings', authorize('admin', 'h4_admin', 'fitpass_admin', 'superadmin'), denyH4BranchAdmin, saveCoinSettings);
 router.post('/products', authorize('admin', 'h4_admin', 'fitpass_admin', 'superadmin'), denyH4BranchAdmin, upload.single('image'), saveProduct);

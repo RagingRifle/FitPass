@@ -46,6 +46,9 @@ const Members = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [planFilter, setPlanFilter] = useState('');
+    const [expiryFrom, setExpiryFrom] = useState('');
+    const [expiryTo, setExpiryTo] = useState('');
     const [page, setPage] = useState(1);
     const [pages, setPages] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -166,7 +169,7 @@ const Members = () => {
 
     useEffect(() => {
         fetchData();
-    }, [page, statusFilter, searchTerm]);
+    }, [page, statusFilter, searchTerm, planFilter, expiryFrom, expiryTo]);
 
     useEffect(() => {
         // A branch or gym can have fewer pages than the previous scope.
@@ -183,7 +186,7 @@ const Members = () => {
         try {
             // Load the directory independently so a plans/branches request
             // failure cannot leave a valid members response hidden.
-            const membersData = await getMembers(statusFilter, page, searchTerm);
+            const membersData = await getMembers(statusFilter, page, searchTerm, 10, { planId: planFilter, expiryFrom, expiryTo });
             if (requestId !== fetchRequestRef.current) return;
             setMembers(membersData.members || []);
             setPages(membersData.pages || 1);
@@ -502,7 +505,7 @@ const Members = () => {
 
             // If user requests full roster export, fetch all members from backend without pagination limits
             if (exportFullRoster) {
-                const fullRes = await getMembers(statusFilter, 1, searchTerm, 10000);
+                const fullRes = await getMembers(statusFilter, 1, searchTerm, 10000, { planId: planFilter, expiryFrom, expiryTo });
                 if (fullRes?.members && Array.isArray(fullRes.members)) {
                     exportData = fullRes.members.filter(m => {
                         const matchBranch = !branchFilter || (m.branchId?._id || m.branchId || '') === branchFilter;
@@ -678,29 +681,44 @@ const Members = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <div className="members-filter-bar">
                 <input
                     className="input"
-                    style={{ flex: '1', minWidth: '200px' }}
+                    aria-label="Search members"
                     placeholder="Search by member ID (MEM1001), name, or phone..."
                     value={searchTerm}
                     onChange={(e) => { setPage(1); setSearchTerm(e.target.value); }}
                 />
                 <select
                     className="input"
-                    style={{ flex: '1', minWidth: '150px' }}
+                    aria-label="Filter members by status"
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => { setPage(1); setStatusFilter(e.target.value); }}
                 >
                     <option value="">All Status</option>
                     <option value="Active">Active</option>
                     <option value="Expired">Expired</option>
                     <option value="Frozen"> Frozen</option>
                 </select>
+                <select
+                    className="input"
+                    aria-label="Filter members by plan"
+                    value={planFilter}
+                    onChange={(e) => { setPage(1); setPlanFilter(e.target.value); }}
+                >
+                    <option value="">All Plans</option>
+                    {plans.map(plan => <option key={plan._id || plan.id} value={plan._id || plan.id}>{plan.name}</option>)}
+                </select>
+                <label className="members-expiry-filter">Expiry from
+                    <input className="input" type="date" value={expiryFrom} max={expiryTo || undefined} onChange={(e) => { setPage(1); setExpiryFrom(e.target.value); }} />
+                </label>
+                <label className="members-expiry-filter">Expiry to
+                    <input className="input" type="date" value={expiryTo} min={expiryFrom || undefined} onChange={(e) => { setPage(1); setExpiryTo(e.target.value); }} />
+                </label>
                 {!isH4Context && !user?.branchId && branches.length > 0 && (
                     <select
                         className="input"
-                        style={{ flex: '1', minWidth: '150px' }}
+                        aria-label="Filter members by branch"
                         value={branchFilter}
                         onChange={(e) => setBranchFilter(e.target.value)}
                     >
@@ -708,7 +726,7 @@ const Members = () => {
                         {branches.map(b => <option key={b._id} value={b._id}> {b.name}</option>)}
                     </select>
                 )}
-                <ResetFiltersButton onClick={() => { setSearchTerm(''); setStatusFilter(''); setBranchFilter(''); setPage(1); }} />
+                <ResetFiltersButton onClick={() => { setSearchTerm(''); setStatusFilter(''); setPlanFilter(''); setExpiryFrom(''); setExpiryTo(''); setBranchFilter(''); setPage(1); }} />
             </div>
 
             <div className="table-container">

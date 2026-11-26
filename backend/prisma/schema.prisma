@@ -974,18 +974,22 @@ model StoreProduct {
 }
 
 model StoreOrder {
-  id          String   @id @default(uuid())
-  memberId    String
-  productId   String
-  productName String
-  division    String
-  coinsSpent  Int
-  status      String   @default("RECEIVED")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  id            String   @id @default(uuid())
+  memberId      String
+  productId     String
+  productName   String
+  division      String
+  coinsSpent    Int
+  amountINR     Float?
+  quantity      Int      @default(1)
+  paymentMethod String?
+  status        String   @default("RECEIVED")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
   @@index([memberId, createdAt])
   @@index([division, status, createdAt])
+  @@index([division, productId, createdAt])
 }
 
 model CoinSettings {
