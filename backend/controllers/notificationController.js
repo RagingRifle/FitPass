@@ -211,9 +211,12 @@ const createAnnouncement = catchAsync(async (req, res, next) => {
     } catch (error) { next(error); }
 });
 
+const { runDailyRemindersIfDue } = require('../utils/dailyReminders');
+
 // Helper logic to find members with expiries or dues
 const generateAutomatedAlerts = async (user) => {
     try {
+        await runDailyRemindersIfDue();
         const today = new Date();
         const threeDaysFromNow = new Date();
         threeDaysFromNow.setDate(today.getDate() + 3);
