@@ -119,13 +119,13 @@ function App() {
         <Route path="/superadmin/admins" element={
           <ProtectedRoute roles={['superadmin']}>
             <Layout>
-              <AdminManagement />
+              <AdminManagement scope="all" />
             </Layout>
           </ProtectedRoute>
         } />
 
-        <Route path="/h4/admins" element={<ProtectedRoute roles={['h4_admin']}><Layout><AdminManagement /></Layout></ProtectedRoute>} />
-        <Route path="/fitpass/admins" element={<ProtectedRoute roles={['fitpass_admin']}><Layout><AdminManagement /></Layout></ProtectedRoute>} />
+        <Route path="/h4/admins" element={<ProtectedRoute roles={['h4_admin']}><Layout><AdminManagement scope="h4" /></Layout></ProtectedRoute>} />
+        <Route path="/fitpass/admins" element={<ProtectedRoute roles={['fitpass_admin']}><Layout><AdminManagement scope="fitpass" /></Layout></ProtectedRoute>} />
 
         <Route path="/superadmin/fitpass-analytics" element={
           <ProtectedRoute roles={['superadmin', 'fitpass_admin']}>

@@ -27,6 +27,7 @@ const NAV_GROUPS = {
                 { name: 'Products & Coins', path: '/products', icon: Banknote },
                 { name: 'Members Directory', path: '/members', icon: Users },
                 { name: 'FitPass Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
+                { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },
             ]
         },
         {
@@ -230,6 +231,7 @@ const Sidebar = () => {
                 { name: `Classes${suffix}`, path: '/classes', icon: Dumbbell },
                 { name: `Assessments${suffix}`, path: '/body-assessments', icon: LineChart },
                 { name: `Staff${suffix}`, path: '/staff', icon: ShieldCheck },
+                { name: 'Admins Directory', path: '/superadmin/admins', icon: ShieldCheck },
                 { name: 'Branches', path: '/branches', icon: Building2 },
             ];
 
@@ -283,7 +285,7 @@ const Sidebar = () => {
                     { name: 'FitPass Members', path: '/superadmin/fitpass-members', icon: Users },
                     { name: 'FitPass Reports', path: '/superadmin/fitpass-analytics', icon: Zap },
                     ...(user?.fitPassPayoutAccess ? [{ name: 'Branch Payouts', path: '/superadmin/fitpass-payouts', icon: IndianRupee }] : []),
-                    { name: 'Admins Directory', path: '/fitpass/admins', icon: ShieldCheck },
+                    { name: 'Partner Accounts', path: '/fitpass/admins', icon: ShieldCheck },
                     { name: 'Class Add-ons', path: '/fitpass-classes', icon: Dumbbell },
                 ]
             },
@@ -337,7 +339,7 @@ const Sidebar = () => {
                     { name: `Workout Plans${suffix}`, path: '/workout-plans', icon: Dumbbell },
                     { name: `Diet Plans${suffix}`, path: '/diet-plans', icon: Apple },
                     { name: 'Reminders', path: '/reminders', icon: Bell },
-                    ...(!user?.branchId ? [{ name: 'Admins Directory', path: '/h4/admins', icon: ShieldCheck }] : []),
+                    ...(!user?.branchId ? [{ name: 'H4 Branch Admins', path: '/h4/admins', icon: ShieldCheck }] : []),
                     { name: 'Audit Logs', path: '/audit', icon: History },
                     { name: `Settings${suffix}`, path: '/settings', icon: Settings },
                 ]

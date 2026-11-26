@@ -4,9 +4,13 @@ import { Loader,  ShieldCheck, Plus, Trash2, Edit2, Lock, Mail, User, ShieldAler
 import { useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 
-function AdminManagement() {
+function AdminManagement({ scope = 'all' }) {
     const { user } = useContext(AuthContext);
     const divisionRole = user?.role === 'h4_admin' ? 'h4' : user?.role === 'fitpass_admin' ? 'fitpass' : 'all';
+    const initialDivision = scope === 'all' ? divisionRole : scope;
+    const initialRole = initialDivision === 'h4'
+        ? 'h4_branch_admin'
+        : user?.role === 'superadmin' ? 'fitpass_admin' : 'fitpass_partner';
     const [admins, setAdmins] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -16,8 +20,8 @@ function AdminManagement() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState(divisionRole === 'h4' ? 'h4_branch_admin' : 'fitpass_admin');
-    const [division, setDivision] = useState(divisionRole);
+    const [role, setRole] = useState(initialRole);
+    const [division, setDivision] = useState(initialDivision);
     const [scopeData, setScopeData] = useState({ fitpassGyms: [], branches: [], h4Gym: null });
     const [gymId, setGymId] = useState('');
     const [branchId, setBranchId] = useState('');
@@ -71,7 +75,7 @@ function AdminManagement() {
             setName('');
             setEmail('');
             setPassword('');
-            setRole(division === 'h4' ? 'h4_branch_admin' : 'fitpass_admin');
+            setRole(division === 'h4' ? 'h4_branch_admin' : user?.role === 'superadmin' ? 'fitpass_admin' : 'fitpass_partner');
             setGymId('');
             setBranchId('');
             setSuccessMessage('Administrator account provisioned successfully!');
@@ -126,6 +130,22 @@ function AdminManagement() {
         }
     };
 
+    const pageTitle = scope === 'h4'
+        ? 'H4 Branch Admins'
+        : scope === 'fitpass' ? 'FitPass Partner Accounts' : 'Admins Directory';
+    const pageDescription = scope === 'h4'
+        ? 'Create and manage administrator access for individual H4 branches.'
+        : scope === 'fitpass'
+            ? 'Create and manage FitPass partner-gym access.'
+            : 'Manage FitPass and H4 administrator accounts. Division-specific access is managed in each division.';
+    const provisionTitle = scope === 'h4'
+        ? 'Add H4 Branch Admin'
+        : scope === 'fitpass' ? 'Add FitPass Partner Account' : 'Provision Admin Account';
+    const provisionButtonLabel = scope === 'h4'
+        ? 'Create H4 Branch Admin'
+        : scope === 'fitpass' ? 'Create Partner Account' : 'Provision Admin Account';
+    const showDivisionTabs = user?.role === 'superadmin' && scope === 'all';
+
     if (loading && admins.length === 0) return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
             <Loader className="spinner" size={40} style={{ color: 'var(--primary-color)' }} />
@@ -137,12 +157,12 @@ function AdminManagement() {
             <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <ShieldCheck size={28} style={{ color: 'var(--primary)' }} />
-                    <h2 style={{ margin: 0 }}>Admins Directory</h2>
+                    <h2 style={{ margin: 0 }}>{pageTitle}</h2>
                 </div>
             </header>
 
-            <p style={{ color: 'var(--text-secondary)', margin: '-1rem 0 1.2rem' }}>Control-room sign-in has separate FitPass and H4 account scopes. Branch admins stay locked to one H4 branch.</p>
-            {user?.role === 'superadmin' && <div style={{ display: 'flex', gap: 8, marginBottom: 18 }} role="tablist" aria-label="Admin directory division">
+            <p style={{ color: 'var(--text-secondary)', margin: '-1rem 0 1.2rem' }}>{pageDescription}</p>
+            {showDivisionTabs && <div style={{ display: 'flex', gap: 8, marginBottom: 18 }} role="tablist" aria-label="Admin directory division">
                 {[['all', `All admin logins · ${admins.length}`], ['fitpass', `FitPass · ${admins.filter(admin => ['fitpass_admin', 'fitpass_partner'].includes(admin.roleScope)).length}`], ['h4', `H4 · ${admins.filter(admin => ['h4_admin', 'h4_branch_admin'].includes(admin.roleScope)).length}`]].map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={division === key} onClick={() => { setDivision(key); setRole(key === 'h4' ? 'h4_admin' : 'fitpass_admin'); }} className={`btn ${division === key ? 'btn-primary' : 'btn-secondary'}`} style={{ padding: '0.55rem 1rem' }}>{label}</button>)}
             </div>}
 
@@ -162,7 +182,7 @@ function AdminManagement() {
             <div className="card" style={{ marginBottom: '2.5rem', padding: '2rem' }}>
                 <h3 style={{ marginBottom: '1.5rem', fontSize: '1.25rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Plus size={20} />
-                    <span>Provision Dedicated Admin Account</span>
+                    <span>{provisionTitle}</span>
                 </h3>
                 <form onSubmit={handleCreateAdmin}>
                     <div className="form-grid">
@@ -225,7 +245,7 @@ function AdminManagement() {
                     {role === 'h4_branch_admin' && <div className="input-group" style={{ maxWidth: 500, marginTop: 12 }}><label>H4 branch</label><select className="input" value={branchId} onChange={e => setBranchId(e.target.value)} required><option value="">Select an H4 branch</option>{h4Branches.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
                     <p style={{ margin: '0.75rem 0 0', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{role === 'h4_branch_admin' ? 'Branch access is locked to the selected H4 location.' : role === 'h4_admin' ? 'H4-wide access across all H4 branches.' : role === 'fitpass_partner' ? 'Partner access is limited to the selected gym.' : 'FitPass network-wide administration.'}</p>
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-                        Provision Admin Account
+                        {provisionButtonLabel}
                     </button>
                 </form>
             </div>
