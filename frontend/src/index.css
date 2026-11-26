@@ -695,16 +695,6 @@ textarea {
     animation: cardEntrance 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-.kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: #FEDF1E;
-}
-
 @keyframes cardEntrance {
     from {
         opacity: 0;
@@ -3231,11 +3221,6 @@ body {
     gap: 0.95rem;
 }
 
-.kpi-card::before {
-    height: 2px;
-    opacity: 0.72;
-}
-
 .kpi-card:hover {
     transform: translateY(-2px);
     border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
@@ -5387,10 +5372,6 @@ body {
 .kpi-card {
     background: #FFFFFF !important;
     border: 1.5px solid #E2D9CC !important;
-}
-.kpi-card::before {
-    background: #FEDF1E !important;
-    height: 4px !important;
 }
 .kpi-icon {
     background: #FFF5CE !important;

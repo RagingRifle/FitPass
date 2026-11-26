@@ -173,103 +173,67 @@ const Dashboard = () => {
 
     return (
         <div className="fade-in">
-            <div className={`page-header dashboard-page-header${isH4User ? ' dashboard-page-header--h4' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                <div className="page-header-left">
-                    <div className="dashboard-heading-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        <h2 style={{ margin: 0 }}>{activeDivision === 'h4' ? 'Gym CRM Dashboard' : 'Partner Dashboard'}</h2>
-                        {['superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(user?.role) && isH4User && (
-                            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                                {user?.branchId ? (
-                                    <div style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '20px',
-                                        padding: '0.35rem 1rem',
-                                        color: 'var(--text-primary)',
-                                        fontWeight: 600,
-                                        fontSize: '0.875rem',
-                                        boxShadow: 'var(--shadow-sm)'
-                                    }}>
-                                        {gymList.find(b => (b._id || b.id) === user.branchId)?.name || 'H4 Branch'}
-                                    </div>
-                                ) : (
-                                    <div className="dashboard-branch-picker">
-                                        <Building2 size={17} className="dashboard-branch-icon" aria-hidden="true" />
-                                        <select
-                                            className="dashboard-branch-select"
-                                            aria-label={activeDivision === 'h4' ? 'Select H4 branch' : 'Select partner gym'}
-                                            value={activeDivision === 'h4' ? selectedBranchId : selectedGymId}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                if (activeDivision === 'h4') {
-                                                    changeSelectedBranch(val);
-                                                } else {
-                                                    changeSelectedGym(val);
-                                                    changeSelectedBranch('');
-                                                }
-                                            }}
-                                        >
-                                            {activeDivision === 'h4' ? (
-                                                <>
-                                                    <option value="">H4 (All Branches)</option>
-                                                    {gymList.map(branch => (
-                                                        <option key={branch._id || branch.id} value={branch._id || branch.id}>
-                                                            {branch.name}
-                                                        </option>
-                                                    ))}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <option value="">All Partner Gyms</option>
-                                                    {gymList.map(gym => (
-                                                        <option key={gym._id || gym.id} value={gym._id || gym.id}>
-                                                            {gym.name}
-                                                        </option>
-                                                    ))}
-                                                </>
-                                            )}
-                                        </select>
-                                        <ChevronDown size={15} className="dashboard-branch-chevron" aria-hidden="true" />
-                                    </div>
-                                )}
+            {!isH4User && (
+                <div className="page-header dashboard-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div className="page-header-left">
+                        <div className="dashboard-heading-row" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <h2 style={{ margin: 0 }}>{activeDivision === 'h4' ? 'Gym CRM Dashboard' : 'Partner Dashboard'}</h2>
+                        </div>
+                        <p style={{ marginTop: '0.25rem' }}>
+                            {user?.branchId
+                                ? `Welcome back, ${user?.name || 'Admin'}. View real-time analytics for ${gymList.find(b => (b._id || b.id) === user.branchId)?.name || 'your branch'}.`
+                                : activeDivision === 'h4'
+                                ? `Welcome back, ${user?.name || 'Admin'}. View real-time analytics for the selected gym and branches.`
+                                : `Welcome back, ${user?.name || 'Partner'}. Here's the activity at your gym today.`
+                            }
+                        </p>
+                    </div>
+                    {(user?.role === 'admin' || user?.role === 'superadmin') && (
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setShowQR(true)} className="btn btn-secondary">
+                                <QrCode size={18} /> Print Check-In QR
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {isH4User && (
+                <section aria-label="Dashboard date filter" className="dashboard-date-filter">
+                    <div className="dashboard-date-fields">
+                        {['superadmin', 'fitpass_admin', 'h4_admin', 'h4_branch_admin'].includes(user?.role) && !user?.branchId && (
+                            <div className="dashboard-branch-picker">
+                                <Building2 size={17} className="dashboard-branch-icon" aria-hidden="true" />
+                                <select
+                                    className="dashboard-branch-select"
+                                    aria-label="Select H4 branch"
+                                    value={selectedBranchId}
+                                    onChange={(e) => changeSelectedBranch(e.target.value)}
+                                >
+                                    <option value="">H4 (All Branches)</option>
+                                    {gymList.map(branch => (
+                                        <option key={branch._id || branch.id} value={branch._id || branch.id}>
+                                            {branch.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={15} className="dashboard-branch-chevron" aria-hidden="true" />
                             </div>
                         )}
+                        <label className="dashboard-date-field"><span>From</span><input aria-label="Start date" type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} /></label>
+                        <span className="dashboard-date-separator" aria-hidden="true">→</span>
+                        <label className="dashboard-date-field"><span>To</span><input aria-label="End date" type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} /></label>
                     </div>
-                    <p style={{ marginTop: '0.25rem' }}>
-                        {user?.branchId
-                            ? `Welcome back, ${user?.name || 'Admin'}. View real-time analytics for ${gymList.find(b => (b._id || b.id) === user.branchId)?.name || 'your branch'}.`
-                            : activeDivision === 'h4'
-                            ? `Welcome back, ${user?.name || 'Admin'}. View real-time analytics for the selected gym and branches.`
-                            : `Welcome back, ${user?.name || 'Partner'}. Here's the activity at your gym today.`
-                        }
-                    </p>
-                </div>
-                {(user?.role === 'admin' || user?.role === 'superadmin') && (
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => setShowQR(true)} className="btn btn-secondary">
-                            <QrCode size={18} /> Print Check-In QR
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {isH4User && <section aria-label="Dashboard date filter" className="dashboard-date-filter">
-                <div className="dashboard-date-fields">
-                    <label className="dashboard-date-field"><span>From</span><input aria-label="Start date" type="date" value={dateRange.startDate} max={dateRange.endDate} onChange={e => setDateRange(value => ({ ...value, startDate: e.target.value }))} /></label>
-                    <span className="dashboard-date-separator" aria-hidden="true">→</span>
-                    <label className="dashboard-date-field"><span>To</span><input aria-label="End date" type="date" value={dateRange.endDate} min={dateRange.startDate} max={dateInputValue(new Date())} onChange={e => setDateRange(value => ({ ...value, endDate: e.target.value }))} /></label>
-                </div>
-                <div className="dashboard-date-presets" aria-label="Choose a date range">{[7, 30, 90].map(days => {
-                    const end = new Date();
-                    const start = new Date();
-                    start.setDate(start.getDate() - (days - 1));
-                    const isSelected = dateRange.startDate === dateInputValue(start) && dateRange.endDate === dateInputValue(end);
-                    return <button key={days} type="button" className={`dashboard-date-preset${isSelected ? ' is-selected' : ''}`} aria-pressed={isSelected} onClick={() => setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) })}>{days} days</button>;
-                })}</div>
-                <small className="dashboard-date-note">Revenue, expenses, check-ins and new joins for this period</small>
-            </section>}
+                    <div className="dashboard-date-presets" aria-label="Choose a date range">{[7, 30, 90].map(days => {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setDate(start.getDate() - (days - 1));
+                        const isSelected = dateRange.startDate === dateInputValue(start) && dateRange.endDate === dateInputValue(end);
+                        return <button key={days} type="button" className={`dashboard-date-preset${isSelected ? ' is-selected' : ''}`} aria-pressed={isSelected} onClick={() => setDateRange({ startDate: dateInputValue(start), endDate: dateInputValue(end) })}>{days} days</button>;
+                    })}</div>
+                    <small className="dashboard-date-note">Revenue, expenses, check-ins and new joins for this period</small>
+                </section>
+            )}
 
             {/* QR Code Modal */}
             {showQR && (
