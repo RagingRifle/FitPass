@@ -4,7 +4,11 @@ const mockPrisma = {
         findMany: jest.fn(),
     },
     storeProduct: {
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
+        findMany: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
         updateMany: jest.fn(),
     },
     storeOrder: {
@@ -17,7 +21,7 @@ const mockPrisma = {
 jest.mock('../config/prisma', () => mockPrisma);
 
 const prisma = require('../config/prisma');
-const { registerH4Purchase, getH4Purchases } = require('../controllers/storeController');
+const { registerH4Purchase, getStorePurchases, getProducts, saveProduct } = require('../controllers/storeController');
 const { H4_GYM_IDS } = require('../config/constants');
 
 const callController = (controller, req) => new Promise((resolve, reject) => {
@@ -40,7 +44,7 @@ describe('H4 store purchases', () => {
     });
 
     it('records a purchase total and decrements available stock by quantity', async () => {
-        const product = { id: 'product-1', isActive: true, division: 'h4', priceINR: 75, stock: 8 };
+        const product = { id: 'product-1', isActive: true, division: 'h4', priceINR: 75, costINR: 50, stock: 8 };
         const tx = {
             storeProduct: {
                 findUnique: jest.fn().mockResolvedValue(product),
@@ -74,6 +78,7 @@ describe('H4 store purchases', () => {
                 memberId: 'member-1',
                 productId: 'product-1',
                 amountINR: 150,
+                costINR: 100,
                 quantity: 2,
                 paymentMethod: 'UPI',
                 division: 'h4',
@@ -88,7 +93,7 @@ describe('H4 store purchases', () => {
             .mockResolvedValueOnce([{ id: 'member-1', name: 'Member One', phone: '9876543210' }]);
         prisma.storeOrder.findMany.mockResolvedValue([order]);
 
-        const response = await callController(getH4Purchases, {
+        const response = await callController(getStorePurchases, {
             user: { role: 'admin', gymId: H4_GYM_IDS[0] },
             query: {
                 division: 'h4',
@@ -113,5 +118,109 @@ describe('H4 store purchases', () => {
             orderBy: { createdAt: 'desc' },
         });
         expect(response.body[0].member.name).toBe('Member One');
+    });
+
+    it('calculates cost price from selling price and fixed margin amount', async () => {
+        prisma.storeProduct.findFirst.mockResolvedValue(null);
+        prisma.storeProduct.create.mockImplementation(async ({ data }) => ({ id: 'product-1', ...data }));
+
+        const response = await callController(saveProduct, {
+            user: { role: 'h4_admin', gymId: H4_GYM_IDS[0] },
+            params: {},
+            body: {
+                name: 'Training shirt',
+                division: 'h4',
+                priceINR: '1400',
+                marginINR: '200',
+                isActive: 'true',
+            },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(prisma.storeProduct.create).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+                priceINR: 1400,
+                costINR: 1200,
+                marginINR: 200,
+            }),
+        });
+    });
+
+    it('calculates FitCoin selling price from cost and fixed margin', async () => {
+        prisma.storeProduct.findFirst.mockResolvedValue(null);
+        prisma.storeProduct.create.mockImplementation(async ({ data }) => ({ id: 'product-2', ...data }));
+
+        const response = await callController(saveProduct, {
+            user: { role: 'fitpass_admin' },
+            params: {},
+            body: {
+                name: 'FitPass bottle',
+                division: 'fitpass',
+                costCoins: '300',
+                marginCoins: '50',
+                isActive: 'true',
+            },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(prisma.storeProduct.create).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+                priceCoins: 350,
+                costCoins: 300,
+                marginCoins: 50,
+                costINR: null,
+                marginINR: null,
+            }),
+        });
+    });
+
+    it('returns FitPass orders for reports in FitCoins', async () => {
+        const order = { id: 'order-2', memberId: 'member-2', division: 'fitpass', coinsSpent: 350, costCoins: 300 };
+        prisma.member.findMany.mockResolvedValue([{ id: 'member-2', name: 'FitPass Member' }]);
+        prisma.storeOrder.findMany.mockResolvedValue([order]);
+
+        const response = await callController(getStorePurchases, {
+            user: { role: 'fitpass_admin' },
+            query: { division: 'fitpass' },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(prisma.storeOrder.findMany).toHaveBeenCalledWith({
+            where: { division: 'fitpass' },
+            orderBy: { createdAt: 'desc' },
+        });
+        expect(response.body[0]).toEqual(expect.objectContaining({
+            coinsSpent: 350,
+            costCoins: 300,
+            member: expect.objectContaining({ name: 'FitPass Member' }),
+        }));
+    });
+
+    it('does not select internal cost and margin fields for member product listings', async () => {
+        prisma.storeProduct.findMany.mockResolvedValue([]);
+
+        const response = await callController(getProducts, {
+            user: { role: 'member' },
+            query: { division: 'fitpass' },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(prisma.storeProduct.findMany).toHaveBeenCalledWith({
+            where: { division: 'fitpass', isActive: true },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                priceCoins: true,
+                priceINR: true,
+                imageUrl: true,
+                division: true,
+                isActive: true,
+                stock: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
     });
 });

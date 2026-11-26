@@ -45,6 +45,19 @@ const getProducts = catchAsync(async (req, res) => {
   const products = await prisma.storeProduct.findMany({
     where: { division, ...(isAdmin ? {} : { isActive: true }) },
     orderBy: { createdAt: 'desc' },
+    ...(!isAdmin ? { select: {
+      id: true,
+      name: true,
+      description: true,
+      priceCoins: true,
+      priceINR: true,
+      imageUrl: true,
+      division: true,
+      isActive: true,
+      stock: true,
+      createdAt: true,
+      updatedAt: true,
+    } } : {}),
   });
   res.json(products);
 });
@@ -55,6 +68,17 @@ const getMyOrders = catchAsync(async (req, res) => {
   const orders = await prisma.storeOrder.findMany({
     where: { memberId: member.id, division: 'fitpass' },
     orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      productId: true,
+      productName: true,
+      division: true,
+      coinsSpent: true,
+      quantity: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
   res.json(orders);
 });
@@ -77,18 +101,67 @@ const saveProduct = catchAsync(async (req, res) => {
   // The route parameter is the canonical edit ID. Multipart form fields can be
   // duplicated by clients/proxies, which turns Prisma's unique ID into an array.
   const id = req.params.id || req.body.id;
-  const { name, description = '', priceCoins, priceINR, imageUrl = '', division = 'fitpass', isActive = true, stock } = req.body;
+  const { name, description = '', priceCoins, costCoins, marginCoins, priceINR, costINR, marginINR, imageUrl = '', division = 'fitpass', isActive = true, stock } = req.body;
   const safeDivision = adminDivision(req, division);
-  if (!name?.trim() || (safeDivision !== 'h4' && (!Number.isInteger(Number(priceCoins)) || Number(priceCoins) < 1))) {
-    return res.status(400).json({ message: 'Product name and a positive whole coin price are required.' });
+  if (!name?.trim()) {
+    return res.status(400).json({ message: 'Product name is required.' });
   }
   if (stock !== '' && stock != null && (!Number.isInteger(Number(stock)) || Number(stock) < 0)) return res.status(400).json({ message: 'Stock must be a non-negative whole number.' });
   const duplicate = await prisma.storeProduct.findFirst({
     where: { division: safeDivision, name: { equals: name.trim(), mode: 'insensitive' }, ...(id ? { id: { not: id } } : {}) },
   });
   if (duplicate) return res.status(409).json({ message: 'A product with this name already exists in this shop. Edit the existing product instead.' });
-  if (safeDivision === 'h4' && (!Number.isFinite(Number(priceINR)) || Number(priceINR) < 0)) return res.status(400).json({ message: 'Enter a valid INR price for H4 merchandise.' });
-  const data = { name: name.trim(), description, priceCoins: safeDivision === 'h4' ? 0 : Number(priceCoins), priceINR: safeDivision === 'h4' ? Number(priceINR) : null, imageUrl: req.file?.path || imageUrl, division: safeDivision, isActive: isActive === true || isActive === 'true', stock: stock === '' || stock == null ? null : Number(stock) };
+  let h4Pricing = null;
+  let fitpassPricing = null;
+  if (safeDivision === 'h4') {
+    const hasCost = costINR !== '' && costINR != null;
+    const hasSellingPrice = priceINR !== '' && priceINR != null;
+    const hasMargin = marginINR !== '' && marginINR != null;
+    const values = {
+      costINR: hasCost ? Number(costINR) : null,
+      priceINR: hasSellingPrice ? Number(priceINR) : null,
+      marginINR: hasMargin ? Number(marginINR) : null,
+    };
+    const supplied = Object.keys(values).filter(key => values[key] != null);
+    if (supplied.length < 2 || supplied.some(key => !Number.isFinite(values[key]))) {
+      return res.status(400).json({ message: 'Enter any two of cost price, selling price, and margin amount.' });
+    }
+    if (['costINR', 'priceINR'].some(key => values[key] != null && values[key] < 0)) {
+      return res.status(400).json({ message: 'Cost price and selling price cannot be negative.' });
+    }
+    const roundCurrency = value => Math.round((value + Number.EPSILON) * 100) / 100;
+    if (values.costINR == null) values.costINR = roundCurrency(values.priceINR - values.marginINR);
+    if (values.priceINR == null) values.priceINR = roundCurrency(values.costINR + values.marginINR);
+    if (values.marginINR == null) values.marginINR = roundCurrency(values.priceINR - values.costINR);
+    if (values.costINR < 0 || Math.abs(values.priceINR - values.costINR - values.marginINR) > 0.01) {
+      return res.status(400).json({ message: 'Cost price, selling price, and margin amount must add up correctly.' });
+    }
+    h4Pricing = values;
+  } else {
+    const hasCost = costCoins !== '' && costCoins != null;
+    const hasSellingPrice = priceCoins !== '' && priceCoins != null;
+    const hasMargin = marginCoins !== '' && marginCoins != null;
+    const values = {
+      costCoins: hasCost ? Number(costCoins) : null,
+      priceCoins: hasSellingPrice ? Number(priceCoins) : null,
+      marginCoins: hasMargin ? Number(marginCoins) : null,
+    };
+    const supplied = Object.keys(values).filter(key => values[key] != null);
+    if (supplied.length < 2 || supplied.some(key => !Number.isInteger(values[key]))) {
+      return res.status(400).json({ message: 'Enter any two whole-coin values for cost price, selling price, and margin amount.' });
+    }
+    if (['costCoins', 'priceCoins'].some(key => values[key] != null && values[key] < 0)) {
+      return res.status(400).json({ message: 'Cost price and selling price cannot be negative.' });
+    }
+    if (values.costCoins == null) values.costCoins = values.priceCoins - values.marginCoins;
+    if (values.priceCoins == null) values.priceCoins = values.costCoins + values.marginCoins;
+    if (values.marginCoins == null) values.marginCoins = values.priceCoins - values.costCoins;
+    if (values.costCoins < 0 || values.priceCoins < 1 || values.priceCoins > 100000 || values.costCoins > 100000 || Math.abs(values.priceCoins - values.costCoins - values.marginCoins) > 0) {
+      return res.status(400).json({ message: 'Enter a positive FitCoin selling price and valid cost/margin values that add up.' });
+    }
+    fitpassPricing = values;
+  }
+  const data = { name: name.trim(), description, priceCoins: safeDivision === 'h4' ? 0 : fitpassPricing.priceCoins, costCoins: safeDivision === 'h4' ? null : fitpassPricing.costCoins, marginCoins: safeDivision === 'h4' ? null : fitpassPricing.marginCoins, priceINR: safeDivision === 'h4' ? h4Pricing.priceINR : null, costINR: safeDivision === 'h4' ? h4Pricing.costINR : null, marginINR: safeDivision === 'h4' ? h4Pricing.marginINR : null, imageUrl: req.file?.path || imageUrl, division: safeDivision, isActive: isActive === true || isActive === 'true', stock: stock === '' || stock == null ? null : Number(stock) };
   if (id) {
     const existing = await prisma.storeProduct.findUnique({ where: { id } });
     if (!existing || existing.division !== safeDivision) return res.status(404).json({ message: 'Product not found.' });
@@ -117,11 +190,14 @@ const permanentlyDeleteProduct = catchAsync(async (req, res) => {
   res.json({ success: true });
 });
 
-const getH4Purchases = catchAsync(async (req, res) => {
-  const division = adminDivision(req, req.query.division === 'h4' ? 'h4' : 'fitpass');
-  if (division !== 'h4') return res.status(403).json({ message: 'Purchase reports are available for H4 merchandise only.' });
-  const where = { division: 'h4' };
-  if (req.user.role === 'admin') {
+const getStorePurchases = catchAsync(async (req, res) => {
+  const requestedDivision = req.query.division === 'h4' ? 'h4' : 'fitpass';
+  const division = adminDivision(req, requestedDivision);
+  if (division === 'fitpass' && !['superadmin', 'fitpass_admin'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'FitPass purchase reports are available to FitPass administrators only.' });
+  }
+  const where = { division };
+  if (division === 'h4' && req.user.role === 'admin') {
     const memberScope = { gymId: String(req.user.gymId || '') };
     if (req.user.branchId) memberScope.branchId = String(req.user.branchId);
     const scopedMembers = await prisma.member.findMany({ where: memberScope, select: { id: true } });
@@ -196,6 +272,9 @@ const registerH4Purchase = catchAsync(async (req, res) => {
     if (!current?.isActive || current.division !== 'h4') {
       throw Object.assign(new Error('Product is unavailable.'), { statusCode: 404 });
     }
+    if (!Number.isFinite(Number(current.costINR)) || Number(current.costINR) < 0) {
+      throw Object.assign(new Error('Add a valid cost price to this product before registering a purchase.'), { statusCode: 409 });
+    }
     if (current.stock != null) {
       const stock = await tx.storeProduct.updateMany({
         where: { id: current.id, isActive: true, stock: { gte: quantity } },
@@ -210,7 +289,8 @@ const registerH4Purchase = catchAsync(async (req, res) => {
         productName: current.name,
         division: 'h4',
         coinsSpent: 0,
-        amountINR: Number(current.priceINR || 0) * quantity,
+        amountINR: Math.round((Number(current.priceINR || 0) * quantity + Number.EPSILON) * 100) / 100,
+        costINR: Math.round((Number(current.costINR) * quantity + Number.EPSILON) * 100) / 100,
         quantity,
         paymentMethod,
         status: 'RECEIVED',
@@ -244,11 +324,24 @@ const purchaseProduct = catchAsync(async (req, res) => {
     }
     const changed = await tx.member.updateMany({ where: { id: member.id, [coinField]: { gte: current.priceCoins } }, data: { [coinField]: { decrement: current.priceCoins } } });
     if (!changed.count) throw Object.assign(new Error('Not enough coins for this product.'), { statusCode: 402 });
-    const order = await tx.storeOrder.create({ data: { memberId: member.id, productId: current.id, productName: current.name, division, coinsSpent: current.priceCoins, status: 'RECEIVED' } });
+    const order = await tx.storeOrder.create({ data: { memberId: member.id, productId: current.id, productName: current.name, division, coinsSpent: current.priceCoins, costCoins: current.costCoins, status: 'RECEIVED' } });
     const updated = await tx.member.findUnique({ where: { id: member.id } });
     return { order, balance: updated[coinField] };
   });
-  res.json({ success: true, ...result });
+  res.json({
+    success: true,
+    order: {
+      id: result.order.id,
+      memberId: result.order.memberId,
+      productId: result.order.productId,
+      productName: result.order.productName,
+      division: result.order.division,
+      coinsSpent: result.order.coinsSpent,
+      status: result.order.status,
+      createdAt: result.order.createdAt,
+    },
+    balance: result.balance,
+  });
 });
 
-module.exports = { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteProduct, getH4Purchases, registerH4Purchase, purchaseProduct, getCoinSettings, saveCoinSettings };
+module.exports = { getProducts, getMyOrders, saveProduct, deleteProduct, permanentlyDeleteProduct, getStorePurchases, registerH4Purchase, purchaseProduct, getCoinSettings, saveCoinSettings };

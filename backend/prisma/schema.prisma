@@ -962,7 +962,11 @@ model StoreProduct {
   name        String
   description String   @default("")
   priceCoins  Int
+  costCoins   Int?
+  marginCoins Int?
   priceINR    Float?
+  costINR     Float?
+  marginINR   Float?
   imageUrl    String   @default("")
   division    String   @default("fitpass")
   isActive    Boolean  @default(true)
@@ -980,7 +984,9 @@ model StoreOrder {
   productName   String
   division      String
   coinsSpent    Int
+  costCoins     Int?
   amountINR     Float?
+  costINR       Float?
   quantity      Int      @default(1)
   paymentMethod String?
   status        String   @default("RECEIVED")
