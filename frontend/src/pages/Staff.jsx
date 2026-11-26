@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getStaff, createStaff, updateStaff, deleteStaff } from '../services/apiService';
 import API from '../services/api';
 import Modal from '../components/Modal';
@@ -8,6 +9,10 @@ import './Staff.css';
 
 const Staff = () => {
     const { user, activeDivision } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const isH4Scope = activeDivision === 'h4' || ['h4_admin', 'h4_branch_admin'].includes(user?.role);
+    const canCreateBranchH4Admin = ['superadmin', 'h4_admin'].includes(user?.role);
+    const canCreateOverallH4Admin = user?.role === 'superadmin';
     const [activeTab, setActiveTab] = useState('directory');
     const [staffList, setStaffList] = useState([]);
     const [branchList, setBranchList] = useState([]);
@@ -131,7 +136,15 @@ const Staff = () => {
         try {
             const changedPassword = formData.password;
             const credentialEmail = formData.email.trim().toLowerCase();
-            if (editingStaff) {
+            if (!editingStaff && isH4Scope && ['h4_admin', 'h4_branch_admin'].includes(formData.role)) {
+                await API.post('/superadmin/admins', {
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    role: formData.role,
+                    ...(formData.role === 'h4_branch_admin' ? { branchId: formData.branchId } : {})
+                });
+            } else if (editingStaff) {
                 const payload = { ...formData };
                 if (!payload.password) {
                     delete payload.password;
@@ -178,7 +191,14 @@ const Staff = () => {
     });
 
     const trainerCount = staffList.filter(person => person.role === 'trainer').length;
-    const adminCount = staffList.filter(person => person.role === 'admin').length;
+    const adminCount = staffList.filter(person => ['admin', 'h4_admin', 'h4_branch_admin'].includes(person.role)).length;
+    const roleLabel = (role) => ({
+        trainer: 'Trainer',
+        receptionist: 'Receptionist',
+        admin: 'Administrator',
+        h4_branch_admin: 'H4 Branch Admin',
+        h4_admin: 'Overall H4 Admin'
+    }[role] || role);
 
     return (
         <div className="fade-in staff-page">
@@ -231,8 +251,13 @@ const Staff = () => {
                         <label className="staff-page__role-filter"><span>Role</span><select aria-label="Filter staff by role" value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
                             <option value="">All Roles</option>
                             <option value="trainer">Trainer</option>
-                            <option value="receptionist">Receptionist</option>
-                            <option value="admin">Admin</option>
+                            {isH4Scope ? <>
+                                <option value="h4_branch_admin">H4 Branch Admin</option>
+                                <option value="h4_admin">Overall H4 Admin</option>
+                            </> : <>
+                                <option value="receptionist">Receptionist</option>
+                                <option value="admin">Admin</option>
+                            </>}
                         </select></label>
                         <button className="staff-page__reset" type="button" onClick={() => { setSearch(''); setRoleFilter(''); }}><RotateCcw size={15} /> Reset</button>
                     </div>
@@ -267,24 +292,34 @@ const Staff = () => {
                                                 <td><span className="staff-page__email"><span>{staff.email}</span></span></td>
                                                 <td>
                                                     <span className={`staff-page__role staff-page__role--${staff.role}`}>
-                                                        {staff.role}
+                                                        {roleLabel(staff.role)}
                                                     </span>
                                                 </td>
                                                 <td><span className="staff-page__date">{new Date(staff.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></td>
                                                 <td>
                                                     <div className="staff-page__actions">
-                                                        <button className="staff-page__action" aria-label={`Edit ${staff.name}`} title="Edit staff member"
-                                                            onClick={() => handleOpenModal(staff)}
-                                                        >
-                                                            <Pencil size={14} />
-                                                        </button>
-                                                        <button className="staff-page__action staff-page__action--delete" aria-label={`Remove ${staff.name}`}
-                                                            onClick={() => handleDelete(staff)}
-                                                            disabled={staff._id === user?._id || staff.id === user?.id}
-                                                            title={staff._id === user?._id || staff.id === user?.id ? 'Cannot delete yourself' : ''}
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </button>
+                                                        {['h4_admin', 'h4_branch_admin'].includes(staff.role) ? user?.role === 'h4_branch_admin' ? (
+                                                            <span title="Administrator account">—</span>
+                                                        ) : (
+                                                            <button className="staff-page__action" type="button" aria-label={`Manage ${staff.name}'s administrator account`} title="Manage administrator account"
+                                                                onClick={() => navigate(user?.role === 'superadmin' ? '/superadmin/admins' : '/h4/admins')}
+                                                            >
+                                                                <ShieldCheck size={14} />
+                                                            </button>
+                                                        ) : <>
+                                                            <button className="staff-page__action" aria-label={`Edit ${staff.name}`} title="Edit staff member"
+                                                                onClick={() => handleOpenModal(staff)}
+                                                            >
+                                                                <Pencil size={14} />
+                                                            </button>
+                                                            <button className="staff-page__action staff-page__action--delete" aria-label={`Remove ${staff.name}`}
+                                                                onClick={() => handleDelete(staff)}
+                                                                disabled={staff._id === user?._id || staff.id === user?.id}
+                                                                title={staff._id === user?._id || staff.id === user?.id ? 'Cannot delete yourself' : ''}
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </>}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -311,9 +346,15 @@ const Staff = () => {
                 <div className="staff-page__access-guide">
                     <div className="staff-page__guide-heading"><div><span className="staff-page__eyebrow"><span /> PRESET ACCESS</span><h2>Access follows the role</h2><p>Core permissions are assigned by role. Trainer workloads and coaching permissions can be adjusted per staff member.</p></div></div>
                     <div className="staff-page__role-cards">
-                        <article><span className="staff-page__role-mark staff-page__role-mark--admin"><ShieldCheck size={18} /></span><h3>Administrator</h3><p>Manage branch members, staff, operations, and reporting within the assigned organization scope.</p></article>
-                        <article><span className="staff-page__role-mark staff-page__role-mark--trainer"><Dumbbell size={18} /></span><h3>Trainer</h3><p>Work with assigned members. Managers set a member cap and enable workout, diet, and assessment tasks.</p></article>
-                        <article><span className="staff-page__role-mark staff-page__role-mark--desk"><Users size={18} /></span><h3>Receptionist</h3><p>Support member check-ins and front desk tasks without access to administrative settings.</p></article>
+                        {isH4Scope ? <>
+                            <article><span className="staff-page__role-mark staff-page__role-mark--admin"><ShieldCheck size={18} /></span><h3>Overall H4 Admin</h3><p>Manage all H4 branches, staff, operations, and reporting.</p></article>
+                            <article><span className="staff-page__role-mark staff-page__role-mark--admin"><ShieldCheck size={18} /></span><h3>H4 Branch Admin</h3><p>Manage members, trainers, and operations only at the assigned branch.</p></article>
+                            <article><span className="staff-page__role-mark staff-page__role-mark--trainer"><Dumbbell size={18} /></span><h3>Trainer</h3><p>Work with assigned members. Managers set a member cap and enable coaching tasks.</p></article>
+                        </> : <>
+                            <article><span className="staff-page__role-mark staff-page__role-mark--admin"><ShieldCheck size={18} /></span><h3>Administrator</h3><p>Manage branch members, staff, operations, and reporting within the assigned organization scope.</p></article>
+                            <article><span className="staff-page__role-mark staff-page__role-mark--trainer"><Dumbbell size={18} /></span><h3>Trainer</h3><p>Work with assigned members. Managers set a member cap and enable workout, diet, and assessment tasks.</p></article>
+                            <article><span className="staff-page__role-mark staff-page__role-mark--desk"><Users size={18} /></span><h3>Receptionist</h3><p>Support member check-ins and front desk tasks without access to administrative settings.</p></article>
+                        </>}
                     </div>
                 </div>
             )}
@@ -343,7 +384,7 @@ const Staff = () => {
                                 placeholder="John Doe"
                             />
                         </div>
-                        {formData.role === 'trainer' && !user?.branchId && <div className="input-group"><label>Assigned branch *</label><select className="input" value={formData.branchId || ''} onChange={e => setFormData({ ...formData, branchId: e.target.value })} required><option value="">Choose a branch</option>{branchList.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
+                        {(formData.role === 'trainer' || formData.role === 'h4_branch_admin') && !user?.branchId && <div className="input-group"><label>Assigned branch *</label><select className="input" value={formData.branchId || ''} onChange={e => setFormData({ ...formData, branchId: e.target.value })} required><option value="">Choose a branch</option>{branchList.map(branch => <option key={branch.id || branch._id} value={branch.id || branch._id}>{branch.name}</option>)}</select></div>}
 
                         <div className="input-group">
                             <label>Email Address *</label>
@@ -389,9 +430,15 @@ const Staff = () => {
                                 onChange={e => setFormData({ ...formData, role: e.target.value })}
                                 required
                             >
-                                <option value="trainer">Trainer / Instructor</option>
-                                <option value="receptionist">Receptionist / Desk Staff</option>
-                                <option value="admin">Administrator</option>
+                                {isH4Scope ? <>
+                                    <option value="trainer">Trainer / Instructor</option>
+                                    {canCreateBranchH4Admin && <option value="h4_branch_admin">H4 Branch Admin</option>}
+                                    {canCreateOverallH4Admin && <option value="h4_admin">Overall H4 Admin</option>}
+                                </> : <>
+                                    <option value="trainer">Trainer / Instructor</option>
+                                    <option value="receptionist">Receptionist / Desk Staff</option>
+                                    <option value="admin">Administrator</option>
+                                </>}
                             </select>
                         </div>
                     </div>

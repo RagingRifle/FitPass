@@ -15,6 +15,12 @@ const resolveStaffGymId = async (req) => {
     return gym?.name?.toLowerCase().includes('h4') ? selectedGymId : '';
 };
 
+const isH4Gym = async (gymId) => {
+    if (H4_GYM_IDS.includes(String(gymId))) return true;
+    const gym = await prisma.gym.findUnique({ where: { id: String(gymId) }, select: { name: true } });
+    return gym?.name?.toLowerCase().includes('h4') || false;
+};
+
 // @desc    Get all staff members
 // @route   GET /api/staff
 // @access  Private/Admin
@@ -22,8 +28,9 @@ const getStaff = catchAsync(async (req, res, next) => {
     try {
         const gymId = await resolveStaffGymId(req);
         if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
+        const h4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user.role) || await isH4Gym(gymId);
         const query = {
-            role: { $in: ['admin', 'trainer', 'receptionist'] },
+            role: { $in: h4Scope ? ['trainer', 'h4_admin', 'h4_branch_admin'] : ['admin', 'trainer', 'receptionist'] },
             ...req.tenantFilter,
             gymId
         };
@@ -47,11 +54,13 @@ const createStaff = catchAsync(async (req, res, next) => {
         const { name, email, password, role, trainerMemberLimit, trainerPermissions, shiftsPerDay, branchId } = req.body;
         const gymId = await resolveStaffGymId(req);
         if (!gymId) return res.status(403).json({ message: 'Select the H4 division to manage H4 staff.' });
+        const h4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user.role) || await isH4Gym(gymId);
         if (!name || !email || !password || !role) {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
-        if (!['admin', 'trainer', 'receptionist'].includes(role)) {
+        const allowedRoles = h4Scope ? ['trainer'] : ['admin', 'trainer', 'receptionist'];
+        if (!allowedRoles.includes(role)) {
             return res.status(400).json({ message: 'Invalid role' });
         }
         let assignedBranchId = req.user.branchId || branchId || null;
@@ -123,6 +132,9 @@ const updateStaff = catchAsync(async (req, res, next) => {
         if (!staff) {
             return res.status(404).json({ message: 'Staff member not found' });
         }
+        if (['h4_admin', 'h4_branch_admin'].includes(staff.role)) {
+            return res.status(403).json({ message: 'Manage H4 administrator accounts in the Admins Directory.' });
+        }
 
         if (email && email.trim().toLowerCase() !== staff.email) {
             const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
@@ -134,7 +146,9 @@ const updateStaff = catchAsync(async (req, res, next) => {
 
         staff.name = name || staff.name;
         if (role) {
-            if (!['admin', 'trainer', 'receptionist'].includes(role)) {
+            const h4Scope = ['h4_admin', 'h4_branch_admin'].includes(req.user.role) || await isH4Gym(gymId);
+            const allowedRoles = h4Scope ? ['trainer'] : ['admin', 'trainer', 'receptionist'];
+            if (!allowedRoles.includes(role)) {
                 return res.status(400).json({ message: 'Invalid role' });
             }
             staff.role = role;
@@ -190,6 +204,9 @@ const deleteStaff = catchAsync(async (req, res, next) => {
         const staff = await User.findOne(query);
         if (!staff) {
             return res.status(404).json({ message: 'Staff member not found' });
+        }
+        if (['h4_admin', 'h4_branch_admin'].includes(staff.role)) {
+            return res.status(403).json({ message: 'Manage H4 administrator accounts in the Admins Directory.' });
         }
 
         if (staff.id === req.user.id) {
